@@ -10,8 +10,18 @@ así que la aplicación corre directamente sobre el sistema operativo.
 |---|---|
 | nginx | Recibe el tráfico HTTPS, entrega archivos estáticos y reenvía el resto a Gunicorn |
 | Gunicorn | Ejecuta la aplicación Django |
-| systemd | Mantiene Gunicorn levantado y lo reinicia si cae o si reinicia el servidor |
+| Tareas programadas | Proceso aparte del portal web. Lee las métricas de cada Moodle y prepara el cobro mensual |
+| systemd | Mantiene Gunicorn levantado, lo reinicia si cae, y dispara las tareas programadas |
 | MariaDB | Base de datos del portal, separada de las bases de cada instancia Moodle |
+
+Las tareas programadas no corren dentro de Gunicorn. Son un proceso separado que
+systemd dispara con un timer, por dos razones: un cálculo mensual que recorre
+varias instancias Moodle puede tardar minutos, y bloquear un worker de Gunicorn
+todo ese rato dejaría al portal sin capacidad para atender usuarios. Además, si
+la tarea falla, no arrastra consigo al sitio web.
+
+La unidad de systemd para esas tareas se escribirá cuando exista acceso al
+servidor de staging y se sepa qué comando de gestión ejecutan.
 
 ## Instalación inicial
 

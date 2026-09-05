@@ -21,12 +21,14 @@ flowchart LR
     subgraph huawei[Servidor Huawei Cloud]
         nginx[nginx<br/>HTTPS y estaticos]
         gunicorn[Gunicorn<br/>gestionado por systemd]
+        worker[Tareas programadas<br/>disparadas por un timer de systemd]
         maria[(MariaDB Portal)]
         moodle[(Instancias Moodle<br/>Apache y PHP)]
 
         nginx --> gunicorn
         gunicorn --> maria
-        gunicorn -.->|solo lectura| moodle
+        worker --> maria
+        worker -.->|solo lectura| moodle
     end
 
     dev -->|git push<br/>pull request| repo
