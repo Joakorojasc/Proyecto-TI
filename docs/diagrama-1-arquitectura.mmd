@@ -1,0 +1,35 @@
+%% Diagrama 1 - Arquitectura del sistema
+%% Design Doc, seccion 4.1
+%%
+%% Los nombres de los componentes son los acordados por el equipo y deben ser
+%% identicos en los tres diagramas y en el texto de ambos documentos.
+
+flowchart TB
+    subgraph externos[Fuera de nuestro alcance]
+        moodles[(Instancias Moodle<br/>MariaDB por instancia)]
+        aprov[Capa de aprovisionamiento<br/>Grupo B]
+        pasarela[Pasarela de pagos<br/>Transbank o Flow]
+        dte[Proveedor DTE<br/>emision de facturas]
+    end
+
+    subgraph portal[Portal Edocere]
+        web[Panel Web<br/>plantillas Django]
+        api[API interna<br/>vistas y servicios]
+        adminc[Consola superadmin<br/>Django admin extendido]
+        worker[Tareas programadas<br/>lectura de metricas y cobro]
+        db[(MariaDB Portal<br/>clientes, planes, pagos)]
+    end
+
+    cliente([Cliente]) --> web
+    rafael([Superadministrador]) --> adminc
+
+    web --> api
+    adminc --> api
+    api --> db
+    worker --> db
+
+    api -->|solicita crear instancia| aprov
+    aprov -->|confirma creacion| api
+    worker -->|lee usuarios activos,<br/>cursos y categorias| moodles
+    api -->|inicia cobro| pasarela
+    worker -->|solicita emision| dte

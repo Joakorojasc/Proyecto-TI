@@ -1,0 +1,35 @@
+%% Diagrama 2 - Infraestructura y despliegue
+%% Design Doc, seccion 4.2
+%%
+%% Muestra donde corre cada cosa y como llega el codigo desde el computador de
+%% un integrante hasta el servidor. Sin contenedores en el servidor, por
+%% restriccion del cliente.
+
+flowchart LR
+    subgraph local[Equipo de desarrollo]
+        dev[Computador<br/>Django runserver]
+        docker[(MariaDB local<br/>Docker)]
+        dev --- docker
+    end
+
+    subgraph github[GitHub]
+        repo[Repositorio<br/>rama main protegida]
+        ci[GitHub Actions<br/>Ruff, mypy, pytest]
+        repo --> ci
+    end
+
+    subgraph huawei[Servidor Huawei Cloud]
+        nginx[nginx<br/>HTTPS y estaticos]
+        gunicorn[Gunicorn<br/>gestionado por systemd]
+        maria[(MariaDB Portal)]
+        moodle[(Instancias Moodle<br/>Apache y PHP)]
+
+        nginx --> gunicorn
+        gunicorn --> maria
+        gunicorn -.->|solo lectura| moodle
+    end
+
+    dev -->|git push<br/>pull request| repo
+    ci -->|si pasa, permite merge| repo
+    repo -->|git pull, migrate,<br/>restart del servicio| gunicorn
+    internet([Internet]) --> nginx

@@ -1,0 +1,23 @@
+# Normaliza los finales de línea para todo el equipo.
+#
+# Windows y Linux marcan el fin de línea distinto. Sin esta regla, cada
+# integrante sube el formato de su sistema operativo y un pull request puede
+# mostrar cientos de líneas cambiadas cuando en realidad no cambió el código,
+# solo un carácter invisible. Eso hace imposible revisar de verdad.
+#
+# En el repositorio se guarda siempre LF, que es lo que espera el servidor
+# Linux y el pipeline.
+* text=auto eol=lf
+
+# Los scripts de Windows sí necesitan CRLF para ejecutarse.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Archivos binarios: Git no debe tocarles el contenido.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary

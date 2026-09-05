@@ -1,0 +1,56 @@
+# Servicio systemd del portal.
+#
+# systemd es el gestor de servicios de Linux. Sin esto tendríamos que levantar
+# Gunicorn a mano por SSH y se caería al cerrar la sesión. Con el servicio
+# registrado, arranca solo al encender el servidor y se reinicia si el proceso
+# muere.
+#
+# Se instala en /etc/systemd/system/portal.service y se activa con:
+#   sudo systemctl enable --now portal
+
+[Unit]
+Description=Portal de gestion multitenant Edocere
+# No intentes arrancar antes de que la red y la base de datos estén listas,
+# porque Django falla al iniciar si no puede conectarse a MariaDB.
+After=network.target mariadb.service
+Requires=mariadb.service
+
+[Service]
+# Corre con un usuario sin privilegios. Si alguien lograra ejecutar código a
+# través de la aplicación, no tendría permisos de administrador en el servidor.
+User=portal
+Group=portal
+WorkingDirectory=/opt/portal-edocere
+
+# Las credenciales viven en este archivo, fuera del repositorio, con permisos
+# 600 para que solo el usuario portal pueda leerlo.
+EnvironmentFile=/opt/portal-edocere/.env
+
+# Gunicorn ejecuta la aplicación. Escucha solo en 127.0.0.1, no en 0.0.0.0:
+# el único que le habla es nginx, desde la misma máquina. Así la aplicación no
+# queda expuesta directamente a internet.
+#
+# 3 workers = procesos que atienden peticiones en paralelo. La regla habitual
+# es (2 x núcleos) + 1; ajustar cuando sepamos el tamaño real del servidor.
+#
+# Los logs van a la salida estándar para que los capture systemd.
+ExecStart=/opt/portal-edocere/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8000 \
+    --workers 3 \
+    --timeout 60 \
+    --access-logfile - \
+    --error-logfile -
+
+# Si el proceso se cae por cualquier motivo, systemd lo vuelve a levantar
+# después de 5 segundos.
+Restart=always
+RestartSec=5
+
+# Endurecimiento: la aplicación no puede escribir fuera de sus directorios ni
+# escalar privilegios.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

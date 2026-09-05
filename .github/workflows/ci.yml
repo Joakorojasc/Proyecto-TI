@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  calidad:
+    name: Linter, análisis estático y tests
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: portal_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: portal_test
+      DB_USER: root
+      DB_PASSWORD: root
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Dependencias del sistema para el driver de MariaDB
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-libmysqlclient-dev build-essential pkg-config
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Linter (Ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Análisis estático (mypy + django-stubs)
+        run: mypy .
+
+      - name: Verificar que no falten migraciones
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Chequeo de configuración de Django
+        run: python manage.py check
+
+      - name: Tests con cobertura
+        run: pytest --cov=. --cov-report=term-missing --cov-report=html
+
+      - name: Guardar reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-cobertura
+          path: htmlcov/
+          if-no-files-found: ignore
