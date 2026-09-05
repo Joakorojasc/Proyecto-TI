@@ -1,10 +1,13 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [main]
+  # En cada push a cualquier rama. La idea es enterarse de que algo se rompió
+  # en el momento, sin esperar a abrir un pull request.
   push:
-    branches: [main]
+
+  # Y en cada pull request. Este es el que cuenta como check obligatorio para
+  # poder mergear a main.
+  pull_request:
 
 jobs:
   calidad:

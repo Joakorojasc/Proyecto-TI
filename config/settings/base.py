@@ -13,9 +13,20 @@ porque este archivo se sube a GitHub.
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # BASE_DIR apunta a la raíz del proyecto. Lo usamos para construir rutas sin
 # depender de dónde esté instalado el proyecto en cada máquina.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Lee el archivo .env de la raíz y mete sus valores en las variables de entorno,
+# para que los os.environ.get de más abajo los encuentren. Sin esta línea el
+# .env que cada uno crea en su máquina no lo leería nadie.
+#
+# No pisa las variables que ya vengan del sistema: en el servidor y en el
+# pipeline mandan las del entorno, no un archivo. Si no existe el .env, no pasa
+# nada y se usan los valores por defecto.
+load_dotenv(BASE_DIR / ".env")
 
 # La SECRET_KEY firma las cookies de sesión y los tokens CSRF. El valor por
 # defecto solo sirve para desarrollo; en el servidor se pasa por variable de
