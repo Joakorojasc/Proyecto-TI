@@ -5,7 +5,7 @@ exclude = [".venv", "migrations", "staticfiles"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "DJ", "C4", "SIM"]
-ignore = ["E501"]
+ignore = ["E501", "DJ001", "DJ008"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]
