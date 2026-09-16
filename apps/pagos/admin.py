@@ -1,3 +1,5 @@
-from django.contrib import admin  # noqa: F401
+from django.contrib import admin
 
-# Los modelos de esta app se registran acá cuando existan.
+from .models import DocumentoTributario, Pago
+
+admin.site.register([Pago, DocumentoTributario])
