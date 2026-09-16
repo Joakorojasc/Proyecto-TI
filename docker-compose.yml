@@ -1,0 +1,15 @@
+services:
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: portal_edocere
+      MARIADB_USER: portal
+      MARIADB_PASSWORD: portal
+    ports:
+      - "3306:3306"
+    volumes:
+      - datos_mariadb:/var/lib/mysql
+
+volumes:
+  datos_mariadb:
