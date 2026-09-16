@@ -38,7 +38,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def crear_planes() -> dict[str, Plan]:
-        definiciones = [
+        definiciones: list[dict[str, Any]] = [
             {
                 "clave": "PLAN-DEMO-MENSUAL",
                 "nombre": "Plan mensual demo",
@@ -84,7 +84,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def crear_clientes() -> dict[str, Cliente]:
-        definiciones = [
+        definiciones: list[dict[str, Any]] = [
             {
                 "clave": "DEMO-CLIENTE-PEQUENO",
                 "rut": "DEMO-PEQUENO-001",
