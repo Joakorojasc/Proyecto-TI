@@ -132,7 +132,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-STATICFILES_DIRS = [BASE_DIR / "static"] # 
+STATICFILES_DIRS = [BASE_DIR / "static"]  #
 
 # collectstatic junta acá todos los archivos estáticos (CSS, JS, imágenes) para
 # que nginx los sirva directamente, sin pasar por Django.
