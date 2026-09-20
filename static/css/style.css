@@ -1,0 +1,51 @@
+:root {
+    --edocere-blue: #0A3D62; /* Azul corporativo */
+    --edocere-orange: #E58E26; /* Naranja para botones de acción */
+    --bg-light: #F4F6F8;
+    --text-dark: #2C3E50;
+    --danger: #E74C3C;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar básica */
+.sidebar {
+    width: 250px;
+    background-color: var(--edocere-blue);
+    color: white;
+    padding: 20px;
+}
+
+.sidebar a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 15px;
+}
+
+/* Contenedor principal */
+.main-content {
+    flex: 1;
+    padding: 30px;
+}
+
+.btn-primary {
+    background-color: var(--edocere-orange);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Estados globales (ocultos por defecto) */
+#global-loader, #global-error {
+    display: none;
+}

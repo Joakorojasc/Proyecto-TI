@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Edocere</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+    <!-- Navegación Lateral -->
+    <nav class="sidebar">
+        <h2>Edocere</h2>
+        <a href="#">Dashboard</a>
+        <a href="#">Mis Instancias</a>
+        <a href="#">Facturación</a>
+        <hr>
+        <a href="#">Cerrar Sesión</a>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <!-- Alertas globales -->
+        <div id="global-error" style="color: var(--danger); font-weight: bold;">
+            Ocurrió un error al procesar la solicitud.
+        </div>
+        
+        <div id="global-loader">
+            Cargando...
+        </div>
+
+        <!-- AQUÍ SE INYECTA EL CÓDIGO DE TUS COMPAÑEROS -->
+        {% block content %}
+        {% endblock content %}
+    </main>
+
+</body>
+</html>
