@@ -235,22 +235,26 @@ de todo mezclados.
 
 `core` es la excepción: esa no es de negocio, es técnica.
 
-### Estado actual, sin adornos
+### Estado actual
 
-**De las seis, hoy solo `core` tiene código.** Las otras cinco tienen la
-estructura de Django y un `models.py` que dice:
+Las seis apps ya tienen sus modelos, con las migraciones generadas. Las nueve
+entidades del diagrama entidad-relación quedaron repartidas así:
 
-```python
-from django.db import models  # noqa: F401
+| App | Entidades |
+|---|---|
+| `clientes` | Cliente, UsuarioPortal |
+| `planes` | Plan, Suscripcion |
+| `instancias` | InstanciaMoodle |
+| `pagos` | Pago, DocumentoTributario |
+| `estadisticas` | MedicionUsoMensual |
+| `core` | Bitacora |
 
-# Los modelos de esta app se definen acá.
-```
+Si en algún momento el diagrama cambia y aparece una entidad sin app, o una app
+sin entidad, hay que ajustar una de las dos cosas. Esa es la costura entre el
+modelo de datos y la estructura del código.
 
-No es un olvido. Sus modelos dependen del diagrama entidad-relación, que está a
-cargo de otro integrante. **Si tu diagrama termina con una entidad que no tiene
-carpeta acá, o con una carpeta que no tiene entidad, hay que ajustar una de las
-dos cosas.** Esa es la costura entre el modelo de datos y la estructura del
-código, y conviene revisarla antes de escribir nada.
+Lo que todavía no existe son las vistas y las pantallas. Los modelos guardan
+datos, pero nadie los muestra ni los edita fuera del panel de administración.
 
 ### Dónde se declaran las apps
 
@@ -269,9 +273,9 @@ administración sin haber escrito una línea para eso:
 - `django.contrib.contenttypes`, `messages`, `staticfiles` — infraestructura
   interna
 
-### Lo único que funciona hoy: el endpoint de salud
+### El endpoint de salud
 
-Está en `apps/core/views.py`:
+Es la única vista que existe por ahora. Está en `apps/core/views.py`:
 
 ```python
 def health(request: HttpRequest) -> JsonResponse:
@@ -697,22 +701,25 @@ nada, se regenera. Si borras `.venv` tienes que reinstalar todo.
 **Lo que está funcionando:**
 
 - Estructura Django completa con la configuración partida por entornos
+- Las nueve entidades del modelo de datos, con sus migraciones
+- El comando `seed_demo`, que carga datos de prueba siempre iguales
 - El endpoint de salud, con dos tests
-- El pipeline corriendo en verde, con reporte de cobertura al 84%
+- El pipeline corriendo en verde, con reporte de cobertura
 - `main` protegida con pull request obligatorio, pipeline verde y una aprobación
+- Entorno de desarrollo con Docker, que levanta el portal y la base juntos
 - Configuración de nginx y systemd versionada y documentada
 - Dos fichas de decisión de arquitectura y dos diagramas
 
 **Lo que falta y de qué depende:**
 
-- **Los modelos de las cinco apps de dominio** — dependen del diagrama
-  entidad-relación
-- **Las pantallas del portal** — dependen de los modelos
-- **La automatización del despliegue** — depende del acceso al servidor de
-  staging, que coordina el cliente
-- **Dónde se ejecutan las tareas programadas en el servidor** — está definido
-  como un timer de systemd en el diagrama, pero la unidad se escribe cuando haya
-  acceso
+- **Las pantallas del portal**, que es lo grueso de lo que viene
+- **El registro, el login y los roles**, que hay que enganchar al sistema de
+  autenticación de Django
+- **Las pruebas de los modelos**, que hoy no tienen ninguna
+- **La integración con la capa de aprovisionamiento**, que depende de acordar
+  el contrato con el otro grupo
+- **Dónde se ejecutan las tareas programadas en el servidor**, definido como un
+  timer de systemd en el diagrama, pero la unidad se escribe cuando haya acceso
 
 Lo que está montado no es funcionalidad: es lo que permite agregar funcionalidad
 sin romper nada. Configuración por entorno, verificación automática en cada
