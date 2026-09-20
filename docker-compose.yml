@@ -1,15 +1,120 @@
+# Acá se define todo lo que el proyecto necesita para funcionar y cómo se
+# conectan las piezas. La idea es levantarlo con un solo comando:
+#
+#   docker compose up
+#
+# Comandos que van a usar seguido:
+#   docker compose up --build          levanta todo y reconstruye si hace falta
+#   docker compose up -d               igual pero sin quedarse en la consola
+#   docker compose down                apaga todo, los datos se conservan
+#   docker compose down -v             apaga y borra la base, para partir limpio
+#   docker compose logs -f portal      mira los logs del portal
+#   docker compose exec portal sh      te mete adentro del contenedor
+#
+# Referencia: https://docs.docker.com/reference/compose-file/
+
 services:
+
+  # Base de datos del portal. Es propia y va separada de las bases de cada
+  # instancia Moodle, porque el portal nunca escribe en un Moodle, solo lee
+  # estadísticas.
   mariadb:
     image: mariadb:11
+
     environment:
       MARIADB_ROOT_PASSWORD: root
       MARIADB_DATABASE: portal_edocere
       MARIADB_USER: portal
       MARIADB_PASSWORD: portal
+
     ports:
+      # Publica la base hacia tu Windows para poder conectarte con DBeaver o
+      # similar y mirar las tablas.
+      #
+      # Si ya tienen MySQL instalado el puerto va a estar ocupado y no va a
+      # levantar. En ese caso cambien el número de la izquierda, por ejemplo
+      # "3307:3306". El de la izquierda es el de tu máquina.
       - "3306:3306"
+
     volumes:
+      # Para que los datos no se borren cada vez que apagamos el entorno.
       - datos_mariadb:/var/lib/mysql
 
+    healthcheck:
+      # Docker le pregunta cada 5 segundos a MariaDB si ya está lista. Sirve
+      # para que el portal no arranque antes de tiempo.
+      #
+      # La imagen de MariaDB trae su propio script para esto. El
+      # --innodb_initialized es lo que de verdad demora en el primer arranque.
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # El portal, o sea la aplicación Django.
+  portal:
+    build:
+      # Lo arma con el Dockerfile de esta carpeta.
+      context: .
+      dockerfile: Dockerfile
+
+    # Nombre fijo para no tener que adivinar el que Docker le inventa.
+    container_name: portal_edocere
+
+    depends_on:
+      mariadb:
+        # Esto evita el error clásico de "no me puedo conectar a la base" al
+        # levantar. El depends_on normal solo espera a que el contenedor de
+        # MariaDB arranque, y entre eso y que la base pueda recibir consultas
+        # pasan como 15 segundos. Con service_healthy espera el healthcheck.
+        condition: service_healthy
+
+    environment:
+      # Estas variables mandan por sobre lo que diga tu .env.
+      #
+      # El .env igual queda visible adentro del contenedor, porque más
+      # abajo montamos toda la carpeta. Pero el base.py lo lee con load_dotenv,
+      # que está configurado para no pisar variables que ya existan. Gracias a
+      # eso tu .env puede seguir apuntando a 127.0.0.1 para cuando trabajes sin
+      # Docker, y no hay que andar editándolo.
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      SECRET_KEY: clave-insegura-solo-para-desarrollo
+      DEBUG: "True"
+      ALLOWED_HOSTS: localhost,127.0.0.1
+
+      DB_ENGINE: django.db.backends.mysql
+      DB_NAME: portal_edocere
+      DB_USER: portal
+      DB_PASSWORD: portal
+
+      # Esta es la diferencia con trabajar fuera de Docker. Adentro de la red
+      # de Docker, 127.0.0.1 sería este mismo contenedor, donde no hay ninguna
+      # base. "mariadb" es el nombre del servicio y Docker lo resuelve solo.
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+
+      LOG_LEVEL: INFO
+
+      # Carga los datos demo al arrancar. Pónganlo en "0" si alguna vez quieren
+      # la base vacía.
+      CARGAR_DATOS_DEMO: "1"
+
+    ports:
+      # El portal queda en http://localhost:8000
+      - "8000:8000"
+
+    volumes:
+      # Monta la carpeta del proyecto adentro del contenedor, así editan un
+      # archivo y el runserver lo recarga solo, sin tener que reconstruir la
+      # imagen en cada cambio.
+      - .:/app
+
+      # Esta línea parece rara pero hace falta. El montaje de arriba pisa toda
+      # la carpeta /app con la de tu Windows, incluido el .venv. Como esas
+      # librerías están compiladas para Windows, romperían el contenedor. Con
+      # esto /app/.venv queda vacío adentro y se evita el problema.
+      - /app/.venv
+
+# Docker crea este volumen la primera vez y después lo reutiliza.
 volumes:
   datos_mariadb:
