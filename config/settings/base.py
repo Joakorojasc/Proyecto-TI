@@ -110,6 +110,14 @@ DATABASES = {
     }
 }
 
+#Bloque para simular la base de datos en SQLite para desarrollo local, sin necesidad de MariaDB.
+#DATABASES = {
+    #'default': {
+        #'ENGINE': 'django.db.backends.sqlite3',
+        #'NAME': BASE_DIR / 'db.sqlite3',
+    #}
+#}
+
 # Reglas que debe cumplir una contraseña al registrarse.
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -158,3 +166,6 @@ LOGGING = {
     },
     "root": {"handlers": ["consola"], "level": os.environ.get("LOG_LEVEL", "INFO")},
 }
+
+LOGIN_REDIRECT_URL = '/'  # Cambia la barra '/' por el nombre de tu ruta principal si es distinta
+LOGOUT_REDIRECT_URL = '/login/'
