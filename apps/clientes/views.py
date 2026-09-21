@@ -1,11 +1,12 @@
 from django.contrib.auth.forms import UserCreationForm
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from .forms import EmpresaRegistroForm
 from .models import UsuarioPortal
 
 
-def registro_cliente(request):
+def registro_cliente(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         user_form = UserCreationForm(request.POST)
         empresa_form = EmpresaRegistroForm(request.POST)
