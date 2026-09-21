@@ -1,7 +1,9 @@
-from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import redirect, render
+
 from .forms import EmpresaRegistroForm
 from .models import UsuarioPortal
+
 
 def registro_cliente(request):
     if request.method == 'POST':
