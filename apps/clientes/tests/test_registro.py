@@ -38,4 +38,6 @@ class RegistroClienteTests(TestCase):
         response = self.client.post(url, data=datos)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Cliente.objects.count(), 1)
-        self.assertEqual(Cliente.objects.first().rut, "76.123.456-7")
+        cliente = Cliente.objects.first()
+        assert cliente is not None
+        self.assertEqual(cliente.rut, "76.123.456-7")
