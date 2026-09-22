@@ -11,12 +11,21 @@
 
     <!-- Navegación Lateral -->
     <nav class="sidebar">
-        <h2>Edocere</h2>
-        <a href="#">Dashboard</a>
+        <!-- Enlaces principales de servicio -->
+        <a href="{% url 'home' %}">Inicio</a>
+
+        <hr style="border-top: 1px solid #4a5568; margin: 15px 0;"> <!-- Un separador sutil -->
+
         <a href="#">Mis Instancias</a>
-        <a href="#">Facturación</a>
-        <hr>
-        <a href="#">Cerrar Sesión</a>
+        <a href="#">Suscripciones y Planes</a>
+        <a href="#">Facturación y Pagos</a>
+        <a href="#">Estadísticas</a>
+
+        <hr style="border-top: 1px solid #4a5568; margin: 15px 0;"> <!-- Un separador sutil -->
+
+        <!-- Enlaces de administración de cuenta -->
+        <a href="#">Perfil de Institución</a>
+        <a href="{% url 'logout' %}">Cerrar Sesión</a>
     </nav>
 
     <!-- Contenido Principal -->

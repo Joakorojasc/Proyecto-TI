@@ -194,8 +194,8 @@ Es el router: recibe una dirección y decide qué código la atiende.
 
 ```python
 urlpatterns = [
-    path("admin/", admin.site.urls),          # el panel de Django
-    path("", include("apps.core.urls")),      # lo que expone core
+    path("admin/", admin.site.urls),  # el panel de Django
+    path("", include("apps.core.urls")),  # lo que expone core
 ]
 ```
 
@@ -343,7 +343,8 @@ estilo y los pull requests se llenan de cambios que no son cambios reales.
 def sumar(a: int, b: int) -> int:
     return a + b
 
-sumar("hola", 5)     # mypy avisa acá; sin él, explota en producción
+
+sumar("hola", 5)  # mypy avisa acá; sin él, explota en producción
 ```
 
 Nuestra configuración tiene `disallow_untyped_defs = true`, o sea que **toda
@@ -389,8 +390,7 @@ def usuario_cliente(db: None) -> User:
 Se usan por nombre. Un test futuro se escribiría así:
 
 ```python
-def test_cliente_no_ve_instancias_de_otro(usuario_cliente):
-    ...
+def test_cliente_no_ve_instancias_de_otro(usuario_cliente): ...
 ```
 
 pytest ve el parámetro `usuario_cliente`, busca la fixture con ese nombre, la
