@@ -4,7 +4,7 @@ from django.shortcuts import redirect, render
 from .forms import RegistroClienteForm
 
 
-def registro_cliente(request)-> HttpResponse:
+def registro_cliente(request) -> HttpResponse:
     if request.method == "POST":
         form = RegistroClienteForm(request.POST)
         if form.is_valid():

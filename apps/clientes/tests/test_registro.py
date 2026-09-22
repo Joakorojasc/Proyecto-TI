@@ -6,14 +6,14 @@ from apps.clientes.models import Cliente
 
 
 class RegistroClienteTests(TestCase):
-    def test_pagina_registro_carga_bien(self)-> None:
+    def test_pagina_registro_carga_bien(self) -> None:
         """Prueba que al entrar a la URL por GET, la página cargue correctamente (código 200)"""
         url = reverse("registro_cliente")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "clientes/registro.html")
 
-    def test_formulario_acepta_datos_correctos(self)-> None:
+    def test_formulario_acepta_datos_correctos(self) -> None:
         """Prueba que el formulario entienda cuando le pasamos datos válidos"""
         datos = {
             "rut": "76.123.456-7",
@@ -25,7 +25,7 @@ class RegistroClienteTests(TestCase):
         form = RegistroClienteForm(data=datos)
         self.assertTrue(form.is_valid())
 
-    def test_registro_guarda_en_base_de_datos(self)-> None:
+    def test_registro_guarda_en_base_de_datos(self) -> None:
         """Prueba que al enviar los datos por POST, se cree el Cliente en la BD"""
         url = reverse("registro_cliente")
         datos = {
