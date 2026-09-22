@@ -2,6 +2,8 @@ from django.db.models import QuerySet
 
 
 class AislamientoClienteMixin:
+    request: Any
+    
     def get_queryset(self) -> QuerySet:
         queryset = super().get_queryset()  # type: ignore
         if hasattr(self.request.user, "usuarioportal"):
