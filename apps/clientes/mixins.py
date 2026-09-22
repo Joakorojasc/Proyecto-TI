@@ -1,4 +1,6 @@
 from django.db.models import QuerySet
+
+
 class AislamientoClienteMixin:
     def get_queryset(self)-> QuerySet:
         queryset = super().get_queryset()
