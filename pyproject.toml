@@ -1,7 +1,7 @@
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-exclude = [".venv", "migrations", "staticfiles"]
+exclude = [".venv", "venv", "migrations", "staticfiles"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "DJ", "C4", "SIM"]
@@ -13,7 +13,7 @@ known-first-party = ["apps", "config"]
 [tool.mypy]
 python_version = "3.12"
 plugins = ["mypy_django_plugin.main"]
-exclude = ["migrations/", ".venv/"]
+exclude = ["migrations/", ".venv/", "venv/"]
 ignore_missing_imports = true
 warn_unused_ignores = true
 warn_redundant_casts = true
