@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="plan-selection-page">
+    <div class="plan-selection-card">
+        <p class="section-kicker">Suscripción</p>
+        <h2>Selecciona el plan</h2>
+
+        <div class="client-summary">
+            <span class="client-badge">Cliente</span>
+            <h3>{{ cliente.razon_social }}</h3>
+            <p>{{ cliente.rut }}</p>
+        </div>
+
+        <form method="post" class="plan-form">
+            {% csrf_token %}
+
+            <div class="field-group">
+                <label class="field-label">{{ form.plan.label }}</label>
+                <div class="plan-option-list">
+                    {% for radio in form.plan %}
+                    <label class="plan-option">
+                        {{ radio.tag }}
+                        <span class="plan-option-copy">
+                            {{ radio.choice_label }}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary plan-submit">Asignar plan</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

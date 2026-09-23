@@ -32,6 +32,6 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
             UsuarioPortal.objects.create(
                 cliente=nuevo_cliente, nombre=auth_user.username, rol="Admin"
             )
-            return redirect("login")
+            return redirect("seleccionar_plan", cliente_id=nuevo_cliente.id)
 
     return render(request, "registro.html", {"user_form": user_form, "empresa_form": empresa_form})
