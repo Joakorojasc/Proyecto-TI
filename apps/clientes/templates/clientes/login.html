@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="login-container" style="max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #4a5568; border-radius: 8px;">
+    <h2 style="text-align: center; color: #4a5568;">Iniciar Sesión en Edocere</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <button type="submit" style="width: 100%; padding: 10px; background-color: #4a5568; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 15px;">
+            Entrar
+        </button>
+    </form>
+    
+    <p style="text-align: center; margin-top: 15px; font-size: 14px;">
+        ¿Tu institución no tiene cuenta? <a href="{% url 'registro_cliente' %}">Regístrate aquí</a>
+    </p>
+</div>
+{% endblock content %}
