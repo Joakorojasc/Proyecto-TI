@@ -1,3 +1,4 @@
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -7,7 +8,7 @@ from .forms import SeleccionarPlanForm
 from .models import Suscripcion
 
 
-def seleccionar_plan(request, cliente_id):
+def seleccionar_plan(request: HttpRequest, cliente_id: int) -> HttpResponse:
     cliente = get_object_or_404(Cliente, id=cliente_id)
     form = SeleccionarPlanForm(request.POST or None)
 
@@ -31,4 +32,3 @@ def seleccionar_plan(request, cliente_id):
             "form": form,
         },
     )
-    
