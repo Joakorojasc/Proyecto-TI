@@ -1,8 +1,9 @@
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
 from apps.clientes.forms import RegistroClienteForm
-from apps.clientes.models import Cliente
+from apps.clientes.models import Cliente, UsuarioPortal
 
 
 class RegistroClienteTests(TestCase):
@@ -41,3 +42,27 @@ class RegistroClienteTests(TestCase):
         cliente = Cliente.objects.first()
         assert cliente is not None
         self.assertEqual(cliente.rut, "76.123.456-7")
+
+
+class RegistroUsuarioTests(TestCase):
+    def test_registro_crea_usuario_cliente_y_perfil_relacionados(self) -> None:
+        datos = {
+            "username": "admin-demo",
+            "password1": "ClaveSegura123!",
+            "password2": "ClaveSegura123!",
+            "razon_social": "Empresa Demo",
+            "rut": "76.987.654-3",
+        }
+
+        respuesta = self.client.post(reverse("registro"), data=datos)
+
+        self.assertEqual(respuesta.status_code, 302)
+        auth_user = User.objects.get(username="admin-demo")
+        cliente = Cliente.objects.get(rut="76.987.654-3")
+        usuario_portal = UsuarioPortal.objects.get(usuario=auth_user)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(Cliente.objects.count(), 1)
+        self.assertEqual(UsuarioPortal.objects.count(), 1)
+        self.assertEqual(usuario_portal.usuario, auth_user)
+        self.assertEqual(auth_user.usuarioportal, usuario_portal)
+        self.assertEqual(usuario_portal.cliente, cliente)
