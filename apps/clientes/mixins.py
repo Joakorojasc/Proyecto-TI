@@ -8,7 +8,7 @@ class AislamientoClienteMixin:
 
     def get_queryset(self) -> QuerySet:
         queryset = super().get_queryset()  # type: ignore[misc]
-        if hasattr(self.request.user, "usuarioportal"):
-            cliente_del_usuario = self.request.user.usuarioportal.cliente
-            return queryset.filter(cliente=cliente_del_usuario)
-        return queryset.none()
+        usuario_portal = getattr(self.request.user, "usuarioportal", None)
+        if usuario_portal is None or usuario_portal.cliente_id is None:
+            return queryset.none()
+        return queryset.filter(cliente_id=usuario_portal.cliente_id)

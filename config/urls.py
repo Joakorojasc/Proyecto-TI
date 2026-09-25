@@ -11,6 +11,7 @@ urlpatterns = [
     # path("test-esqueleto/", TemplateView.as_view(template_name="base.html")), # Para ver el esqueleto
     path("", include("apps.core.urls")),
     path("clientes/", include("apps.clientes.urls")),
+    path("instancias/", include("apps.instancias.urls")),
     path("login/", auth_views.LoginView.as_view(template_name="login.html"), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("registro/", registro_usuario, name="registro"),

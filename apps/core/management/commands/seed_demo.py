@@ -23,8 +23,8 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         planes = self.crear_planes()
         clientes = self.crear_clientes()
-        suscripciones = self.crear_suscripciones(clientes, planes)
         instancias = self.crear_instancias(clientes)
+        suscripciones = self.crear_suscripciones(instancias, planes)
         self.crear_mediciones(instancias)
 
         self.stdout.write(
@@ -119,26 +119,28 @@ class Command(BaseCommand):
 
     @staticmethod
     def crear_suscripciones(
-        clientes: dict[str, Cliente], plans: dict[str, Plan]
+        instancias: dict[str, InstanciaMoodle], plans: dict[str, Plan]
     ) -> dict[str, Suscripcion]:
         definiciones = [
-            ("DEMO-CLIENTE-PEQUENO", "PLAN-DEMO-MENSUAL"),
-            ("DEMO-CLIENTE-MEDIANO", "PLAN-DEMO-MENSUAL"),
-            ("DEMO-CLIENTE-ANUAL", "PLAN-DEMO-ANUAL-2000"),
+            ("PEQUENA", "PLAN-DEMO-MENSUAL"),
+            ("MEDIANA", "PLAN-DEMO-MENSUAL"),
+            ("ANUAL_PRINCIPAL", "PLAN-DEMO-ANUAL-2000"),
+            ("ANUAL_SECUNDARIA", "PLAN-DEMO-ANUAL-2000"),
         ]
         suscripciones: dict[str, Suscripcion] = {}
-        for cliente_clave, plan_clave in definiciones:
-            cliente = clientes[cliente_clave]
+        for instancia_clave, plan_clave in definiciones:
+            instancia = instancias[instancia_clave]
             plan = plans[plan_clave]
             suscripcion, _ = Suscripcion.objects.update_or_create(
-                cliente=cliente,
-                plan=plan,
+                instancia=instancia,
                 defaults={
+                    "cliente": instancia.cliente,
+                    "plan": plan,
                     "estado": "activa",
                     "fecha_inicio": timezone.make_aware(datetime(2026, 1, 1)),
                 },
             )
-            suscripciones[cliente_clave] = suscripcion
+            suscripciones[instancia_clave] = suscripcion
         return suscripciones
 
     @staticmethod
