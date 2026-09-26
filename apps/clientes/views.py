@@ -1,5 +1,6 @@
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group
+from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
@@ -36,6 +37,15 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
             UsuarioPortal.objects.create(
                 cliente=nuevo_cliente, nombre=auth_user.username, rol="Admin"
             )
+            with transaction.atomic():
+                auth_user = user_form.save()
+                nuevo_cliente = empresa_form.save()
+                UsuarioPortal.objects.create(
+                    usuario=auth_user,
+                    cliente=nuevo_cliente,
+                    nombre=auth_user.username,
+                    rol="Admin",
+                )
             return redirect("login")
 
     return render(request, "registro.html", {"user_form": user_form, "empresa_form": empresa_form})

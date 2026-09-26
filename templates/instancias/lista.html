@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="instances-page">
+    <header class="instances-header">
+        <h1>Mis Instancias</h1>
+    </header>
+
+    {% if instancias %}
+    <div class="instances-table-wrapper">
+        <table class="instances-table">
+            <thead>
+                <tr>
+                    <th scope="col">Dominio</th>
+                    <th scope="col">Versión</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Plan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for instancia in instancias %}
+                <tr>
+                    <td>{{ instancia.dominio|default:"Sin dominio" }}</td>
+                    <td>{{ instancia.version|default:"Sin versión" }}</td>
+                    <td>{{ instancia.estado|default:"Sin estado" }}</td>
+                    <td>
+                        {% with suscripciones_activas=instancia.suscripciones_activas %}
+                            {% if suscripciones_activas|length == 1 %}
+                                {{ suscripciones_activas.0.plan.nombre|default:"Sin plan activo" }}
+                            {% elif suscripciones_activas|length > 1 %}
+                                Múltiples planes activos
+                            {% else %}
+                                Sin plan activo
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="instances-empty">Aún no tienes instancias Moodle asociadas.</p>
+    {% endif %}
+</section>
+{% endblock content %}
