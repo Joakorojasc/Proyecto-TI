@@ -33,3 +33,7 @@ addopts = "-q"
 
 [tool.coverage.run]
 omit = ["*/migrations/*", "*/tests/*", "config/wsgi.py", "config/asgi.py", "manage.py"]
+
+# Para que falle bajo 90% de coverage y se mantenga  siempre. 
+[tool.coverage.report]
+fail_under = 90
