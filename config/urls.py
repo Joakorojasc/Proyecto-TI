@@ -3,9 +3,11 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from apps.clientes.views import registro_usuario
+from apps.core.views import home
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("", home, name="home"),
     path("", include("apps.core.urls")),
     path("clientes/", include("apps.clientes.urls")),
     path("instancias/", include("apps.instancias.urls")),
