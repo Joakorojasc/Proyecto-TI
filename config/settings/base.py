@@ -167,5 +167,6 @@ LOGGING = {
     "root": {"handlers": ["consola"], "level": os.environ.get("LOG_LEVEL", "INFO")},
 }
 
+LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"  # Cambia la barra '/' por el nombre de tu ruta principal si es distinta
 LOGOUT_REDIRECT_URL = "/login/"
