@@ -4,15 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Edocere</title>
+    <title>{% block title %}Portal Edocere{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body>
-
-    <!-- Navegación Lateral -->
-    <nav class="sidebar">
-        <!-- Enlaces principales de servicio -->
+<body class="portal-shell">
+    {% if user.is_authenticated %}
+    <aside class="sidebar" aria-label="Navegación principal">
+        <div class="brand">Edocere</div>
         <a href="{% url 'home' %}">Inicio</a>
+        <a href="#">Mis Instancias</a>
 
         <hr style="border-top: 1px solid #4a5568; margin: 15px 0;"> <!-- Un separador sutil -->
 
@@ -20,29 +20,17 @@
         <a href="#">Suscripciones y Planes</a>
         <a href="#">Facturación y Pagos</a>
         <a href="#">Estadísticas</a>
-
-        <hr style="border-top: 1px solid #4a5568; margin: 15px 0;"> <!-- Un separador sutil -->
-
-        <!-- Enlaces de administración de cuenta -->
+        <div class="sidebar-divider"></div>
         <a href="#">Perfil de Institución</a>
         <a href="{% url 'logout' %}">Cerrar Sesión</a>
-    </nav>
+    </aside>
+    {% endif %}
 
-    <!-- Contenido Principal -->
     <main class="main-content">
-        <!-- Alertas globales -->
-        <div id="global-error" style="color: var(--danger); font-weight: bold;">
-            Ocurrió un error al procesar la solicitud.
-        </div>
-        
-        <div id="global-loader">
-            Cargando...
-        </div>
+        <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
+        <div id="global-loader">Cargando...</div>
 
-        <!-- AQUÍ SE INYECTA EL CÓDIGO DE TUS COMPAÑEROS -->
-        {% block content %}
-        {% endblock content %}
+        {% block content %}{% endblock content %}
     </main>
-
 </body>
 </html>

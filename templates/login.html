@@ -1,18 +1,21 @@
 {% extends 'base.html' %}
 
+{% block title %}Iniciar sesión{% endblock %}
+
 {% block content %}
-<div class="login-container">
-    <h2>Iniciar Sesión en Edocere</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Entrar</button>
-    </form>
+<div class="auth-panel">
+    <div class="auth-card">
+        <h2>Iniciar Sesión en Edocere</h2>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Entrar</button>
+        </form>
 
-    <div class="registro-enlace">
-        <p>¿Tu institución aún no tiene cuenta?</p>
-        <a href="{% url 'registro' %}">Registrar Empresa</a>
+        <div class="registro-enlace">
+            <p>¿Tu institución aún no tiene cuenta?</p>
+            <a href="{% url 'registro' %}">Registrar Empresa</a>
+        </div>
     </div>
-
 </div>
 {% endblock %}
