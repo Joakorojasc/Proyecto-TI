@@ -20,6 +20,9 @@ def registro_cliente(request: HttpRequest) -> HttpResponse:
 
 
 def registro_usuario(request: HttpRequest) -> HttpResponse:
+    user_form: UserCreationForm
+    empresa_form: EmpresaRegistroForm
+
     if request.method == "POST":
         user_form = UserCreationForm(request.POST)
         empresa_form = EmpresaRegistroForm(request.POST)
