@@ -10,6 +10,7 @@ urlpatterns = [
     path("", home, name="home"),
     path("health/", health, name="health"),
     path("core/", include(("apps.core.urls", "core"), namespace="core")),
+    path("", include("apps.core.urls")),
     path("clientes/", include("apps.clientes.urls")),
     path("instancias/", include("apps.instancias.urls")),
     path("login/", auth_views.LoginView.as_view(template_name="login.html"), name="login"),
