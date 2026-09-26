@@ -1,23 +1,31 @@
 {% extends 'base.html' %}
 
+{% block title %}Registro{% endblock %}
+
 {% block content %}
-<div class="login-container">
-    <h2>Registrar Nueva Institución</h2>
-    <form method="post">
-        {% csrf_token %}
-        
-        <h3>Datos de Acceso</h3>
-        {{ user_form.as_p }}
-        
-        <h3>Datos de la Institución</h3>
-        {{ empresa_form.as_p }}
-        
-        <button type="submit">Crear Cuenta</button>
-    </form>
-    
-    <div class="registro-enlace">
-        <p>¿Ya tienes cuenta?</p>
-        <a href="{% url 'login' %}">Volver al inicio de sesión</a>
+<div class="auth-panel">
+    <div class="auth-card auth-card-wide">
+        <h2>Registrar Nueva Institución</h2>
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section">
+                <h3>Datos de Acceso</h3>
+                {{ user_form.as_p }}
+            </div>
+
+            <div class="form-section">
+                <h3>Datos de la Institución</h3>
+                {{ empresa_form.as_p }}
+            </div>
+
+            <button type="submit">Crear Cuenta</button>
+        </form>
+
+        <div class="registro-enlace">
+            <p>¿Ya tienes cuenta?</p>
+            <a href="{% url 'login' %}">Volver al inicio de sesión</a>
+        </div>
     </div>
 </div>
 {% endblock %}

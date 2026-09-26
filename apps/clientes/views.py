@@ -1,4 +1,5 @@
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import Group
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
@@ -27,6 +28,9 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
 
         if user_form.is_valid() and empresa_form.is_valid():
             auth_user = user_form.save()
+            grupo_cliente, created = Group.objects.get_or_create(name="Cliente")
+            auth_user.groups.add(grupo_cliente)
+
             nuevo_cliente = empresa_form.save()
 
             UsuarioPortal.objects.create(
