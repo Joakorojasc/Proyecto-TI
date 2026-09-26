@@ -20,7 +20,7 @@ class RegistroClienteTests(TestCase):
         url = reverse("home")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/login/", response.url)
+        self.assertIn("/login/", response.url)  # type: ignore
 
     def test_pagina_registro_carga_bien(self) -> None:
         """Prueba que al entrar a la URL por GET, la página cargue correctamente (código 200)"""
