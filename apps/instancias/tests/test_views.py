@@ -212,6 +212,7 @@ class DetalleInstanciaViewTests(TestCase):
         respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
 
         self.assertEqual(respuesta.status_code, 200)
+        assert self.instancia_a.dominio is not None
         self.assertContains(respuesta, self.instancia_a.dominio)
 
     def test_cliente_no_accede_al_detalle_de_otro_cliente(self) -> None:
