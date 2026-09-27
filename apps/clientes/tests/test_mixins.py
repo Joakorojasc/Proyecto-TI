@@ -52,3 +52,14 @@ class AislamientoClienteMixinTests(TestCase):
         resultado = VistaInstancias(usuario).get_queryset()
 
         self.assertQuerySetEqual(resultado, [self.instancia_uno])
+
+    def test_superadmin_ve_todas_las_instancias(self) -> None:
+        usuario = User.objects.create_superuser(
+            username="superadmin",
+            email="superadmin@edocere.cl",
+            password="clave",
+        )
+
+        resultado = VistaInstancias(usuario).get_queryset()
+
+        self.assertQuerySetEqual(resultado, [self.instancia_uno, self.instancia_dos], ordered=False)

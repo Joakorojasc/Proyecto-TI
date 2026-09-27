@@ -7,6 +7,21 @@ from apps.clientes.models import Cliente, UsuarioPortal
 
 
 class RegistroClienteTests(TestCase):
+    def test_pagina_login_carga_bien(self) -> None:
+        """La página de login debe responder y usar el template de autenticación."""
+        url = reverse("login")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "login.html")
+        self.assertContains(response, "Iniciar Sesión en Edocere")
+
+    def test_home_requiere_autenticacion(self) -> None:
+        """La home debe redirigir a login si el usuario no está autenticado."""
+        url = reverse("home")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response.url)  # type: ignore
+
     def test_pagina_registro_carga_bien(self) -> None:
         """Prueba que al entrar a la URL por GET, la página cargue correctamente (código 200)"""
         url = reverse("registro_cliente")
