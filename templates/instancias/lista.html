@@ -20,7 +20,11 @@
             <tbody>
                 {% for instancia in instancias %}
                 <tr>
-                    <td>{{ instancia.dominio|default:"Sin dominio" }}</td>
+                    <td>
+                        <a href="{% url 'instancias:detalle' instancia.pk %}">
+                            {{ instancia.dominio|default:"Sin dominio" }}
+                        </a>
+                    </td>
                     <td>{{ instancia.version|default:"Sin versión" }}</td>
                     <td>{{ instancia.estado|default:"Sin estado" }}</td>
                     <td>
