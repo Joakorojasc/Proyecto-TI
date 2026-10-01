@@ -249,6 +249,24 @@ entidades del diagrama entidad-relación quedaron repartidas así:
 | `estadisticas` | MedicionUsoMensual |
 | `core` | Bitacora |
 
+### Planes personalizados y suscripciones
+
+`Plan.cliente` es opcional. Cuando no tiene cliente asociado, el plan pertenece
+al catálogo compartido y puede ofrecerse a todos. Cuando tiene un cliente, es
+un plan personalizado exclusivo de ese cliente, con valores que el
+superadministrador puede editar desde el panel de administración.
+
+Después del registro, el cliente llega a la selección de planes. Elegir un plan
+mensual o anual crea una `Suscripcion` activa asociada al cliente y al plan.
+Elegir **Tengo un plan personalizado** crea o recupera el `Plan` personalizado
+de ese cliente, pero no crea una suscripción: el administrador debe completar
+sus valores y gestionar la suscripción después. Los planes asociados a otros
+clientes no se ofrecen en el formulario público.
+
+`Suscripcion.instancia` también es opcional. Permite asociar una suscripción a
+una instancia Moodle concreta; cuando se informa, la instancia y la suscripción
+deben pertenecer al mismo cliente.
+
 Si en algún momento el diagrama cambia y aparece una entidad sin app, o una app
 sin entidad, hay que ajustar una de las dos cosas. Esa es la costura entre el
 modelo de datos y la estructura del código.
@@ -275,7 +293,7 @@ administración sin haber escrito una línea para eso:
 
 ### El endpoint de salud
 
-Es la única vista que existe por ahora. Está en `apps/core/views.py`:
+La vista del endpoint de salud está en `apps/core/views.py`:
 
 ```python
 def health(request: HttpRequest) -> JsonResponse:

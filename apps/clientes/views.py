@@ -42,7 +42,7 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
                     rol="Admin",
                 )
 
-            return redirect("login")
+            return redirect("seleccionar_plan", cliente_id=nuevo_cliente.id)
     else:
         user_form = UserCreationForm()
         empresa_form = EmpresaRegistroForm()
