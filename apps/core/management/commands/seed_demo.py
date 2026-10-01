@@ -48,6 +48,14 @@ class Command(BaseCommand):
                 "limite_usuarios": None,
             },
             {
+                "clave": "PLAN-DEMO-GRATIS",
+                "nombre": "Plan demo gratis",
+                "tipo_plan": "mensual",
+                "precio_base": Decimal("0.00"),
+                "precio_por_usuario": None,
+                "limite_usuarios": 10,
+            },
+            {
                 "clave": "PLAN-DEMO-ANUAL-1000",
                 "nombre": "Plan anual demo hasta 1000 usuarios",
                 "tipo_plan": "anual",
@@ -80,6 +88,7 @@ class Command(BaseCommand):
                 defaults=definicion,
             )
             planes[clave] = plan
+
         return planes
 
     @staticmethod

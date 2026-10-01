@@ -3,11 +3,11 @@
 {% block content %}
 <div class="plan-selection-page">
     <div class="plan-selection-card">
-        <p class="section-kicker">Suscripción</p>
-        <h2>Selecciona el plan</h2>
+        <!-- <p class="section-kicker">Suscripción</p> -->
+        <h2>Selecciona el plan de suscripción para tu instancia</h2>
 
         <div class="client-summary">
-            <span class="client-badge">Cliente</span>
+            <!-- <span class="client-badge">Cliente</span> -->
             <h3>{{ cliente.razon_social }}</h3>
             <p>{{ cliente.rut }}</p>
         </div>
@@ -17,19 +17,48 @@
 
             <div class="field-group">
                 <label class="field-label">{{ form.plan.label }}</label>
-                <div class="plan-option-list">
-                    {% for radio in form.plan %}
-                    <label class="plan-option">
-                        {{ radio.tag }}
-                        <span class="plan-option-copy">
-                            {{ radio.choice_label }}
-                        </span>
-                    </label>
+
+                <div class="plan-grid">
+                    {% for section in form.plan_sections %}
+                    <div class="plan-section{% if section.key == 'Personalizado' %} plan-section-personalizado{% endif %}">
+                        <div class="plan-section-header">
+                            <h3>{{ section.title }}</h3>
+                            <p>{{ section.description }}</p>
+                        </div>
+
+                        <div class="plan-option-list">
+                            {% for plan in section.plans %}
+                            <label class="plan-option">
+                                <input
+                                    type="radio"
+                                    name="plan"
+                                    value="{{ plan.id }}"
+                                    {% if form.data and form.data.plan == plan.id|stringformat:"s" %}checked{% endif %}
+                                >
+                                <span class="plan-option-copy">
+                                    {{ plan.display_label }}
+                                </span>
+                            </label>
+                            {% empty %}
+                            <p class="plan-empty">No hay planes disponibles para esta categoría.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
                     {% endfor %}
+                    
                 </div>
             </div>
+            <center>
+                <button type="submit" class="btn-primary plan-submit">Asignar plan</button>
+            </center>
+            <div class="plan-section plan-section-personalizado">
+                        <div class="plan-section-header">
+                            <h3>Plan personalizado</h3>
+                            <p>Si los planes que ofrecemos no se ajustan a tus necesidades y te has comunicado con nosotros para acceder a un plan personalizado, presiona aquí:</p>
+                        </div>
+                        <button type="submit" class="btn-primary" name="personalized_plan" value="1">Tengo un plan personalizado</button>
+                    </div>
 
-            <button type="submit" class="btn-primary plan-submit">Asignar plan</button>
         </form>
     </div>
 </div>
