@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -13,6 +14,13 @@ class Cliente(models.Model):
 
 class UsuarioPortal(models.Model):
     id = models.AutoField(primary_key=True)
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="usuarioportal",
+        null=True,
+        blank=True,
+    )
     cliente = models.ForeignKey(
         "clientes.Cliente",
         on_delete=models.SET_NULL,

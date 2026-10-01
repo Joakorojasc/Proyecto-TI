@@ -95,6 +95,12 @@ services:
 
       LOG_LEVEL: INFO
 
+      # Sentry se activa poniendo SENTRY_DSN en tu .env, que no se sube al
+      # repositorio. Si no está, queda vacío y Sentry ni se inicializa, que es
+      # lo que queremos por defecto en desarrollo.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENTORNO: ${SENTRY_ENTORNO:-docker}
+
       # Carga los datos demo al arrancar. Pónganlo en "0" si alguna vez quieren
       # la base vacía.
       CARGAR_DATOS_DEMO: "1"

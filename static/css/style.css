@@ -1,12 +1,19 @@
 :root {
-    --edocere-blue: #0A3D62; /* Azul corporativo */
-    --edocere-orange: #E58E26; /* Naranja para botones de acción */
+    --edocere-blue: #0A3D62;
+    --edocere-blue-soft: #144b78;
+    --edocere-orange: #E58E26;
     --bg-light: #F4F6F8;
     --text-dark: #2C3E50;
     --text-soft: #5d6d7e;
     --border: #dfe6ee;
     --white: #ffffff;
     --danger: #E74C3C;
+    --white: #ffffff;
+    --border: #dfe6ee;
+}
+
+* {
+    box-sizing: border-box;
 }
 
 body {
@@ -14,52 +21,75 @@ body {
     font-family: system-ui, -apple-system, sans-serif;
     background-color: var(--bg-light);
     color: var(--text-dark);
+}
+
+.portal-shell {
     display: flex;
     min-height: 100vh;
 }
 
-/* Sidebar básica */
 .sidebar {
     width: 250px;
-    background-color: var(--edocere-blue);
-    color: white;
-    padding: 20px;
-    box-sizing: border-box;
+    background: linear-gradient(180deg, var(--edocere-blue) 0%, var(--edocere-blue-soft) 100%);
+    color: var(--white);
+    padding: 24px 20px;
+}
+
+.brand {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 24px;
 }
 
 .sidebar a {
-    color: white;
+    color: var(--white);
     text-decoration: none;
     display: block;
-    margin-bottom: 15px;
-    opacity: 0.92;
+    margin-bottom: 14px;
+    opacity: 0.95;
+}
+
+.sidebar-divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    margin: 18px 0;
 }
 
 .main-content {
     flex: 1;
     padding: 32px;
-    box-sizing: border-box;
 }
 
-.btn-primary {
-    background-color: var(--edocere-orange);
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
+.auth-panel {
+    min-height: calc(100vh - 64px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Estados globales (ocultos por defecto) */
-#global-loader, #global-error {
-    display: none;
+.auth-card {
+    width: min(100%, 430px);
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(11, 35, 58, 0.08);
+    padding: 28px 24px;
 }
 
-/* Estilos rápidos para formularios nativos de Django */
-.login-container form p {
+.auth-card-wide {
+    width: min(100%, 620px);
+}
+
+.auth-card h2 {
+    margin-top: 0;
+    color: var(--edocere-blue);
+    text-align: center;
+}
+
+.auth-card form p {
     display: flex;
     flex-direction: column;
-    margin-bottom: 15px;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .login-container input {
@@ -83,8 +113,45 @@ body {
     font-weight: 700;
 }
 
-.login-container button:hover {
-    background-color: #002244;
+.auth-card label {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.auth-card input,
+.auth-card select,
+.auth-card textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.auth-card button {
+    width: 100%;
+    background-color: var(--edocere-blue);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    padding: 12px 18px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.auth-card button:hover {
+    background-color: var(--edocere-blue-soft);
+}
+
+.form-section {
+    margin-bottom: 20px;
+}
+
+.form-section h3 {
+    margin: 0 0 12px;
+    color: var(--edocere-blue);
+    font-size: 1.05rem;
 }
 
 .registro-enlace {
@@ -92,9 +159,13 @@ body {
     text-align: center;
 }
 
+.registro-enlace p {
+    margin: 0 0 8px;
+}
+
 .registro-enlace a {
-    color: #003366;
-    font-weight: bold;
+    color: var(--edocere-blue);
+    font-weight: 700;
     text-decoration: none;
 }
 
@@ -269,4 +340,69 @@ body {
     .plan-grid {
         grid-template-columns: 1fr;
     }
+}
+
+#global-loader,
+#global-error {
+    display: none;
+}
+
+.btn-primary {
+    background-color: var(--edocere-orange);
+    color: var(--white);
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.instances-page {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.instances-header {
+    margin-bottom: 24px;
+}
+
+.instances-header h1 {
+    margin: 0;
+    color: var(--edocere-blue);
+    font-size: 30px;
+}
+
+.instances-table-wrapper {
+    overflow-x: auto;
+    background-color: white;
+    border: 1px solid #dfe5eb;
+    border-radius: 4px;
+}
+
+.instances-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.instances-table th,
+.instances-table td {
+    padding: 15px 18px;
+    border-bottom: 1px solid #e8edf1;
+}
+
+.instances-table th {
+    background-color: #edf2f5;
+    color: var(--edocere-blue);
+    font-weight: 600;
+}
+
+.instances-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.instances-empty {
+    padding: 24px;
+    background-color: white;
+    border: 1px solid #dfe5eb;
+    border-radius: 4px;
 }

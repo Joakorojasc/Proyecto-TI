@@ -8,7 +8,16 @@ class AislamientoClienteMixin:
 
     def get_queryset(self) -> QuerySet:
         queryset = super().get_queryset()  # type: ignore[misc]
-        if hasattr(self.request.user, "usuarioportal"):
-            cliente_del_usuario = self.request.user.usuarioportal.cliente
-            return queryset.filter(cliente=cliente_del_usuario)
-        return queryset.none()
+        user = getattr(self.request, "user", None)
+
+        if user is None or not getattr(user, "is_authenticated", False):
+            return queryset.none()
+
+        if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+            return queryset
+
+        usuario_portal = getattr(user, "usuarioportal", None)
+        if usuario_portal is None or usuario_portal.cliente_id is None:
+            return queryset.none()
+
+        return queryset.filter(cliente_id=usuario_portal.cliente_id)
