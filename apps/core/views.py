@@ -1,5 +1,13 @@
+from django.contrib.auth.decorators import login_required
 from django.db import connection
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import render
+
+
+@login_required(login_url="/login/")
+def home(request: HttpRequest) -> HttpResponse:
+    """Página principal del portal, accesible solo para usuarios autenticados."""
+    return render(request, "base.html")
 
 
 def health(request: HttpRequest) -> JsonResponse:

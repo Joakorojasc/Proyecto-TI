@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Empresa</title>
+</head>
+<body>
+    <h2>Registro de Empresa (Cliente)</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Registrar Empresa</button>
+    </form>
+</body>
+</html>

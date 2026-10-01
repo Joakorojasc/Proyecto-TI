@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="instances-page">
+    <header class="instances-header">
+        <h1>{{ instancia.dominio|default:"Sin dominio" }}</h1>
+    </header>
+
+    <p>Versión: {{ instancia.version|default:"Sin versión" }}</p>
+    <p>Estado: {{ instancia.estado|default:"Sin estado" }}</p>
+
+    {% if ultima_medicion %}
+    <section>
+        <h2>Última medición</h2>
+        <p>Período: {{ ultima_medicion.mes }}/{{ ultima_medicion.anio }}</p>
+        <p>Usuarios activos: {{ ultima_medicion.usuarios_activos }}</p>
+        <p>Cantidad de cursos: {{ ultima_medicion.cantidad_cursos }}</p>
+        <p>Cantidad de categorías: {{ ultima_medicion.cantidad_categorias }}</p>
+    </section>
+
+    <section>
+        <h2>Historial mensual</h2>
+        <div class="instances-table-wrapper">
+            <table class="instances-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Período</th>
+                        <th scope="col">Usuarios activos</th>
+                        <th scope="col">Cursos</th>
+                        <th scope="col">Categorías</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for medicion in mediciones %}
+                    <tr>
+                        <td>{{ medicion.mes }}/{{ medicion.anio }}</td>
+                        <td>{{ medicion.usuarios_activos }}</td>
+                        <td>{{ medicion.cantidad_cursos }}</td>
+                        <td>{{ medicion.cantidad_categorias }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% else %}
+    <p class="instances-empty">Aún no hay estadísticas disponibles para esta instancia.</p>
+    {% endif %}
+</section>
+{% endblock content %}

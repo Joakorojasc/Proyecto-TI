@@ -7,6 +7,8 @@ fixtures que sirven a todo el proyecto, para no repetirlas en cada app.
 import pytest
 from django.contrib.auth.models import User
 
+from apps.clientes.models import Cliente, UsuarioPortal
+
 
 @pytest.fixture
 def superadmin(db: None) -> User:
@@ -29,8 +31,19 @@ def usuario_cliente(db: None) -> User:
     Solo debe ver sus propias instancias. Sirve para verificar que el
     aislamiento entre clientes funciona: un cliente nunca ve datos de otro.
     """
-    return User.objects.create_user(
+    cliente = Cliente.objects.create(
+        rut="76.123.456-7",
+        razon_social="Cliente Demo",
+    )
+    usuario = User.objects.create_user(
         username="cliente-demo",
         email="contacto@cliente-demo.cl",
         password="clave-de-prueba",
     )
+    UsuarioPortal.objects.create(
+        usuario=usuario,
+        cliente=cliente,
+        nombre=usuario.username,
+        rol="Admin",
+    )
+    return usuario

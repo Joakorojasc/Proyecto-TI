@@ -1,0 +1,55 @@
+# Acá le decimos a Docker qué archivos no copiar a la imagen.
+# Funciona igual que el .gitignore. Mientras menos cosas entren, más liviana
+# queda y más rápido se arma.
+#
+# Hay dos que importan de verdad y están explicadas abajo: el .env y el .venv.
+
+# El .env tiene la contraseña de la base y la SECRET_KEY. Si entra a la imagen
+# queda guardado en una de sus capas y cualquiera que la tenga puede leerlo,
+# aunque después lo borres. Las variables se las pasamos por el compose.
+.env
+*.pem
+*.key
+
+# Esta es la que más problemas causa si se olvida. Nuestro .venv tiene las
+# librerías compiladas para Windows, y adentro del contenedor corre Linux. Si
+# Python llega a encontrarlas, el contenedor revienta. Las dependencias se
+# instalan adentro con pip.
+.venv
+venv
+env
+
+# El historial de git no le sirve de nada al contenedor y pesa.
+.git
+.gitignore
+.gitattributes
+.github
+
+# Basura que genera Python al correr.
+__pycache__
+*.py[cod]
+*.egg-info
+.mypy_cache
+.pytest_cache
+.ruff_cache
+
+# El reporte de cobertura se genera de nuevo cada vez que corren los tests.
+.coverage
+htmlcov
+
+# Configuración de editores y archivos del sistema.
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Documentación y los archivos del propio Docker.
+docs
+*.md
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# collectstatic los vuelve a generar adentro.
+staticfiles

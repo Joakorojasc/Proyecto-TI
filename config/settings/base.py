@@ -110,6 +110,14 @@ DATABASES = {
     }
 }
 
+# Bloque para simular la base de datos en SQLite para desarrollo local, sin necesidad de MariaDB.
+# DATABASES = {
+#'default': {
+#'ENGINE': 'django.db.backends.sqlite3',
+#'NAME': BASE_DIR / 'db.sqlite3',
+# }
+# }
+
 # Reglas que debe cumplir una contraseña al registrarse.
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -131,6 +139,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+STATICFILES_DIRS = [BASE_DIR / "static"]  #
 
 # collectstatic junta acá todos los archivos estáticos (CSS, JS, imágenes) para
 # que nginx los sirva directamente, sin pasar por Django.
@@ -156,3 +166,33 @@ LOGGING = {
     },
     "root": {"handlers": ["consola"], "level": os.environ.get("LOG_LEVEL", "INFO")},
 }
+
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"  # Cambia la barra '/' por el nombre de tu ruta principal si es distinta
+LOGOUT_REDIRECT_URL = "/login/"
+
+# Sentry avisa de cada error nuevo del portal sin que nadie tenga que revisar
+# los logs a mano. Los registros del servidor siguen existiendo y se consultan
+# con journalctl, pero nadie los mira hasta que un cliente reclama. Con esto el
+# error llega solo.
+#
+# Queda apagado mientras no exista SENTRY_DSN, así que en desarrollo y en los
+# tests no molesta ni consume la cuota del plan gratuito.
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+
+if SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        # No mandamos datos del usuario a Sentry. El portal guarda RUT, razón
+        # social y correos de las empresas clientes, y nada de eso tiene por
+        # qué salir del sistema para diagnosticar un error.
+        send_default_pii=False,
+        # El muestreo de rendimiento va en cero porque solo nos interesan los
+        # errores, y las trazas consumen la cuota rápido.
+        traces_sample_rate=0.0,
+        # Permite distinguir en Sentry si el error vino de la máquina de
+        # alguien, del pipeline o del servidor.
+        environment=os.environ.get("SENTRY_ENTORNO", "local"),
+    )

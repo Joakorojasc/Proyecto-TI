@@ -13,37 +13,54 @@ datos es MariaDB porque es la que Edocere ya opera en su servidor.
 
 Para calidad usamos Ruff como linter y formateador, mypy con django-stubs para
 revisar tipos, y pytest para los tests. En el servidor corre Gunicorn levantado
-por systemd, detrás de nginx. Sin contenedores: el cliente no los quiere en su
-máquina.
+por systemd, detrás de nginx, sin contenedores, porque el cliente no los quiere
+en su máquina.
+
+Docker lo usamos solo de este lado, para levantar el entorno de desarrollo y
+pruebas en nuestros computadores. Nada de eso llega al servidor de Edocere.
 
 ## Levantarlo en tu computador
 
-Necesitas Python 3.12 y, si quieres ver el portal andando, Docker Desktop.
+La forma corta es con Docker, que levanta el portal y la base de una vez. Solo
+necesitas Docker Desktop andando.
 
 ```bash
 git clone https://github.com/Joakorojasc/Proyecto-TI.git
 cd Proyecto-TI
-
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate.bat
-
-pip install -r requirements.txt -r requirements-dev.txt
-cp .env.example .env
+docker compose up --build
 ```
 
-Después levantas la base y arrancas:
+La primera vez demora unos minutos porque tiene que compilar el driver de
+MariaDB. Las siguientes es casi inmediato.
+
+Queda en http://localhost:8000, con las migraciones aplicadas y los datos de
+prueba ya cargados. Para entrar al panel de administración necesitas crear un
+usuario:
 
 ```bash
-docker compose up -d             # MariaDB 11 en un contenedor
+docker compose exec portal python manage.py createsuperuser
+```
+
+Para apagarlo, `docker compose down`. Los datos se conservan. Si quieres partir
+de cero, `docker compose down -v`.
+
+### Sin Docker
+
+Si prefieres correr Django directo en tu máquina necesitas Python 3.12 y una
+MariaDB. Para la base puedes levantar solo ese contenedor con
+`docker compose up -d mariadb`.
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate.bat
+
+pip install -r requirements.txt -r requirements-dev.txt
+copy .env.example .env
+
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
-
-Queda en http://localhost:8000, y el panel de administración en
-http://localhost:8000/admin/
-
-Para apagar la base, `docker compose down`. Los datos se conservan.
 
 ## Comandos de calidad
 

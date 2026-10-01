@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Portal Edocere{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="portal-shell">
+    {% if user.is_authenticated %}
+    <aside class="sidebar" aria-label="Navegación principal">
+        <div class="brand">Edocere</div>
+        <a href="{% url 'home' %}">Inicio</a>
+        <a href="#">Mis Instancias</a>
+
+        <hr style="border-top: 1px solid #4a5568; margin: 15px 0;"> <!-- Un separador sutil -->
+
+        <a href="{% url 'instancias:lista' %}">Mis Instancias</a>
+        <a href="#">Suscripciones y Planes</a>
+        <a href="#">Facturación y Pagos</a>
+        <a href="#">Estadísticas</a>
+        <div class="sidebar-divider"></div>
+        <a href="#">Perfil de Institución</a>
+        <a href="{% url 'logout' %}">Cerrar Sesión</a>
+    </aside>
+    {% endif %}
+
+    <main class="main-content">
+        <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
+        <div id="global-loader">Cargando...</div>
+
+        {% block content %}{% endblock content %}
+    </main>
+</body>
+</html>
