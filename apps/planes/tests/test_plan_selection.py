@@ -72,9 +72,7 @@ def test_seleccion_plan_muestra_precio_mensual_y_limite_de_usuarios(client: Clie
         limite_usuarios=10,
     )
 
-    response = client.get(
-        reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id})
-    )
+    response = client.get(reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id}))
 
     assert response.status_code == 200
     content = response.content.decode()
