@@ -23,6 +23,8 @@ class CrearInstanciaViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "URL del dominio de la instancia")
         self.assertContains(response, "URL del logo")
+        assert self.cliente.razon_social is not None
+        assert self.plan.nombre is not None
         self.assertContains(response, self.cliente.razon_social)
         self.assertContains(response, self.plan.nombre)
 
@@ -36,7 +38,7 @@ class CrearInstanciaViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("home"))
+        self.assertEqual(response["Location"], reverse("home"))
         instancia = InstanciaMoodle.objects.get()
         self.assertEqual(instancia.cliente, self.cliente)
         self.assertEqual(instancia.dominio, "https://aula.empresa.cl")
@@ -58,7 +60,7 @@ class CrearInstanciaViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("home"))
+        self.assertEqual(response["Location"], reverse("home"))
         self.assertFalse(InstanciaMoodle.objects.get().logo_url)
 
     def test_rechaza_urls_invalidas_sin_crear_instancia(self) -> None:

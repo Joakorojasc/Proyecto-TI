@@ -23,14 +23,14 @@ class Plan(models.Model):
     def display_label(self) -> str:
         precio = self.precio_base if self.precio_base is not None else 0
         precio_unitario = self.precio_por_usuario if self.precio_por_usuario is not None else 0
-        tipo = self.tipo_plan or "Plan"
-        if self.tipo_plan == "mensual":
+        tipo = (self.tipo_plan or "").lower()
+        if tipo == "mensual":
             return f"{self.nombre} · ${precio_unitario:,.2f}/usuario/mes"
-        elif self.tipo_plan == "anual":
+        if tipo == "anual":
             return f"{self.nombre} · ${precio:,.0f}/año"
-        elif self.tipo_plan and self.tipo_plan.lower() == "personalizado":
+        if tipo == "personalizado":
             return f"{self.nombre} · Valores a convenir"
-        return self.nombre or tipo
+        return self.nombre or self.tipo_plan or "Plan"
 
 
 class Suscripcion(models.Model):
