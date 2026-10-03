@@ -111,3 +111,56 @@ class SuscripcionModelTests(TestCase):
         )
 
         suscripcion.full_clean()
+
+
+class PlanEtiquetaTests(TestCase):
+    """Cómo se le muestra cada plan al cliente cuando elige.
+
+    display_label() es lo que el cliente lee en el formulario de selección, así
+    que un error acá se ve en pantalla aunque el precio esté bien guardado.
+    """
+
+    def test_plan_mensual_muestra_el_precio_por_usuario(self) -> None:
+        plan = Plan.objects.create(
+            nombre="Plan Mensual",
+            tipo_plan="mensual",
+            precio_por_usuario=1.5,
+        )
+
+        self.assertEqual(plan.display_label(), "Plan Mensual · $1.50/usuario/mes")
+
+    def test_plan_anual_muestra_el_precio_total(self) -> None:
+        plan = Plan.objects.create(
+            nombre="Plan Anual",
+            tipo_plan="anual",
+            precio_base=1000000,
+        )
+
+        self.assertEqual(plan.display_label(), "Plan Anual · $1,000,000/año")
+
+    def test_plan_personalizado_no_muestra_precio(self) -> None:
+        """El personalizado se cotiza caso a caso, por eso no lleva cifra."""
+        plan = Plan.objects.create(nombre="Plan a medida", tipo_plan="personalizado")
+
+        self.assertEqual(plan.display_label(), "Plan a medida · Valores a convenir")
+
+    def test_plan_sin_precio_no_rompe_la_etiqueta(self) -> None:
+        """Un plan recién creado puede no tener precio todavía y la pantalla igual debe cargar."""
+        plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="mensual")
+
+        self.assertEqual(plan.display_label(), "Plan Mensual · $0.00/usuario/mes")
+
+    def test_plan_sin_tipo_cae_en_el_nombre(self) -> None:
+        plan = Plan.objects.create(nombre="Plan Suelto")
+
+        self.assertEqual(plan.display_label(), "Plan Suelto")
+
+    def test_str_del_plan_usa_la_misma_etiqueta(self) -> None:
+        """Así el panel de administración muestra lo mismo que ve el cliente."""
+        plan = Plan.objects.create(
+            nombre="Plan Anual",
+            tipo_plan="anual",
+            precio_base=500000,
+        )
+
+        self.assertEqual(str(plan), plan.display_label())
