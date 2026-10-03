@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import QuerySet
 from django.test import TestCase
 
@@ -13,7 +13,7 @@ class VistaBaseInstancias:
 
 
 class VistaInstancias(AislamientoClienteMixin, VistaBaseInstancias):
-    def __init__(self, user: User) -> None:
+    def __init__(self, user: User | AnonymousUser) -> None:
         self.request = type("Request", (), {"user": user})()
 
 
@@ -63,3 +63,25 @@ class AislamientoClienteMixinTests(TestCase):
         resultado = VistaInstancias(usuario).get_queryset()
 
         self.assertQuerySetEqual(resultado, [self.instancia_uno, self.instancia_dos], ordered=False)
+
+    def test_usuario_anonimo_no_ve_ninguna_instancia(self) -> None:
+        """Alguien sin sesión no debe alcanzar ni una instancia.
+
+        Si el filtro fallara acá, una petición sin autenticar vería las
+        instancias de todos los clientes.
+        """
+        resultado = VistaInstancias(AnonymousUser()).get_queryset()
+
+        self.assertQuerySetEqual(resultado, [])
+
+    def test_usuario_sin_cliente_asociado_no_ve_instancias(self) -> None:
+        """Un usuario autenticado pero sin UsuarioPortal tampoco ve nada.
+
+        Pasa si alguien queda a medio registrar: tiene cuenta pero todavía no
+        está vinculado a una empresa.
+        """
+        usuario = User.objects.create_user(username="sin-empresa")
+
+        resultado = VistaInstancias(usuario).get_queryset()
+
+        self.assertQuerySetEqual(resultado, [])
