@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-panel">
+    <div class="auth-card auth-card-wide">
+        <h2>Configura tu instancia</h2>
+        <p>Cliente: {{ cliente.razon_social }}</p>
+        <p>Plan seleccionado: {{ plan.display_label }}</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Crear instancia</button>
+        </form>
+    </div>
+</section>
+{% endblock content %}
