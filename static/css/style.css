@@ -325,6 +325,12 @@ body {
     line-height: 1.5;
 }
 
+.plan-option-limit {
+    color: var(--text-soft);
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
 .plan-empty {
     margin: 0;
     color: var(--text-soft);

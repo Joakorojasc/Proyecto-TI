@@ -256,12 +256,13 @@ al catálogo compartido y puede ofrecerse a todos. Cuando tiene un cliente, es
 un plan personalizado exclusivo de ese cliente, con valores que el
 superadministrador puede editar desde el panel de administración.
 
-Después del registro, el cliente llega a la selección de planes. Elegir un plan
-mensual o anual crea una `Suscripcion` activa asociada al cliente y al plan.
-Elegir **Tengo un plan personalizado** crea o recupera el `Plan` personalizado
-de ese cliente, pero no crea una suscripción: el administrador debe completar
-sus valores y gestionar la suscripción después. Los planes asociados a otros
-clientes no se ofrecen en el formulario público.
+Después del registro, el cliente llega a la selección de planes y luego al
+formulario para crear su instancia, indicando la URL del dominio y, de forma
+opcional, la URL del logo. Al crearla, se guarda la instancia con estado
+`activa` y una `Suscripcion` activa asociada al mismo cliente, al plan elegido y
+a la instancia. Elegir **Tengo un plan personalizado** crea o recupera el `Plan`
+personalizado de ese cliente y continúa al mismo formulario. Los planes personalizados
+asociados a otros clientes no se ofrecen en el formulario público.
 
 `Suscripcion.instancia` también es opcional. Permite asociar una suscripción a
 una instancia Moodle concreta; cuando se informa, la instancia y la suscripción

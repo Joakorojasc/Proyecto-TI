@@ -37,6 +37,9 @@
                                 >
                                 <span class="plan-option-copy">
                                     {{ plan.display_label }}
+                                    {% if plan.limite_usuarios %}
+                                    <small class="plan-option-limit">Hasta {{ plan.limite_usuarios }} usuarios activos</small>
+                                    {% endif %}
                                 </span>
                             </label>
                             {% empty %}
