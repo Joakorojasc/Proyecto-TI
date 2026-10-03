@@ -13,7 +13,7 @@ class VistaBaseInstancias:
 
 
 class VistaInstancias(AislamientoClienteMixin, VistaBaseInstancias):
-    def __init__(self, user: User) -> None:
+    def __init__(self, user: User | AnonymousUser) -> None:
         self.request = type("Request", (), {"user": user})()
 
 
