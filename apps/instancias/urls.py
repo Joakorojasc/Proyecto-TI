@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     DetalleInstanciaView,
+    EditarInstanciaView,
     ListaInstanciasView,
     crear_instancia,
 )
@@ -16,4 +17,5 @@ urlpatterns = [
     ),
     path("", ListaInstanciasView.as_view(), name="lista"),
     path("<int:pk>/", DetalleInstanciaView.as_view(), name="detalle"),
+    path("<int:pk>/editar/", EditarInstanciaView.as_view(), name="editar"),
 ]

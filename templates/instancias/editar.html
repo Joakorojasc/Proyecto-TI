@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-panel">
+    <div class="auth-card auth-card-wide">
+        <h2>Editar instancia</h2>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <p>
+                <label for="dominio-actual">Dirección web</label>
+                <input type="text" id="dominio-actual" value="{{ instancia.dominio_host }}" disabled>
+                <span class="helptext">El dominio no se puede modificar por ahora.</span>
+            </p>
+
+            <button type="submit">Guardar cambios</button>
+        </form>
+
+        <div class="registro-enlace">
+            <a href="{% url 'instancias:detalle' instancia.pk %}">Cancelar</a>
+        </div>
+    </div>
+</section>
+{% endblock content %}

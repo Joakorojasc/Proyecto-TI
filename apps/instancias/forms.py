@@ -109,3 +109,24 @@ class CrearInstanciaForm(forms.ModelForm):
         if commit:
             instancia.save()
         return instancia
+
+
+class EditarInstanciaForm(forms.ModelForm):
+    nombre = forms.CharField(
+        label="Nombre de la instancia",
+        help_text="Cómo quieres identificar esta instancia, por ejemplo: Campus Corporativo.",
+        max_length=255,
+        widget=forms.TextInput(attrs={"placeholder": "Campus Corporativo"}),
+    )
+    logo_url = forms.URLField(
+        label="URL del logo",
+        help_text="Campo opcional. Incluye el protocolo de la URL.",
+        max_length=2048,
+        required=False,
+        assume_scheme="https",
+        widget=forms.URLInput(attrs={"placeholder": "https://empresa.cl/logo.png"}),
+    )
+
+    class Meta:
+        model = InstanciaMoodle
+        fields = ("nombre", "logo_url")

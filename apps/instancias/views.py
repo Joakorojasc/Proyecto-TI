@@ -5,14 +5,15 @@ from django.db import transaction
 from django.db.models import Prefetch, Q, QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import DetailView, ListView
+from django.views.generic import DetailView, ListView, UpdateView
 
 from apps.clientes.mixins import AislamientoClienteMixin
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
-from .forms import CrearInstanciaForm
+from .forms import CrearInstanciaForm, EditarInstanciaForm
 from .models import InstanciaMoodle
 
 
@@ -91,3 +92,14 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
         context["mediciones"] = mediciones
         context["ultima_medicion"] = mediciones.first()
         return context
+
+
+class EditarInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, UpdateView):
+    model = InstanciaMoodle
+    form_class = EditarInstanciaForm
+    template_name = "instancias/editar.html"
+    context_object_name = "instancia"
+    login_url = "/login/"
+
+    def get_success_url(self) -> str:
+        return reverse("instancias:detalle", args=[self.object.pk])

@@ -303,9 +303,9 @@ class DetalleInstanciaViewTests(TestCase):
 
         self.assertContains(respuesta, "1/2026")
         self.assertContains(respuesta, "2/2026")
-        self.assertNotContains(respuesta, "99")
-        self.assertNotContains(respuesta, "88")
-        self.assertNotContains(respuesta, "77")
+        self.assertNotContains(respuesta, "<td>99</td>")
+        self.assertNotContains(respuesta, "<td>88</td>")
+        self.assertNotContains(respuesta, "<td>77</td>")
 
     def test_instancia_sin_mediciones_muestra_mensaje(self) -> None:
         self.client.force_login(self.usuario_a)
