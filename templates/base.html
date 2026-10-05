@@ -11,18 +11,22 @@
     {% if user.is_authenticated %}
     <aside class="sidebar" aria-label="Navegación principal">
         <div class="brand">Edocere</div>
-        <a href="{% url 'home' %}">Inicio</a>
-        <a href="#">Mis Instancias</a>
+        <a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} class="activo" aria-current="page"{% endif %}>Inicio</a>
 
-        <hr style="border-top: 1px solid #4a5568; margin: 15px 0;"> <!-- Un separador sutil -->
-
-        <a href="{% url 'instancias:lista' %}">Mis Instancias</a>
-        <a href="#">Suscripciones y Planes</a>
-        <a href="#">Facturación y Pagos</a>
-        <a href="#">Estadísticas</a>
         <div class="sidebar-divider"></div>
-        <a href="#">Perfil de Institución</a>
-        <a href="{% url 'logout' %}">Cerrar Sesión</a>
+
+        <a href="{% url 'seccion_perfil' %}"{% if request.resolver_match.url_name == 'seccion_perfil' %} class="activo" aria-current="page"{% endif %}>Perfil de Institución</a>
+        <a href="{% url 'instancias:lista' %}"{% if request.resolver_match.namespace == 'instancias' %} class="activo" aria-current="page"{% endif %}>Mis Instancias</a>
+        <a href="{% url 'seccion_suscripciones' %}"{% if request.resolver_match.url_name == 'seccion_suscripciones' %} class="activo" aria-current="page"{% endif %}>Suscripciones y Planes</a>
+        <a href="{% url 'seccion_facturacion' %}"{% if request.resolver_match.url_name == 'seccion_facturacion' %} class="activo" aria-current="page"{% endif %}>Facturación y Pagos</a>
+        <a href="{% url 'seccion_estadisticas' %}"{% if request.resolver_match.url_name == 'seccion_estadisticas' %} class="activo" aria-current="page"{% endif %}>Estadísticas</a>
+
+        <div class="sidebar-divider"></div>
+
+        <form method="post" action="{% url 'logout' %}" class="sidebar-logout">
+            {% csrf_token %}
+            <button type="submit">Cerrar Sesión</button>
+        </form>
     </aside>
     {% endif %}
 

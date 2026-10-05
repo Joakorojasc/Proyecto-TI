@@ -9,6 +9,28 @@ class Plan(models.Model):
     precio_base = models.DecimalField(max_digits=12, decimal_places=2, null=True)
     precio_por_usuario = models.DecimalField(max_digits=12, decimal_places=2, null=True)
     limite_usuarios = models.IntegerField(null=True)
+    cliente = models.ForeignKey(
+        "clientes.Cliente",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="planes",
+    )
+
+    def __str__(self) -> str:
+        return self.display_label()
+
+    def display_label(self) -> str:
+        precio = self.precio_base if self.precio_base is not None else 0
+        precio_unitario = self.precio_por_usuario if self.precio_por_usuario is not None else 0
+        tipo = (self.tipo_plan or "").lower()
+        if tipo == "mensual":
+            return f"{self.nombre} · ${precio_unitario:,.2f}/usuario/mes"
+        if tipo == "anual":
+            return f"{self.nombre} · ${precio:,.0f}/año"
+        if tipo == "personalizado":
+            return f"{self.nombre} · Valores a convenir"
+        return self.nombre or self.tipo_plan or "Plan"
 
 
 class Suscripcion(models.Model):

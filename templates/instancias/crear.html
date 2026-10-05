@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-panel">
+    <div class="auth-card auth-card-wide">
+        <h2>Configura tu instancia</h2>
+        <p>Cliente: {{ cliente.razon_social }}</p>
+        <p>Plan seleccionado: {{ plan.display_label }}</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Crear instancia</button>
+        </form>
+    </div>
+</section>
+
+<script>
+(function () {
+    var radios = document.querySelectorAll('input[name="tipo_dominio"]');
+    var inputSub = document.getElementById('id_subdominio');
+    var inputPropio = document.getElementById('id_dominio_propio');
+    var sub = inputSub.closest('p');
+    var propio = inputPropio.closest('p');
+
+    var fila = document.createElement('div');
+    fila.style.display = 'flex';
+    fila.style.alignItems = 'center';
+    fila.style.gap = '8px';
+    inputSub.parentNode.insertBefore(fila, inputSub);
+    inputSub.style.flex = '1';
+    var sufijo = document.createElement('span');
+    sufijo.textContent = '.edocere.com';
+    fila.appendChild(inputSub);
+    fila.appendChild(sufijo);
+
+    var vista = document.createElement('p');
+    vista.style.fontWeight = '600';
+    propio.insertAdjacentElement('afterend', vista);
+
+    function actualizar() {
+        var elegido = document.querySelector('input[name="tipo_dominio"]:checked');
+        var esPropio = elegido && elegido.value === 'propio';
+        sub.style.display = esPropio ? 'none' : '';
+        propio.style.display = esPropio ? '' : 'none';
+
+        var valor = esPropio
+            ? inputPropio.value.trim().toLowerCase().replace(/^https?:\/\//, '')
+            : inputSub.value.trim().toLowerCase();
+        var host = esPropio ? valor : (valor ? valor + '.edocere.com' : '');
+        vista.textContent = host ? 'Tu instancia estará en: https://' + host : '';
+    }
+
+    radios.forEach(function (r) { r.addEventListener('change', actualizar); });
+    inputSub.addEventListener('input', actualizar);
+    inputPropio.addEventListener('input', actualizar);
+    actualizar();
+})();
+</script>
+{% endblock content %}

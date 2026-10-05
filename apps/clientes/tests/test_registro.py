@@ -60,19 +60,32 @@ class RegistroClienteTests(TestCase):
 
 
 class RegistroUsuarioTests(TestCase):
-    def test_registro_crea_usuario_cliente_y_perfil_relacionados(self) -> None:
-        datos = {
-            "username": "admin-demo",
+    def setUp(self) -> None:
+        self.url = reverse("registro")
+        self.datos = {
+            "username": "admin@demo.cl",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Empresa Demo",
             "rut": "76.987.654-3",
         }
 
-        respuesta = self.client.post(reverse("registro"), data=datos)
+    def test_pagina_registro_pide_correo(self) -> None:
+        respuesta = self.client.get(self.url)
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Correo electrónico")
+
+    def test_pagina_login_pide_correo(self) -> None:
+        respuesta = self.client.get(reverse("login"))
+
+        self.assertContains(respuesta, "Correo electrónico")
+
+    def test_registro_crea_usuario_cliente_y_perfil_relacionados(self) -> None:
+        respuesta = self.client.post(self.url, data=self.datos)
 
         self.assertEqual(respuesta.status_code, 302)
-        auth_user = User.objects.get(username="admin-demo")
+        auth_user = User.objects.get(username="admin@demo.cl")
         cliente = Cliente.objects.get(rut="76.987.654-3")
         usuario_portal = UsuarioPortal.objects.get(usuario=auth_user)
         self.assertEqual(User.objects.count(), 1)
@@ -81,3 +94,55 @@ class RegistroUsuarioTests(TestCase):
         self.assertEqual(usuario_portal.usuario, auth_user)
         self.assertEqual(auth_user.usuarioportal, usuario_portal)
         self.assertEqual(usuario_portal.cliente, cliente)
+
+    def test_correo_se_guarda_como_usuario_y_como_contacto(self) -> None:
+        self.client.post(self.url, data=self.datos)
+
+        self.assertEqual(User.objects.get().email, "admin@demo.cl")
+        self.assertEqual(Cliente.objects.get().email_contacto, "admin@demo.cl")
+        self.assertEqual(UsuarioPortal.objects.get().email, "admin@demo.cl")
+
+    def test_registro_inicia_sesion_y_lleva_a_mis_instancias(self) -> None:
+        respuesta = self.client.post(self.url, data=self.datos)
+
+        self.assertRedirects(respuesta, reverse("instancias:lista"))
+        auth_user = User.objects.get()
+        self.assertEqual(int(self.client.session["_auth_user_id"]), auth_user.pk)
+
+    def test_mis_instancias_vacio_ofrece_crear_instancia(self) -> None:
+        self.client.post(self.url, data=self.datos)
+        cliente = Cliente.objects.get()
+
+        respuesta = self.client.get(reverse("instancias:lista"))
+
+        self.assertContains(respuesta, "Aún no tienes instancias Moodle asociadas.")
+        self.assertContains(respuesta, reverse("seleccionar_plan", args=[cliente.pk]))
+
+    def test_correo_se_normaliza_a_minusculas(self) -> None:
+        self.client.post(self.url, data={**self.datos, "username": "Admin@Demo.CL"})
+
+        self.assertEqual(User.objects.get().username, "admin@demo.cl")
+
+    def test_rechaza_correo_invalido(self) -> None:
+        respuesta = self.client.post(self.url, data={**self.datos, "username": "no-es-un-correo"})
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["user_form"].errors["username"])
+        self.assertFalse(User.objects.exists())
+        self.assertFalse(Cliente.objects.exists())
+
+    def test_rechaza_correo_repetido_sin_importar_mayusculas(self) -> None:
+        User.objects.create_user(username="admin@demo.cl", password="clave")
+
+        respuesta = self.client.post(self.url, data={**self.datos, "username": "ADMIN@demo.cl"})
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["user_form"].errors["username"])
+        self.assertEqual(User.objects.count(), 1)
+        self.assertFalse(Cliente.objects.exists())
+
+    def test_se_puede_iniciar_sesion_con_el_correo(self) -> None:
+        self.client.post(self.url, data=self.datos)
+        self.client.logout()
+
+        self.assertTrue(self.client.login(username="admin@demo.cl", password="ClaveSegura123!"))
