@@ -2,8 +2,12 @@
 
 {% block content %}
 <section class="instances-page">
+
     <header class="instances-header">
         <h1>Mis Instancias</h1>
+        {% if cliente_id %}
+        <a class="btn-crear-instancia" href="{% url 'seleccionar_plan' cliente_id %}">+ Crear instancia</a>
+        {% endif %}
     </header>
 
     {% if instancias %}
@@ -11,9 +15,10 @@
         <table class="instances-table">
             <thead>
                 <tr>
+                    <th scope="col">Nombre</th>
                     <th scope="col">Dominio</th>
-                    <th scope="col">Versión</th>
                     <th scope="col">Estado</th>
+                    <th scope="col">Versión</th>
                     <th scope="col">Plan</th>
                 </tr>
             </thead>
@@ -22,11 +27,23 @@
                 <tr>
                     <td>
                         <a href="{% url 'instancias:detalle' instancia.pk %}">
-                            {{ instancia.dominio|default:"Sin dominio" }}
+                            {{ instancia.nombre|default:instancia.dominio_host|default:"Sin nombre" }}
                         </a>
                     </td>
+                    <td>
+                        {{ instancia.dominio_host|default:"Sin dominio" }}
+                        {% if instancia.es_subdominio_edocere %}
+                            <span class="domain-tag">Edocere</span>
+                        {% elif instancia.dominio_host %}
+                            <span class="domain-tag domain-tag--propio">Propio</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="instances-status instances-status--{{ instancia.estado|default:'sin-estado' }}">
+                            {{ instancia.get_estado_display|default:"Sin estado" }}
+                        </span>
+                    </td>
                     <td>{{ instancia.version|default:"Sin versión" }}</td>
-                    <td>{{ instancia.estado|default:"Sin estado" }}</td>
                     <td>
                         {% with suscripciones_activas=instancia.suscripciones_activas %}
                             {% if suscripciones_activas|length == 1 %}

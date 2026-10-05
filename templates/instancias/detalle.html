@@ -2,12 +2,14 @@
 
 {% block content %}
 <section class="instances-page">
-    <header class="instances-header">
-        <h1>{{ instancia.dominio|default:"Sin dominio" }}</h1>
+    <header class="instances-header instance-header">
+        <h1>{{ instancia.nombre|default:instancia.dominio_host|default:"Sin nombre" }}</h1>
+        <span class="instances-status instances-status--{{ instancia.estado|default:'sin-estado' }}">
+            {{ instancia.get_estado_display|default:"Sin estado" }}
+        </span>
     </header>
 
     <p>Versión: {{ instancia.version|default:"Sin versión" }}</p>
-    <p>Estado: {{ instancia.estado|default:"Sin estado" }}</p>
 
     {% if ultima_medicion %}
     <section>

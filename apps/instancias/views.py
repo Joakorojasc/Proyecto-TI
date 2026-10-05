@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q, QuerySet
@@ -7,7 +9,7 @@ from django.utils import timezone
 from django.views.generic import DetailView, ListView
 
 from apps.clientes.mixins import AislamientoClienteMixin
-from apps.clientes.models import Cliente
+from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
 from .forms import CrearInstanciaForm
@@ -36,7 +38,7 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
                 fecha_inicio=timezone.now(),
             )
 
-        return redirect("home")
+        return redirect("instancias:lista")
 
     return render(
         request,
@@ -65,6 +67,15 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
                 to_attr="suscripciones_activas",
             )
         )
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["cliente_id"] = (
+            UsuarioPortal.objects.filter(usuario_id=self.request.user.pk)
+            .values_list("cliente_id", flat=True)
+            .first()
+        )
+        return context
 
 
 class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailView):
