@@ -2,12 +2,21 @@
 
 {% block content %}
 <section class="instances-page">
-    <header class="instances-header">
-        <h1>{{ instancia.dominio|default:"Sin dominio" }}</h1>
+    <header class="instances-header instance-header">
+        <div class="instance-title">
+            <h1>{{ instancia.nombre|default:instancia.dominio_host|default:"Sin nombre" }}</h1>
+            <span class="instances-status instances-status--{{ instancia.estado|default:'sin-estado' }}">
+                {{ instancia.get_estado_display|default:"Sin estado" }}
+            </span>
+        </div>
+        <a class="btn-editar-instancia" href="{% url 'instancias:editar' instancia.pk %}">Editar</a>
     </header>
 
+    <p>Dirección web: {{ instancia.dominio_host|default:"Sin dominio" }}</p>
     <p>Versión: {{ instancia.version|default:"Sin versión" }}</p>
-    <p>Estado: {{ instancia.estado|default:"Sin estado" }}</p>
+    {% if instancia.logo_url %}
+    <p><img class="instance-logo" src="{{ instancia.logo_url }}" alt="Logo de la instancia"></p>
+    {% endif %}
 
     {% if ultima_medicion %}
     <section>

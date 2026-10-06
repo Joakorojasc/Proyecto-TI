@@ -181,6 +181,30 @@ class ListaInstanciasViewTests(TestCase):
 
         self.assertContains(respuesta, reverse("instancias:detalle", args=[self.instancia_a.pk]))
 
+    def test_lista_muestra_boton_para_crear_instancia(self) -> None:
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertContains(respuesta, reverse("seleccionar_plan", args=[self.cliente_a.pk]))
+
+    def test_lista_vacia_tambien_muestra_el_boton(self) -> None:
+        InstanciaMoodle.objects.filter(cliente=self.cliente_a).delete()
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertContains(respuesta, "Aún no tienes instancias Moodle asociadas.")
+        self.assertContains(respuesta, reverse("seleccionar_plan", args=[self.cliente_a.pk]))
+
+    def test_usuario_sin_cliente_no_ve_el_boton(self) -> None:
+        usuario = User.objects.create_user(username="sin-perfil", password="clave")
+        self.client.force_login(usuario)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertNotContains(respuesta, "seleccionar-plan")
+
 
 class DetalleInstanciaViewTests(TestCase):
     def setUp(self) -> None:
@@ -279,9 +303,9 @@ class DetalleInstanciaViewTests(TestCase):
 
         self.assertContains(respuesta, "1/2026")
         self.assertContains(respuesta, "2/2026")
-        self.assertNotContains(respuesta, "99")
-        self.assertNotContains(respuesta, "88")
-        self.assertNotContains(respuesta, "77")
+        self.assertNotContains(respuesta, "<td>99</td>")
+        self.assertNotContains(respuesta, "<td>88</td>")
+        self.assertNotContains(respuesta, "<td>77</td>")
 
     def test_instancia_sin_mediciones_muestra_mensaje(self) -> None:
         self.client.force_login(self.usuario_a)

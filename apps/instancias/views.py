@@ -1,16 +1,19 @@
+from typing import Any
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q, QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import DetailView, ListView
+from django.views.generic import DetailView, ListView, UpdateView
 
 from apps.clientes.mixins import AislamientoClienteMixin
-from apps.clientes.models import Cliente
+from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
-from .forms import CrearInstanciaForm
+from .forms import CrearInstanciaForm, EditarInstanciaForm
 from .models import InstanciaMoodle
 
 
@@ -36,7 +39,7 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
                 fecha_inicio=timezone.now(),
             )
 
-        return redirect("home")
+        return redirect("instancias:lista")
 
     return render(
         request,
@@ -66,6 +69,15 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
             )
         )
 
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["cliente_id"] = (
+            UsuarioPortal.objects.filter(usuario_id=self.request.user.pk)
+            .values_list("cliente_id", flat=True)
+            .first()
+        )
+        return context
+
 
 class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailView):
     model = InstanciaMoodle
@@ -80,3 +92,14 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
         context["mediciones"] = mediciones
         context["ultima_medicion"] = mediciones.first()
         return context
+
+
+class EditarInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, UpdateView):
+    model = InstanciaMoodle
+    form_class = EditarInstanciaForm
+    template_name = "instancias/editar.html"
+    context_object_name = "instancia"
+    login_url = "/login/"
+
+    def get_success_url(self) -> str:
+        return reverse("instancias:detalle", args=[self.object.pk])

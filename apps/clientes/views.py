@@ -1,10 +1,10 @@
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
-from .forms import EmpresaRegistroForm, RegistroClienteForm
+from .forms import EmpresaRegistroForm, RegistroClienteForm, UsuarioRegistroForm
 from .models import UsuarioPortal
 
 
@@ -20,17 +20,19 @@ def registro_cliente(request: HttpRequest) -> HttpResponse:
 
 
 def registro_usuario(request: HttpRequest) -> HttpResponse:
-    user_form: UserCreationForm
+    user_form: UsuarioRegistroForm
     empresa_form: EmpresaRegistroForm
 
     if request.method == "POST":
-        user_form = UserCreationForm(request.POST)
+        user_form = UsuarioRegistroForm(request.POST)
         empresa_form = EmpresaRegistroForm(request.POST)
 
         if user_form.is_valid() and empresa_form.is_valid():
             with transaction.atomic():
                 auth_user = user_form.save()
-                nuevo_cliente = empresa_form.save()
+                nuevo_cliente = empresa_form.save(commit=False)
+                nuevo_cliente.email_contacto = auth_user.email
+                nuevo_cliente.save()
 
                 grupo_cliente, _ = Group.objects.get_or_create(name="Cliente")
                 auth_user.groups.add(grupo_cliente)
@@ -39,12 +41,14 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
                     usuario=auth_user,
                     cliente=nuevo_cliente,
                     nombre=auth_user.username,
+                    email=auth_user.email,
                     rol="Admin",
                 )
 
-            return redirect("seleccionar_plan", cliente_id=nuevo_cliente.id)
+            login(request, auth_user, backend="django.contrib.auth.backends.ModelBackend")
+            return redirect("instancias:lista")
     else:
-        user_form = UserCreationForm()
+        user_form = UsuarioRegistroForm()
         empresa_form = EmpresaRegistroForm()
 
     return render(

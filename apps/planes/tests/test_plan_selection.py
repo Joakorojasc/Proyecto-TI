@@ -10,9 +10,9 @@ from apps.planes.models import Plan, Suscripcion
 
 
 @pytest.mark.django_db
-def test_registro_redirige_a_seleccionar_plan(client: Client) -> None:
+def test_registro_redirige_a_mis_instancias(client: Client) -> None:
     data = {
-        "username": "admin_demo",
+        "username": "admin@demo.cl",
         "password1": "Password123!",
         "password2": "Password123!",
         "razon_social": "Empresa Demo",
@@ -23,9 +23,8 @@ def test_registro_redirige_a_seleccionar_plan(client: Client) -> None:
 
     assert response.status_code == 302
     assert isinstance(response, HttpResponseRedirect)
-
-    cliente = Cliente.objects.get(razon_social="Empresa Demo")
-    assert response.url == reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id})
+    assert response.url == reverse("instancias:lista")
+    assert Cliente.objects.filter(razon_social="Empresa Demo").exists()
 
 
 @pytest.mark.django_db
