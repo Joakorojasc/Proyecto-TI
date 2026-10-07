@@ -4,6 +4,9 @@ from typing import Any
 from django import forms
 from django.db.models import Q
 
+from apps.planes.forms import PlanChoiceField
+from apps.planes.models import Plan, Suscripcion
+
 from .models import InstanciaMoodle
 
 DOMINIO_BASE_EDOCERE = "edocere.com"
@@ -112,11 +115,44 @@ class CrearInstanciaForm(forms.ModelForm):
 
 
 class EditarInstanciaForm(forms.ModelForm):
+    PLAN_BLOCKS = {
+        "mensual": {
+            "key": "Mensual",
+            "title": "Planes mensuales",
+            "description": "Ideal para equipos que requieren pagar mes a mes.",
+        },
+        "anual": {
+            "key": "Anual",
+            "title": "Planes anuales",
+            "description": "Ahorra con pagos anuales con precios al por mayor.",
+        },
+        "personalizado": {
+            "key": "Personalizado",
+            "title": "Plan personalizado",
+            "description": "Planes personalizados disponibles para tu institución.",
+        },
+    }
+
     nombre = forms.CharField(
         label="Nombre de la instancia",
         help_text="Cómo quieres identificar esta instancia, por ejemplo: Campus Corporativo.",
         max_length=255,
         widget=forms.TextInput(attrs={"placeholder": "Campus Corporativo"}),
+    )
+    plan = PlanChoiceField(
+        queryset=Plan.objects.none(),
+        label="Plan de suscripción",
+        required=False,
+        empty_label=None,
+        widget=forms.RadioSelect,
+    )
+    confirmacion_contrasena = forms.CharField(
+        label="Contraseña de tu cuenta",
+        required=False,
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "current-password", "id": "id_confirmacion_contrasena"}
+        ),
     )
     logo_url = forms.URLField(
         label="URL del logo",
@@ -129,4 +165,54 @@ class EditarInstanciaForm(forms.ModelForm):
 
     class Meta:
         model = InstanciaMoodle
-        fields = ("nombre", "logo_url")
+        fields = ("nombre", "logo_url", "estado")
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        instancia = self.instance
+        planes = Plan.objects.none()
+        if instancia.pk:
+            planes = Plan.objects.filter(
+                Q(tipo_plan__iexact="mensual")
+                | Q(tipo_plan__iexact="anual")
+                | Q(cliente_id=instancia.cliente_id)
+            ).order_by("tipo_plan", "precio_base")
+            suscripciones_activas = Suscripcion.objects.filter(
+                instancia=instancia,
+                estado="activa",
+            )
+            if suscripciones_activas.count() == 1:
+                self.initial["plan"] = suscripciones_activas.get().plan_id
+
+        plan_field = self.fields["plan"]
+        assert isinstance(plan_field, forms.ModelChoiceField)
+        plan_field.queryset = planes
+        self.plan_sections = self._build_plan_sections(planes, instancia.cliente_id)
+
+    def _build_plan_sections(self, planes: Any, cliente_id: int) -> list[dict[str, Any]]:
+        planes_lista = list(planes)
+        agrupados: dict[str, list[Plan]] = {
+            "mensual": [],
+            "anual": [],
+            "personalizado": [],
+        }
+        for plan in planes_lista:
+            tipo_plan = (plan.tipo_plan or "").lower()
+            if tipo_plan in ("mensual", "anual"):
+                agrupados[tipo_plan].append(plan)
+            elif plan.cliente_id == cliente_id:
+                agrupados["personalizado"].append(plan)
+
+        return [
+            {
+                **config,
+                "plans": agrupados[key],
+            }
+            for key, config in self.PLAN_BLOCKS.items()
+        ]
+
+    def clean_confirmacion_contrasena(self) -> str:
+        contrasena = self.cleaned_data["confirmacion_contrasena"]
+        if not contrasena:
+            raise forms.ValidationError("Ingresa tu contraseña para confirmar los cambios.")
+        return contrasena
