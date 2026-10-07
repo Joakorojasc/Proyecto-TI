@@ -9,12 +9,58 @@
             {% csrf_token %}
             {% for field in form %}
                 {% if field.name != "confirmacion_contrasena" %}
+                    {% if field.name == "plan" %}
+                        <div class="field-group">
+                            <label class="field-label">{{ field.label }}</label>
+                            {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
+                            <div class="plan-grid">
+                                {% for section in form.plan_sections %}
+                                    <div class="plan-section{% if section.key == 'Personalizado' %} plan-section-personalizado{% endif %}">
+                                        <div class="plan-section-header">
+                                            <h3>{{ section.title }}</h3>
+                                            <p>{{ section.description }}</p>
+                                        </div>
+                                        <div class="plan-option-list">
+                                            {% for plan in section.plans %}
+                                                <label class="plan-option">
+                                                    <input
+                                                        type="radio"
+                                                        name="plan"
+                                                        value="{{ plan.pk }}"
+                                                        {% if form.plan.value|stringformat:"s" == plan.pk|stringformat:"s" %}checked{% endif %}
+                                                    >
+                                                    <span class="plan-option-copy">
+                                                        {{ plan.display_label }}
+                                                        {% if plan.limite_usuarios %}
+                                                            <small class="plan-option-limit">Hasta {{ plan.limite_usuarios }} usuarios activos</small>
+                                                        {% endif %}
+                                                    </span>
+                                                </label>
+                                            {% empty %}
+                                                <p class="plan-empty">No hay planes disponibles para esta categoría.</p>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <label class="plan-option plan-option-no-change">
+                                <input
+                                    type="radio"
+                                    name="plan"
+                                    value=""
+                                    {% if not form.plan.value %}checked{% endif %}
+                                >
+                                <span class="plan-option-copy">No cambiar el plan de suscripción</span>
+                            </label>
+                        </div>
+                    {% else %}
                     <p>
                         {{ field.label_tag }}
                         {{ field }}
                         {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
                         {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
                     </p>
+                    {% endif %}
                 {% endif %}
             {% endfor %}
             {% for error in form.non_field_errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
@@ -29,7 +75,7 @@
 
             <dialog id="confirmacion-contrasena" aria-labelledby="titulo-confirmacion">
                 <h3 id="titulo-confirmacion">Confirma los cambios</h3>
-                <p>Ingresa la contraseña de tu cuenta para guardar los cambios.</p>
+                <p>Ingresa la contraseña de tu cuenta para guardar los cambios de la instancia y su plan.</p>
                 <p>
                     {{ form.confirmacion_contrasena.label_tag }}
                     {{ form.confirmacion_contrasena }}

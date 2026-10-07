@@ -111,4 +111,30 @@ class EditarInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, UpdateVie
                 "La contraseña ingresada no es correcta.",
             )
             return self.form_invalid(form)
-        return super().form_valid(form)
+
+        with transaction.atomic():
+            response = super().form_valid(form)
+            plan_seleccionado = form.cleaned_data["plan"]
+            if plan_seleccionado is not None:
+                suscripciones_activas = list(
+                    Suscripcion.objects.select_for_update().filter(
+                        instancia=self.object,
+                        estado="activa",
+                    )
+                )
+                if (
+                    len(suscripciones_activas) != 1
+                    or suscripciones_activas[0].plan_id != plan_seleccionado.pk
+                ):
+                    Suscripcion.objects.filter(
+                        pk__in=[suscripcion.pk for suscripcion in suscripciones_activas]
+                    ).update(estado="finalizada")
+                    Suscripcion.objects.create(
+                        cliente=self.object.cliente,
+                        instancia=self.object,
+                        plan=plan_seleccionado,
+                        estado="activa",
+                        fecha_inicio=timezone.now(),
+                    )
+
+        return response

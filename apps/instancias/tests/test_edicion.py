@@ -1,8 +1,10 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.clientes.models import Cliente, UsuarioPortal
+from apps.planes.models import Plan, Suscripcion
 
 from ..models import InstanciaMoodle
 
@@ -29,6 +31,36 @@ class EditarInstanciaViewTests(TestCase):
             nombre="Campus B",
             dominio="https://b.edocere.com",
         )
+        self.plan_actual = Plan.objects.create(
+            nombre="Plan Mensual",
+            tipo_plan="Mensual",
+            precio_por_usuario=1000,
+        )
+        self.plan_nuevo = Plan.objects.create(
+            nombre="Plan Anual",
+            tipo_plan="Anual",
+            precio_base=12000,
+        )
+        self.plan_tipo_no_admitido = Plan.objects.create(
+            nombre="Plan trimestral",
+            tipo_plan="Trimestral",
+        )
+        self.plan_personalizado_a = Plan.objects.create(
+            nombre="Plan personalizado de Cliente A",
+            tipo_plan="personalizado",
+            cliente=self.cliente_a,
+        )
+        self.plan_cliente_b = Plan.objects.create(
+            nombre="Plan exclusivo de Cliente B",
+            cliente=self.cliente_b,
+        )
+        self.suscripcion_actual = Suscripcion.objects.create(
+            cliente=self.cliente_a,
+            instancia=self.instancia_a,
+            plan=self.plan_actual,
+            estado="activa",
+            fecha_inicio=timezone.now(),
+        )
         self.url = reverse("instancias:editar", args=[self.instancia_a.pk])
 
     def test_usuario_no_autenticado_redirige_al_login(self) -> None:
@@ -49,6 +81,21 @@ class EditarInstanciaViewTests(TestCase):
         self.assertContains(respuesta, "Activa")
         self.assertContains(respuesta, "Archivada")
         self.assertContains(respuesta, "Confirma los cambios")
+        assert self.plan_actual.nombre is not None
+        self.assertContains(respuesta, self.plan_actual.nombre)
+        assert self.plan_nuevo.nombre is not None
+        self.assertContains(respuesta, self.plan_nuevo.nombre)
+        assert self.plan_personalizado_a.nombre is not None
+        self.assertContains(respuesta, self.plan_personalizado_a.nombre)
+        assert self.plan_cliente_b.nombre is not None
+        self.assertNotContains(respuesta, self.plan_cliente_b.nombre)
+        assert self.plan_tipo_no_admitido.nombre is not None
+        self.assertNotContains(respuesta, self.plan_tipo_no_admitido.nombre)
+        self.assertNotContains(respuesta, "Otros planes")
+        self.assertEqual(
+            respuesta.context["form"]["plan"].value(),
+            self.plan_actual.pk,
+        )
 
     def test_guarda_nombre_y_logo_y_vuelve_al_detalle(self) -> None:
         self.client.force_login(self.usuario_a)
@@ -105,6 +152,74 @@ class EditarInstanciaViewTests(TestCase):
         self.assertEqual(self.instancia_a.version, "5.2")
         self.assertEqual(self.instancia_a.estado, "archivada")
 
+    def test_cambia_plan_cerrando_suscripcion_anterior_y_creando_una_nueva(self) -> None:
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.post(
+            self.url,
+            {
+                "nombre": "Campus A",
+                "logo_url": "https://a.cl/logo.png",
+                "estado": "activa",
+                "plan": str(self.plan_nuevo.pk),
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.suscripcion_actual.refresh_from_db()
+        self.assertEqual(self.suscripcion_actual.estado, "finalizada")
+        suscripcion_nueva = Suscripcion.objects.get(
+            instancia=self.instancia_a,
+            estado="activa",
+        )
+        self.assertEqual(suscripcion_nueva.plan, self.plan_nuevo)
+        self.assertEqual(suscripcion_nueva.cliente, self.cliente_a)
+        self.assertIsNotNone(suscripcion_nueva.fecha_inicio)
+
+    def test_plan_de_otro_cliente_no_se_puede_asignar(self) -> None:
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.post(
+            self.url,
+            {
+                "nombre": "Campus A",
+                "logo_url": "https://a.cl/logo.png",
+                "estado": "activa",
+                "plan": str(self.plan_cliente_b.pk),
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["form"].errors["plan"])
+        self.suscripcion_actual.refresh_from_db()
+        self.assertEqual(self.suscripcion_actual.estado, "activa")
+        self.assertEqual(
+            Suscripcion.objects.filter(instancia=self.instancia_a).count(),
+            1,
+        )
+
+    def test_plan_global_de_tipo_no_admitido_no_se_puede_asignar(self) -> None:
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.post(
+            self.url,
+            {
+                "nombre": "Campus A",
+                "logo_url": "https://a.cl/logo.png",
+                "estado": "activa",
+                "plan": str(self.plan_tipo_no_admitido.pk),
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["form"].errors["plan"])
+        self.suscripcion_actual.refresh_from_db()
+        self.assertEqual(self.suscripcion_actual.estado, "activa")
+        self.assertEqual(self.suscripcion_actual.plan, self.plan_actual)
+
     def test_no_guarda_cambios_si_la_contrasena_es_incorrecta(self) -> None:
         self.client.force_login(self.usuario_a)
 
@@ -114,6 +229,7 @@ class EditarInstanciaViewTests(TestCase):
                 "nombre": "Campus Modificado",
                 "logo_url": "",
                 "estado": "archivada",
+                "plan": str(self.plan_nuevo.pk),
                 "confirmacion_contrasena": "incorrecta",
             },
         )
@@ -123,13 +239,25 @@ class EditarInstanciaViewTests(TestCase):
         self.instancia_a.refresh_from_db()
         self.assertEqual(self.instancia_a.nombre, "Campus A")
         self.assertEqual(self.instancia_a.estado, "activa")
+        self.suscripcion_actual.refresh_from_db()
+        self.assertEqual(self.suscripcion_actual.estado, "activa")
+        self.assertEqual(self.suscripcion_actual.plan, self.plan_actual)
+        self.assertEqual(
+            Suscripcion.objects.filter(instancia=self.instancia_a).count(),
+            1,
+        )
 
     def test_no_guarda_cambios_si_no_se_confirma_contrasena(self) -> None:
         self.client.force_login(self.usuario_a)
 
         respuesta = self.client.post(
             self.url,
-            {"nombre": "Campus Modificado", "logo_url": "", "estado": "archivada"},
+            {
+                "nombre": "Campus Modificado",
+                "logo_url": "",
+                "estado": "archivada",
+                "plan": str(self.plan_nuevo.pk),
+            },
         )
 
         self.assertEqual(respuesta.status_code, 200)
@@ -137,6 +265,13 @@ class EditarInstanciaViewTests(TestCase):
         self.instancia_a.refresh_from_db()
         self.assertEqual(self.instancia_a.nombre, "Campus A")
         self.assertEqual(self.instancia_a.estado, "activa")
+        self.suscripcion_actual.refresh_from_db()
+        self.assertEqual(self.suscripcion_actual.estado, "activa")
+        self.assertEqual(self.suscripcion_actual.plan, self.plan_actual)
+        self.assertEqual(
+            Suscripcion.objects.filter(instancia=self.instancia_a).count(),
+            1,
+        )
 
     def test_nombre_es_obligatorio(self) -> None:
         self.client.force_login(self.usuario_a)
