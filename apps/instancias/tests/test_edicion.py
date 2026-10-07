@@ -9,9 +9,12 @@ from ..models import InstanciaMoodle
 
 class EditarInstanciaViewTests(TestCase):
     def setUp(self) -> None:
+        self.contrasena = "Clave-prueba-2026"
         self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
         self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
+        self.usuario_a.set_password(self.contrasena)
+        self.usuario_a.save(update_fields=["password"])
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
         self.instancia_a = InstanciaMoodle.objects.create(
             cliente=self.cliente_a,
@@ -43,13 +46,21 @@ class EditarInstanciaViewTests(TestCase):
         self.assertContains(respuesta, "https://a.cl/logo.png")
         self.assertContains(respuesta, "a.edocere.com")
         self.assertContains(respuesta, "El dominio no se puede modificar por ahora.")
+        self.assertContains(respuesta, "Activa")
+        self.assertContains(respuesta, "Archivada")
+        self.assertContains(respuesta, "Confirma los cambios")
 
     def test_guarda_nombre_y_logo_y_vuelve_al_detalle(self) -> None:
         self.client.force_login(self.usuario_a)
 
         respuesta = self.client.post(
             self.url,
-            {"nombre": "Campus Nuevo", "logo_url": "https://a.cl/nuevo.png"},
+            {
+                "nombre": "Campus Nuevo",
+                "logo_url": "https://a.cl/nuevo.png",
+                "estado": "activa",
+                "confirmacion_contrasena": self.contrasena,
+            },
         )
 
         self.assertRedirects(respuesta, reverse("instancias:detalle", args=[self.instancia_a.pk]))
@@ -60,13 +71,21 @@ class EditarInstanciaViewTests(TestCase):
     def test_logo_es_opcional(self) -> None:
         self.client.force_login(self.usuario_a)
 
-        respuesta = self.client.post(self.url, {"nombre": "Campus A", "logo_url": ""})
+        respuesta = self.client.post(
+            self.url,
+            {
+                "nombre": "Campus A",
+                "logo_url": "",
+                "estado": "activa",
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
 
         self.assertEqual(respuesta.status_code, 302)
         self.instancia_a.refresh_from_db()
         self.assertFalse(self.instancia_a.logo_url)
 
-    def test_no_modifica_dominio_version_ni_estado(self) -> None:
+    def test_modifica_estado_pero_no_dominio_ni_version(self) -> None:
         self.client.force_login(self.usuario_a)
 
         self.client.post(
@@ -77,18 +96,60 @@ class EditarInstanciaViewTests(TestCase):
                 "dominio": "https://otro.com",
                 "version": "9.9",
                 "estado": "archivada",
+                "confirmacion_contrasena": self.contrasena,
             },
         )
 
         self.instancia_a.refresh_from_db()
         self.assertEqual(self.instancia_a.dominio, "https://a.edocere.com")
         self.assertEqual(self.instancia_a.version, "5.2")
+        self.assertEqual(self.instancia_a.estado, "archivada")
+
+    def test_no_guarda_cambios_si_la_contrasena_es_incorrecta(self) -> None:
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.post(
+            self.url,
+            {
+                "nombre": "Campus Modificado",
+                "logo_url": "",
+                "estado": "archivada",
+                "confirmacion_contrasena": "incorrecta",
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["form"].errors["confirmacion_contrasena"])
+        self.instancia_a.refresh_from_db()
+        self.assertEqual(self.instancia_a.nombre, "Campus A")
+        self.assertEqual(self.instancia_a.estado, "activa")
+
+    def test_no_guarda_cambios_si_no_se_confirma_contrasena(self) -> None:
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.post(
+            self.url,
+            {"nombre": "Campus Modificado", "logo_url": "", "estado": "archivada"},
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["form"].errors["confirmacion_contrasena"])
+        self.instancia_a.refresh_from_db()
+        self.assertEqual(self.instancia_a.nombre, "Campus A")
         self.assertEqual(self.instancia_a.estado, "activa")
 
     def test_nombre_es_obligatorio(self) -> None:
         self.client.force_login(self.usuario_a)
 
-        respuesta = self.client.post(self.url, {"nombre": "", "logo_url": ""})
+        respuesta = self.client.post(
+            self.url,
+            {
+                "nombre": "",
+                "logo_url": "",
+                "estado": "activa",
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertTrue(respuesta.context["form"].errors["nombre"])
@@ -98,7 +159,15 @@ class EditarInstanciaViewTests(TestCase):
     def test_rechaza_logo_invalido(self) -> None:
         self.client.force_login(self.usuario_a)
 
-        respuesta = self.client.post(self.url, {"nombre": "Campus A", "logo_url": "no es url"})
+        respuesta = self.client.post(
+            self.url,
+            {
+                "nombre": "Campus A",
+                "logo_url": "no es url",
+                "estado": "activa",
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertTrue(respuesta.context["form"].errors["logo_url"])

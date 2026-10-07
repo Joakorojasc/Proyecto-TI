@@ -103,3 +103,12 @@ class EditarInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, UpdateVie
 
     def get_success_url(self) -> str:
         return reverse("instancias:detalle", args=[self.object.pk])
+
+    def form_valid(self, form: EditarInstanciaForm) -> HttpResponse:
+        if not self.request.user.check_password(form.cleaned_data["confirmacion_contrasena"]):
+            form.add_error(
+                "confirmacion_contrasena",
+                "La contraseña ingresada no es correcta.",
+            )
+            return self.form_invalid(form)
+        return super().form_valid(form)

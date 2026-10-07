@@ -118,6 +118,14 @@ class EditarInstanciaForm(forms.ModelForm):
         max_length=255,
         widget=forms.TextInput(attrs={"placeholder": "Campus Corporativo"}),
     )
+    confirmacion_contrasena = forms.CharField(
+        label="Contraseña de tu cuenta",
+        required=False,
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "current-password", "id": "id_confirmacion_contrasena"}
+        ),
+    )
     logo_url = forms.URLField(
         label="URL del logo",
         help_text="Campo opcional. Incluye el protocolo de la URL.",
@@ -129,4 +137,10 @@ class EditarInstanciaForm(forms.ModelForm):
 
     class Meta:
         model = InstanciaMoodle
-        fields = ("nombre", "logo_url")
+        fields = ("nombre", "logo_url", "estado")
+
+    def clean_confirmacion_contrasena(self) -> str:
+        contrasena = self.cleaned_data["confirmacion_contrasena"]
+        if not contrasena:
+            raise forms.ValidationError("Ingresa tu contraseña para confirmar los cambios.")
+        return contrasena
