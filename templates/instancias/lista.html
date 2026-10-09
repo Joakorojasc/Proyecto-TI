@@ -9,6 +9,19 @@
         <a class="btn-crear-instancia" href="{% url 'seleccionar_plan' cliente_id %}">+ Crear instancia</a>
         {% endif %}
     </header>
+    
+    <form class="instances-filters" method="get">
+        {% for field in filtro_form %}
+        <div class="filter-field">
+            {{ field.label_tag }}
+            {{ field }}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn-filtrar">Filtrar</button>
+        {% if hay_filtros %}
+        <a class="btn-limpiar" href="{% url 'instancias:lista' %}">Limpiar</a>
+        {% endif %}
+    </form>
 
     {% if instancias %}
     <div class="instances-table-wrapper">
@@ -62,6 +75,8 @@
             </tbody>
         </table>
     </div>
+    {% elif hay_filtros %}
+    <p class="instances-empty">No hay instancias que coincidan con los filtros.</p>
     {% else %}
     <p class="instances-empty">Aún no tienes instancias Moodle asociadas.</p>
     {% endif %}

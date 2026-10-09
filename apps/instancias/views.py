@@ -3,6 +3,7 @@ from typing import Any
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q, QuerySet
+from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -13,7 +14,7 @@ from apps.clientes.mixins import AislamientoClienteMixin
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
-from .forms import CrearInstanciaForm, EditarInstanciaForm
+from .forms import CrearInstanciaForm, EditarInstanciaForm, FiltroInstanciasForm
 from .models import InstanciaMoodle
 
 
@@ -52,14 +53,43 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
     )
 
 
+ORDENES: dict[str, tuple[Any, ...]] = {
+    "": ("created_at", "pk"),
+    "recientes": ("-created_at", "-pk"),
+    "nombre_asc": (Lower("nombre"), "pk"),
+    "nombre_desc": (Lower("nombre").desc(), "pk"),
+}
+
+
 class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView):
     model = InstanciaMoodle
     template_name = "instancias/lista.html"
     context_object_name = "instancias"
     login_url = "/login/"
 
+    cliente_id: int | None
+    filtro_form: FiltroInstanciasForm
+
     def get_queryset(self) -> QuerySet[InstanciaMoodle]:
+        self.cliente_id = (
+            UsuarioPortal.objects.filter(usuario_id=self.request.user.pk)
+            .values_list("cliente_id", flat=True)
+            .first()
+        )
         queryset = super().get_queryset()
+
+        # Un valor inválido en la URL se ignora; los demás filtros siguen funcionando.
+        self.filtro_form = FiltroInstanciasForm(self.request.GET)
+        self.filtro_form.is_valid()
+        filtros = self.filtro_form.cleaned_data
+
+        texto = (filtros.get("q") or "").strip()
+        if texto:
+            queryset = queryset.filter(nombre__icontains=texto)
+        if filtros.get("estado"):
+            queryset = queryset.filter(estado=filtros["estado"])
+        queryset = queryset.order_by(*ORDENES[filtros.get("orden") or ""])
+
         suscripciones_activas = Suscripcion.objects.filter(estado="activa").select_related("plan")
         return queryset.prefetch_related(
             Prefetch(
@@ -71,11 +101,10 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
-        context["cliente_id"] = (
-            UsuarioPortal.objects.filter(usuario_id=self.request.user.pk)
-            .values_list("cliente_id", flat=True)
-            .first()
-        )
+        filtros = self.filtro_form.cleaned_data
+        context["cliente_id"] = self.cliente_id
+        context["filtro_form"] = self.filtro_form
+        context["hay_filtros"] = bool(filtros.get("q") or filtros.get("estado"))
         return context
 
 

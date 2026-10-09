@@ -7,7 +7,7 @@ from django.db.models import Q
 from apps.planes.forms import PlanChoiceField
 from apps.planes.models import Plan, Suscripcion
 
-from .models import InstanciaMoodle
+from .models import EstadoInstancia, InstanciaMoodle
 
 DOMINIO_BASE_EDOCERE = "edocere.com"
 SUBDOMINIO_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
@@ -216,3 +216,27 @@ class EditarInstanciaForm(forms.ModelForm):
         if not contrasena:
             raise forms.ValidationError("Ingresa tu contraseña para confirmar los cambios.")
         return contrasena
+
+
+class FiltroInstanciasForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        max_length=255,
+        label="Buscar",
+        widget=forms.TextInput(attrs={"placeholder": "Buscar por nombre"}),
+    )
+    estado = forms.ChoiceField(
+        required=False,
+        label="Estado",
+        choices=[("", "Todos los estados"), *EstadoInstancia.choices],
+    )
+    orden = forms.ChoiceField(
+        required=False,
+        label="Orden",
+        choices=[
+            ("", "Más antiguas primero"),
+            ("recientes", "Más recientes primero"),
+            ("nombre_asc", "Nombre A-Z"),
+            ("nombre_desc", "Nombre Z-A"),
+        ],
+    )
