@@ -20,6 +20,7 @@
                     <th scope="col">Estado</th>
                     <th scope="col">Versión</th>
                     <th scope="col">Plan</th>
+                    <th scope="col">Creada</th>
                 </tr>
             </thead>
             <tbody>
@@ -55,6 +56,7 @@
                             {% endif %}
                         {% endwith %}
                     </td>
+                    <td>{{ instancia.created_at|date:"d/m/Y" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

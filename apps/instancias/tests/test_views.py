@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -205,6 +207,17 @@ class ListaInstanciasViewTests(TestCase):
 
         self.assertNotContains(respuesta, "seleccionar-plan")
 
+    def test_lista_muestra_fecha_de_creacion(self) -> None:
+        InstanciaMoodle.objects.filter(pk=self.instancia_a.pk).update(
+            created_at=datetime(2026, 3, 5, 12, 0, tzinfo=UTC)
+        )
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertContains(respuesta, '<th scope="col">Creada</th>', html=True)
+        self.assertContains(respuesta, "05/03/2026")
+
 
 class DetalleInstanciaViewTests(TestCase):
     def setUp(self) -> None:
@@ -316,3 +329,16 @@ class DetalleInstanciaViewTests(TestCase):
             respuesta,
             "Aún no hay estadísticas disponibles para esta instancia.",
         )
+
+    def test_fecha_de_creacion_se_asigna_automaticamente(self) -> None:
+        self.assertIsNotNone(self.instancia_a.created_at)
+
+    def test_detalle_muestra_fecha_de_creacion(self) -> None:
+        InstanciaMoodle.objects.filter(pk=self.instancia_a.pk).update(
+            created_at=datetime(2026, 3, 5, 12, 0, tzinfo=UTC)
+        )
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
+
+        self.assertContains(respuesta, "Creada el: 05/03/2026")
