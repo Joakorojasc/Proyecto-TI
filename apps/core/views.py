@@ -7,7 +7,7 @@ from django.shortcuts import render
 @login_required(login_url="/login/")
 def home(request: HttpRequest) -> HttpResponse:
     """Página principal del portal, accesible solo para usuarios autenticados."""
-    return render(request, "base.html")
+    return render(request, "inicio.html")
 
 
 def health(request: HttpRequest) -> JsonResponse:
