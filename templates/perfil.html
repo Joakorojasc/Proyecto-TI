@@ -1,11 +1,100 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="instances-page">
+<section class="profile-page">
     <header class="instances-header">
         <h1>Perfil de Institución</h1>
     </header>
 
-    <p class="instances-empty">Esta sección estará disponible próximamente.</p>
+    {% for message in messages %}
+    <div class="profile-success" role="status" aria-live="polite">{{ message }}</div>
+    {% endfor %}
+
+    <p class="profile-intro">
+        Consulta y actualiza los datos de contacto y facturación de tu institución.
+        Para proteger tu cuenta, te pediremos tu contraseña antes de guardar los cambios.
+    </p>
+
+    <div class="auth-card profile-card">
+        <h2>Información de la institución</h2>
+        <p class="profile-readonly">
+            <strong>RUT de la Institución:</strong> {{ cliente.rut|default:"No informado" }}
+            <span>Este identificador no se puede modificar desde el portal.</span>
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name != "confirmacion_contrasena" %}
+                <p>
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+                    {% for error in field.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
+                </p>
+                {% endif %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+
+            <button type="submit" id="guardar-cambios-perfil">Guardar cambios</button>
+
+            <dialog id="confirmacion-contrasena" aria-labelledby="titulo-confirmacion-perfil">
+                <h3 id="titulo-confirmacion-perfil">Confirma los cambios</h3>
+                <p>Ingresa la contraseña de tu cuenta para guardar los datos de la institución.</p>
+                <p>
+                    {{ form.confirmacion_contrasena.label_tag }}
+                    {{ form.confirmacion_contrasena }}
+                    {% for error in form.confirmacion_contrasena.errors %}
+                        <span class="errorlist">{{ error }}</span>
+                    {% endfor %}
+                </p>
+                <button type="button" id="cancelar-confirmacion-perfil">Cancelar</button>
+                <button type="button" id="confirmar-cambios-perfil">Confirmar y guardar</button>
+            </dialog>
+        </form>
+    </div>
 </section>
+<script>
+    (() => {
+        const form = document.querySelector(".profile-card form");
+        const dialog = document.getElementById("confirmacion-contrasena");
+        const password = document.getElementById("id_confirmacion_contrasena");
+        const confirmButton = document.getElementById("confirmar-cambios-perfil");
+        const cancelButton = document.getElementById("cancelar-confirmacion-perfil");
+        let confirmed = false;
+
+        form.addEventListener("submit", (event) => {
+            if (!confirmed) {
+                event.preventDefault();
+                dialog.showModal();
+                password.focus();
+            }
+            confirmed = false;
+        });
+
+        confirmButton.addEventListener("click", () => {
+            if (!password.value) {
+                password.setCustomValidity("Ingresa tu contraseña para continuar.");
+                password.reportValidity();
+                return;
+            }
+            password.setCustomValidity("");
+            confirmed = true;
+            dialog.close();
+            form.requestSubmit();
+        });
+
+        password.addEventListener("input", () => password.setCustomValidity(""));
+        cancelButton.addEventListener("click", () => dialog.close());
+        dialog.addEventListener("close", () => {
+            if (!confirmed) {
+                password.value = "";
+            }
+        });
+        {% if form.errors %}
+            dialog.showModal();
+            password.focus();
+        {% endif %}
+    })();
+</script>
 {% endblock content %}
