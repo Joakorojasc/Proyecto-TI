@@ -12,7 +12,7 @@ class HomeCardLinkParser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         atributos = dict(attrs)
-        clases = atributos.get("class", "").split()
+        clases = (atributos.get("class") or "").split()
         href = atributos.get("href")
         if tag == "a" and "home-card" in clases and href is not None:
             self.hrefs.append(href)
