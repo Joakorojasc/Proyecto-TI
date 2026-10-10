@@ -7,6 +7,7 @@ from django.views.generic import TemplateView
 from apps.clientes.forms import LoginForm
 from apps.clientes.views import registro_usuario
 from apps.core.views import health, home
+from apps.planes.views import planes_disponibles
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -26,10 +27,7 @@ urlpatterns = [
     path("planes/", include("apps.planes.urls")),
     path(
         "suscripciones/",
-        login_required(
-            TemplateView.as_view(template_name="suscripciones.html"),
-            login_url="/login/",
-        ),
+        planes_disponibles,
         name="seccion_suscripciones",
     ),
     path(
