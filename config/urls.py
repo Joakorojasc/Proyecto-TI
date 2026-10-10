@@ -5,7 +5,7 @@ from django.urls import include, path
 from django.views.generic import TemplateView
 
 from apps.clientes.forms import LoginForm
-from apps.clientes.views import registro_usuario
+from apps.clientes.views import perfil_institucion, registro_usuario
 from apps.core.views import health, home
 from apps.planes.views import planes_disponibles
 
@@ -48,10 +48,7 @@ urlpatterns = [
     ),
     path(
         "perfil/",
-        login_required(
-            TemplateView.as_view(template_name="perfil.html"),
-            login_url="/login/",
-        ),
+        login_required(perfil_institucion, login_url="/login/"),
         name="seccion_perfil",
     ),
 ]

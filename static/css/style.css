@@ -592,6 +592,74 @@ body {
     margin-bottom: 0;
 }
 
+.profile-page {
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.profile-intro {
+    margin: 0 0 22px;
+    color: var(--text-soft);
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.profile-success {
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    border: 1px solid #a8d8b5;
+    border-radius: 8px;
+    background: #edf8f0;
+    color: #205c32;
+    font-weight: 600;
+}
+
+.profile-card {
+    width: 100%;
+}
+
+.profile-card h2 {
+    margin: 0 0 20px;
+    color: var(--edocere-blue);
+}
+
+.profile-readonly {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px 14px;
+    background: var(--bg-light);
+    border-radius: 8px;
+    color: var(--text-dark);
+}
+
+.profile-readonly span {
+    color: var(--text-soft);
+    font-size: 0.9rem;
+}
+
+.profile-card dialog {
+    width: min(440px, calc(100% - 32px));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 12px 30px rgba(11, 35, 58, 0.2);
+}
+
+.profile-card dialog::backdrop {
+    background: rgba(15, 32, 48, 0.55);
+}
+
+.profile-card dialog h3 {
+    margin-top: 0;
+    color: var(--edocere-blue);
+}
+
+.profile-card dialog button {
+    width: auto;
+    margin-top: 8px;
+}
+
 .instances-table a {
     color: var(--edocere-blue);
     font-weight: 600;
