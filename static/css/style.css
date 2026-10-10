@@ -590,3 +590,80 @@ body {
     max-height: 80px;
     object-fit: contain;
 }
+
+.instances-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.instances-filters .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.instances-filters label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0b3d5c;
+}
+
+.instances-filters input[type="text"],
+.instances-filters select {
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid #cfd8dc;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.95rem;
+    color: #263238;
+}
+
+.instances-filters input[type="text"] {
+    min-width: 240px;
+}
+
+.instances-filters input[type="text"]:focus,
+.instances-filters select:focus {
+    outline: none;
+    border-color: #e88f27;
+    box-shadow: 0 0 0 3px rgba(232, 143, 39, 0.2);
+}
+
+.btn-filtrar {
+    height: 38px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 6px;
+    background: #e88f27;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.btn-filtrar:hover {
+    background: #d17f1d;
+}
+
+.btn-limpiar {
+    display: inline-flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 18px;
+    border: 1px solid #0b3d5c;
+    border-radius: 6px;
+    background: #fff;
+    color: #0b3d5c;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+}
+
+.btn-limpiar:hover {
+    background: #0b3d5c;
+    color: #fff;
+}

@@ -342,3 +342,97 @@ class DetalleInstanciaViewTests(TestCase):
         respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
 
         self.assertContains(respuesta, "Creada el: 05/03/2026")
+
+
+class FiltrosListaInstanciasTests(TestCase):
+    def setUp(self) -> None:
+        self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
+        self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
+        UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
+
+        self.beta = self.crear("Beta", "beta.example.com", "activa", mes=1)
+        self.alfa = self.crear("Alfa", "buscame.example.com", "archivada", mes=2)
+        self.gamma = self.crear("Gamma", "gamma.example.com", "activa", mes=3)
+        InstanciaMoodle.objects.create(
+            cliente=self.cliente_b,
+            nombre="Beta Ajena",
+            dominio="ajena.example.com",
+            estado="activa",
+        )
+        self.url = reverse("instancias:lista")
+        self.client.force_login(self.usuario_a)
+
+    def crear(self, nombre: str, dominio: str, estado: str, mes: int) -> InstanciaMoodle:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            nombre=nombre,
+            dominio=dominio,
+            estado=estado,
+        )
+        InstanciaMoodle.objects.filter(pk=instancia.pk).update(
+            created_at=datetime(2026, mes, 1, 12, 0, tzinfo=UTC)
+        )
+        return instancia
+
+    def nombres(self, **params: str) -> list[str | None]:
+        respuesta = self.client.get(self.url, params)
+        return [instancia.nombre for instancia in respuesta.context["instancias"]]
+
+    def test_sin_filtros_muestra_todas_las_instancias_del_cliente(self) -> None:
+        self.assertEqual(self.nombres(), ["Beta", "Alfa", "Gamma"])
+
+    def test_busqueda_por_nombre(self) -> None:
+        self.assertEqual(self.nombres(q="bet"), ["Beta"])
+
+    def test_busqueda_ignora_mayusculas(self) -> None:
+        self.assertEqual(self.nombres(q="ALFA"), ["Alfa"])
+
+    def test_busqueda_no_considera_el_dominio(self) -> None:
+        self.assertEqual(self.nombres(q="buscame"), [])
+
+    def test_busqueda_nunca_muestra_instancias_de_otro_cliente(self) -> None:
+        self.assertNotIn("Beta Ajena", self.nombres(q="beta"))
+
+    def test_filtro_por_estado_archivada(self) -> None:
+        self.assertEqual(self.nombres(estado="archivada"), ["Alfa"])
+
+    def test_filtro_por_estado_activa(self) -> None:
+        self.assertEqual(self.nombres(estado="activa"), ["Beta", "Gamma"])
+
+    def test_estado_invalido_se_ignora(self) -> None:
+        self.assertEqual(self.nombres(estado="cualquiera"), ["Beta", "Alfa", "Gamma"])
+
+    def test_filtros_combinados(self) -> None:
+        self.assertEqual(self.nombres(q="gam", estado="activa"), ["Gamma"])
+        self.assertEqual(self.nombres(q="gam", estado="archivada"), [])
+
+    def test_orden_por_nombre_ascendente(self) -> None:
+        self.assertEqual(self.nombres(orden="nombre_asc"), ["Alfa", "Beta", "Gamma"])
+
+    def test_orden_por_nombre_descendente(self) -> None:
+        self.assertEqual(self.nombres(orden="nombre_desc"), ["Gamma", "Beta", "Alfa"])
+
+    def test_orden_mas_recientes_primero(self) -> None:
+        self.assertEqual(self.nombres(orden="recientes"), ["Gamma", "Alfa", "Beta"])
+
+    def test_orden_invalido_usa_el_orden_por_defecto(self) -> None:
+        self.assertEqual(self.nombres(orden="cualquiera"), ["Beta", "Alfa", "Gamma"])
+
+    def test_sin_resultados_muestra_mensaje_de_filtros(self) -> None:
+        respuesta = self.client.get(self.url, {"q": "no-existe"})
+
+        self.assertContains(respuesta, "No hay instancias que coincidan con los filtros.")
+        self.assertNotContains(respuesta, "Aún no tienes instancias")
+
+    def test_el_buscador_conserva_el_texto_escrito(self) -> None:
+        respuesta = self.client.get(self.url, {"q": "bet"})
+
+        self.assertContains(respuesta, 'value="bet"')
+
+    def test_enlace_limpiar_solo_aparece_con_filtros(self) -> None:
+        sin_filtros = self.client.get(self.url)
+        con_filtros = self.client.get(self.url, {"q": "bet"})
+
+        self.assertNotContains(sin_filtros, "Limpiar")
+        self.assertContains(con_filtros, "Limpiar")
