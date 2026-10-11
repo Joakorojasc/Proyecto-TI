@@ -23,6 +23,7 @@ class InstanciaMoodle(models.Model):
         null=True,
         choices=EstadoInstancia.choices,
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return self.nombre or self.dominio_host or f"Instancia {self.pk}"

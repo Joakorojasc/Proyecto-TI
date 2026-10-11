@@ -24,6 +24,10 @@ WorkingDirectory=/opt/portal-edocere
 
 # Las credenciales viven en este archivo, fuera del repositorio, con permisos
 # 600 para que solo el usuario portal pueda leerlo.
+#
+# Tiene que incluir DJANGO_SETTINGS_MODULE=config.settings.production. Si esa
+# línea falta, Django cae en la configuración local y el portal arranca con
+# DEBUG activado y sin HTTPS obligatorio, sin dar ningún aviso.
 EnvironmentFile=/opt/portal-edocere/.env
 
 # Gunicorn ejecuta la aplicación. Escucha solo en 127.0.0.1, no en 0.0.0.0:

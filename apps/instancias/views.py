@@ -3,16 +3,18 @@ from typing import Any
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q, QuerySet
+from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import DetailView, ListView
+from django.views.generic import DetailView, ListView, UpdateView
 
 from apps.clientes.mixins import AislamientoClienteMixin
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
-from .forms import CrearInstanciaForm
+from .forms import CrearInstanciaForm, EditarInstanciaForm, FiltroInstanciasForm
 from .models import InstanciaMoodle
 
 
@@ -51,14 +53,43 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
     )
 
 
+ORDENES: dict[str, tuple[Any, ...]] = {
+    "": ("created_at", "pk"),
+    "recientes": ("-created_at", "-pk"),
+    "nombre_asc": (Lower("nombre"), "pk"),
+    "nombre_desc": (Lower("nombre").desc(), "pk"),
+}
+
+
 class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView):
     model = InstanciaMoodle
     template_name = "instancias/lista.html"
     context_object_name = "instancias"
     login_url = "/login/"
 
+    cliente_id: int | None
+    filtro_form: FiltroInstanciasForm
+
     def get_queryset(self) -> QuerySet[InstanciaMoodle]:
+        self.cliente_id = (
+            UsuarioPortal.objects.filter(usuario_id=self.request.user.pk)
+            .values_list("cliente_id", flat=True)
+            .first()
+        )
         queryset = super().get_queryset()
+
+        # Un valor inválido en la URL se ignora; los demás filtros siguen funcionando.
+        self.filtro_form = FiltroInstanciasForm(self.request.GET)
+        self.filtro_form.is_valid()
+        filtros = self.filtro_form.cleaned_data
+
+        texto = (filtros.get("q") or "").strip()
+        if texto:
+            queryset = queryset.filter(nombre__icontains=texto)
+        if filtros.get("estado"):
+            queryset = queryset.filter(estado=filtros["estado"])
+        queryset = queryset.order_by(*ORDENES[filtros.get("orden") or ""])
+
         suscripciones_activas = Suscripcion.objects.filter(estado="activa").select_related("plan")
         return queryset.prefetch_related(
             Prefetch(
@@ -70,11 +101,10 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
-        context["cliente_id"] = (
-            UsuarioPortal.objects.filter(usuario_id=self.request.user.pk)
-            .values_list("cliente_id", flat=True)
-            .first()
-        )
+        filtros = self.filtro_form.cleaned_data
+        context["cliente_id"] = self.cliente_id
+        context["filtro_form"] = self.filtro_form
+        context["hay_filtros"] = bool(filtros.get("q") or filtros.get("estado"))
         return context
 
 
@@ -91,3 +121,49 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
         context["mediciones"] = mediciones
         context["ultima_medicion"] = mediciones.first()
         return context
+
+
+class EditarInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, UpdateView):
+    model = InstanciaMoodle
+    form_class = EditarInstanciaForm
+    template_name = "instancias/editar.html"
+    context_object_name = "instancia"
+    login_url = "/login/"
+
+    def get_success_url(self) -> str:
+        return reverse("instancias:detalle", args=[self.object.pk])
+
+    def form_valid(self, form: EditarInstanciaForm) -> HttpResponse:
+        if not self.request.user.check_password(form.cleaned_data["confirmacion_contrasena"]):
+            form.add_error(
+                "confirmacion_contrasena",
+                "La contraseña ingresada no es correcta.",
+            )
+            return self.form_invalid(form)
+
+        with transaction.atomic():
+            response = super().form_valid(form)
+            plan_seleccionado = form.cleaned_data["plan"]
+            if plan_seleccionado is not None:
+                suscripciones_activas = list(
+                    Suscripcion.objects.select_for_update().filter(
+                        instancia=self.object,
+                        estado="activa",
+                    )
+                )
+                if (
+                    len(suscripciones_activas) != 1
+                    or suscripciones_activas[0].plan_id != plan_seleccionado.pk
+                ):
+                    Suscripcion.objects.filter(
+                        pk__in=[suscripcion.pk for suscripcion in suscripciones_activas]
+                    ).update(estado="finalizada")
+                    Suscripcion.objects.create(
+                        cliente=self.object.cliente,
+                        instancia=self.object,
+                        plan=plan_seleccionado,
+                        estado="activa",
+                        fecha_inicio=timezone.now(),
+                    )
+
+        return response

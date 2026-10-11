@@ -20,6 +20,38 @@ class EmpresaRegistroForm(forms.ModelForm):
         labels = {"razon_social": "Nombre de la Institución", "rut": "RUT de la Institución"}
 
 
+class PerfilInstitucionForm(forms.ModelForm):
+    email_contacto = forms.EmailField(
+        label="Correo electrónico de contacto",
+        max_length=255,
+        required=False,
+        error_messages={"invalid": "Ingresa un correo electrónico válido."},
+    )
+    confirmacion_contrasena = forms.CharField(
+        label="Contraseña de tu cuenta",
+        required=False,
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "current-password", "id": "id_confirmacion_contrasena"}
+        ),
+    )
+
+    class Meta:
+        model = Cliente
+        fields = ("razon_social", "giro", "direccion_facturacion", "email_contacto")
+        labels = {
+            "razon_social": "Nombre de la Institución",
+            "giro": "Giro",
+            "direccion_facturacion": "Dirección de facturación",
+        }
+
+    def clean_confirmacion_contrasena(self) -> str:
+        contrasena = self.cleaned_data["confirmacion_contrasena"]
+        if not contrasena:
+            raise forms.ValidationError("Ingresa tu contraseña para confirmar los cambios.")
+        return contrasena
+
+
 class UsuarioRegistroForm(UserCreationForm):
     # El campo se llama "username" porque Django lo usa para iniciar sesión,
     # pero aquí la persona escribe su correo.

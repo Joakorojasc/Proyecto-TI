@@ -1,11 +1,60 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="instances-page">
+<section class="subscriptions-page">
     <header class="instances-header">
         <h1>Suscripciones y Planes</h1>
     </header>
 
-    <p class="instances-empty">Esta sección estará disponible próximamente.</p>
+    <p class="subscriptions-intro">
+        Conoce los planes disponibles para tus instancias Moodle. Puedes elegir una
+        modalidad mensual o anual; el plan y su precio dependen de la periodicidad
+        del pago y de la cantidad de usuarios activos.
+    </p>
+
+    <div class="subscriptions-plan-grid">
+        <section class="subscriptions-plan-section" aria-labelledby="monthly-plans-title">
+            <h2 id="monthly-plans-title">Planes mensuales</h2>
+            <p>Pago mes a mes, calculado por usuario activo.</p>
+            <div class="subscriptions-plan-list">
+                {% for plan in planes_mensuales %}
+                <article class="subscriptions-plan-card">
+                    <h3>{{ plan.display_label }}</h3>
+                    {% if plan.limite_usuarios %}
+                    <p class="subscriptions-plan-limit">Hasta {{ plan.limite_usuarios }} usuarios activos</p>
+                    {% endif %}
+                </article>
+                {% empty %}
+                <p class="subscriptions-empty">Por el momento no hay planes mensuales disponibles.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="subscriptions-plan-section" aria-labelledby="annual-plans-title">
+            <h2 id="annual-plans-title">Planes anuales</h2>
+            <p>Una modalidad de pago anual para tu institución.</p>
+            <div class="subscriptions-plan-list">
+                {% for plan in planes_anuales %}
+                <article class="subscriptions-plan-card">
+                    <h3>{{ plan.display_label }}</h3>
+                    {% if plan.limite_usuarios %}
+                    <p class="subscriptions-plan-limit">Hasta {{ plan.limite_usuarios }} usuarios activos</p>
+                    {% endif %}
+                </article>
+                {% empty %}
+                <p class="subscriptions-empty">Por el momento no hay planes anuales disponibles.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <section class="subscriptions-custom-plan" aria-labelledby="custom-plan-title">
+        <h2 id="custom-plan-title">¿Necesitas un plan personalizado?</h2>
+        <p>
+            Si necesitas una alternativa distinta a los planes publicados, comunícate
+            previamente con Edocere para conversar sobre tus requerimientos y las
+            condiciones de un plan personalizado que se ajuste a tu medida.
+        </p>
+    </section>
 </section>
 {% endblock content %}

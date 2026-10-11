@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -5,6 +6,23 @@ from apps.clientes.models import Cliente
 
 from .forms import SeleccionarPlanForm
 from .models import Plan
+
+
+@login_required(login_url="/login/")
+def planes_disponibles(request: HttpRequest) -> HttpResponse:
+    planes_base = Plan.objects.filter(cliente__isnull=True)
+    return render(
+        request,
+        "suscripciones.html",
+        {
+            "planes_mensuales": planes_base.filter(tipo_plan__iexact="mensual").order_by(
+                "precio_base", "nombre"
+            ),
+            "planes_anuales": planes_base.filter(tipo_plan__iexact="anual").order_by(
+                "precio_base", "nombre"
+            ),
+        },
+    )
 
 
 def seleccionar_plan(request: HttpRequest, cliente_id: int) -> HttpResponse:

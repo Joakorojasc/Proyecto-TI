@@ -16,7 +16,8 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11
+        #image: mariadb:11
+        image: mirror.gcr.io/library/mariadb:11
         env:
           MARIADB_ROOT_PASSWORD: root
           MARIADB_DATABASE: portal_test

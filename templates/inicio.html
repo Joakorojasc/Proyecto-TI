@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio | Portal Edocere{% endblock %}
+
+{% block content %}
+<section class="home-page">
+    <header class="home-welcome">
+        <h1>Bienvenido al Portal de Instancias</h1>
+        <p class="home-intro">
+            Encuentra aquí todo lo necesario para crear tus instancias, administrarlas,
+            ver estadísticas y consultar tus planes, pagos y facturas asociadas.
+        </p>
+    </header>
+
+    <section class="home-sections" aria-labelledby="home-sections-title">
+        <h2 id="home-sections-title">¿Qué puedes hacer en cada pestaña?</h2>
+        <div class="home-card-grid">
+            <a class="home-card" href="{% url 'seccion_perfil' %}">
+                <h3>Perfil de Institución</h3>
+                <p>Consulta y actualiza los datos de tu institución asociados al portal.</p>
+                <span class="home-card-status">Ir a mi Perfil<span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="home-card" href="{% url 'instancias:lista' %}">
+                <h3>Mis Instancias</h3>
+                <p>Crea instancias Moodle, revisa sus datos y estado, y administra su configuración.</p>
+                <span class="home-card-link">Ir a Mis Instancias <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="home-card" href="{% url 'seccion_suscripciones' %}">
+                <!-- <span class="home-card-label">Planes</span> -->
+                <h3>Suscripciones y Planes</h3>
+                <p>Revisa tus planes contratados y la información de tus suscripciones.</p>
+                <span class="home-card-status">Ir a Suscripciones y Planes<span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="home-card" href="{% url 'seccion_facturacion' %}">
+                <h3>Facturación y Pagos</h3>
+                <p>Consulta los pagos y las facturas asociadas a los servicios de tu institución.</p>
+                <span class="home-card-link">Ir a Facturación y Pagos <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="home-card" href="{% url 'seccion_estadisticas' %}">
+                <h3>Estadísticas</h3>
+                <p>Explora indicadores y estadísticas relacionados con tus instancias.</p>
+                <span class="home-card-status">Ir a Estadísticas <span aria-hidden="true">→</span></span>
+            </a>
+        </div>
+    </section>
+</section>
+{% endblock content %}
