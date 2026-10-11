@@ -12,12 +12,14 @@ Python 3.12 y Django 5.2 LTS, que tiene soporte hasta abril de 2028. La base de
 datos es MariaDB porque es la que Edocere ya opera en su servidor.
 
 Para calidad usamos Ruff como linter y formateador, mypy con django-stubs para
-revisar tipos, y pytest para los tests. En el servidor corre Gunicorn levantado
-por systemd, detrás de nginx, sin contenedores, porque el cliente no los quiere
-en su máquina.
+revisar tipos, y pytest para los tests.
 
-Docker lo usamos solo de este lado, para levantar el entorno de desarrollo y
-pruebas en nuestros computadores. Nada de eso llega al servidor de Edocere.
+Docker levanta el entorno completo en cualquier computador del equipo, y es
+también la forma en que se entrega la aplicación. El despliegue en el servidor
+lo ejecuta Edocere. Pueden correr la imagen tal cual, o instalar el proyecto
+directo y usar la configuración de nginx y systemd que quedó en `deploy/`. Esa
+carpeta está escrita pero nunca se ejecutó, porque el servidor de pruebas no
+llegó a existir.
 
 ## Levantarlo en tu computador
 
@@ -103,10 +105,10 @@ tu rama  →  dev  →  main
 ```
 
 El nombre de la rama lleva el tipo, el ticket y una descripción corta, por
-ejemplo `feat/EDO-12-registro-cliente`. Los tipos que usamos son `feat/` para
+ejemplo `feature/registro-cliente`. Los tipos que usamos son `feature/` para
 funcionalidad nueva, `fix/` para corregir un error, `chore/` para tareas que no
-cambian el comportamiento, `docs/` para documentación y `ci/` para cosas del
-pipeline.
+cambian el comportamiento, `test/` para pruebas, `docs/` para documentación y
+`ci/` para cosas del pipeline.
 
 `main` está protegida con un ruleset: exige pull request, el pipeline en verde y
 la aprobación de otro integrante. No hay excepciones, tampoco para quien
@@ -127,7 +129,9 @@ si hay dependencias nuevas estén anotadas.
 ### Cuándo una tarjeta está lista
 
 Cuando el código está en `main`, el pipeline pasó, tiene test si tocó lógica de
-negocio, y otra persona lo revisó. No cuando funciona en tu computador.
+negocio, y otra persona lo revisó. No cuando funciona en tu computador. Un hito
+del plan se cierra cuando Rafael además lo valida en el entorno de desarrollo,
+que es el criterio que acordamos con él.
 
 ### Deuda técnica
 
@@ -153,17 +157,17 @@ apps/
   instancias/    instancias Moodle y su aprovisionamiento
   pagos/         pagos y documentos tributarios
   estadisticas/  lectura de métricas desde cada instancia Moodle
-deploy/          configuración de nginx y systemd del servidor
+deploy/          configuración de nginx y systemd, opcional para el servidor
 docs/            decisiones de arquitectura, despliegue y diagramas
 ```
 
 Las apps siguen el modelo de dominio del Design Doc. Cada una agrupa sus
 modelos, sus vistas y sus tests.
 
-Por ahora solo `core` tiene código: un endpoint en `/health/` que responde si la
-aplicación está viva y si la base de datos contesta. Lo consultan nginx, el
-script de despliegue y el monitoreo. Los modelos de las otras cinco apps se
-escriben cuando esté listo el diagrama entidad-relación.
+Las seis apps tienen sus modelos, sus vistas y sus tests. `core` además expone
+`/health/`, un endpoint que responde si la aplicación está viva y si la base de
+datos contesta. Lo consulta el pipeline de entrega continua para comprobar que
+el sistema arrancó de verdad, y nginx lo usaría en el servidor.
 
 La configuración está partida en cuatro archivos porque desarrollo y servidor
 necesitan cosas opuestas: en tu computador quieres ver el error completo en
