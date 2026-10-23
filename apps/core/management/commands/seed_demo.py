@@ -96,17 +96,17 @@ class Command(BaseCommand):
         definiciones: list[dict[str, Any]] = [
             {
                 "clave": "DEMO-CLIENTE-PEQUENO",
-                "rut": "DEMO-PEQUENO-001",
+                "rut": "76543210-3",
                 "razon_social": "Empresa Demo Pequeña SpA",
             },
             {
                 "clave": "DEMO-CLIENTE-MEDIANO",
-                "rut": "DEMO-MEDIANO-001",
+                "rut": "77777777-7",
                 "razon_social": "Empresa Demo Mediana SpA",
             },
             {
                 "clave": "DEMO-CLIENTE-ANUAL",
-                "rut": "DEMO-ANUAL-001",
+                "rut": "65123456-5",
                 "razon_social": "Organización Demo Anual SpA",
             },
         ]
