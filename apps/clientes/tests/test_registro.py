@@ -32,7 +32,7 @@ class RegistroClienteTests(TestCase):
     def test_formulario_acepta_datos_correctos(self) -> None:
         """Prueba que el formulario entienda cuando le pasamos datos válidos"""
         datos = {
-            "rut": "76.123.456-7",
+            "rut": "76.123.456-0",
             "razon_social": "Empresa Prueba",
             "giro": "Educación",
             "direccion_facturacion": "Avenida Siempre Viva 123",
@@ -45,7 +45,7 @@ class RegistroClienteTests(TestCase):
         """Prueba que al enviar los datos por POST, se cree el Cliente en la BD"""
         url = reverse("registro_cliente")
         datos = {
-            "rut": "76.123.456-7",
+            "rut": "76.123.456-0",
             "razon_social": "Empresa Prueba",
             "giro": "Educación",
             "direccion_facturacion": "Avenida Siempre Viva 123",
@@ -56,7 +56,7 @@ class RegistroClienteTests(TestCase):
         self.assertEqual(Cliente.objects.count(), 1)
         cliente = Cliente.objects.first()
         assert cliente is not None
-        self.assertEqual(cliente.rut, "76.123.456-7")
+        self.assertEqual(cliente.rut, "76.123.456-0")
 
 
 class RegistroUsuarioTests(TestCase):
@@ -67,7 +67,7 @@ class RegistroUsuarioTests(TestCase):
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Empresa Demo",
-            "rut": "76.987.654-3",
+            "rut": "76.987.654-5",
         }
 
     def test_pagina_registro_pide_correo(self) -> None:
@@ -86,7 +86,7 @@ class RegistroUsuarioTests(TestCase):
 
         self.assertEqual(respuesta.status_code, 302)
         auth_user = User.objects.get(username="admin@demo.cl")
-        cliente = Cliente.objects.get(rut="76.987.654-3")
+        cliente = Cliente.objects.get(rut="76.987.654-5")
         usuario_portal = UsuarioPortal.objects.get(usuario=auth_user)
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(Cliente.objects.count(), 1)

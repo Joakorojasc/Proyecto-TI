@@ -16,7 +16,7 @@ def test_registro_redirige_a_mis_instancias(client: Client) -> None:
         "password1": "Password123!",
         "password2": "Password123!",
         "razon_social": "Empresa Demo",
-        "rut": "76.123.456-7",
+        "rut": "76.123.456-0",
     }
 
     response = client.post(reverse("registro"), data=data)

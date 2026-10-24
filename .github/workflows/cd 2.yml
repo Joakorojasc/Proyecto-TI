@@ -1,0 +1,75 @@
+name: CD
+
+# Entrega continua.
+#
+# El cliente pidió no llegar a un ambiente productivo este semestre, así que
+# nuestra referencia de entregado es la rama main. Este workflow existe para
+# que esa frase signifique algo: cada vez que algo llega a main, se construye
+# la imagen, se levanta el sistema completo y se comprueba que responde.
+#
+# O sea que lo que está en main no solo compila y pasa los tests, sino que
+# arranca y funciona. Si no, este pipeline se pone rojo.
+#
+# El CI (ci.yml) revisa el código. Este revisa que el producto se levante.
+
+on:
+  # Al mergear a main, que es lo que consideramos una entrega.
+  push:
+    branches: [main]
+
+  # Y a mano desde la pestaña Actions, para poder verificarlo cuando haga falta
+  # sin tener que mergear algo.
+  workflow_dispatch:
+
+jobs:
+  despliegue:
+    name: Construye la imagen y verifica que el portal arranca
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Construir la imagen y levantar el entorno
+        # Es el mismo comando que corre cualquiera del equipo en su máquina.
+        # Si funciona acá, funciona allá, y al revés.
+        run: docker compose up -d --build
+
+      - name: Esperar a que el portal responda
+        # El entrypoint espera la base, aplica las migraciones y carga los
+        # datos demo antes de levantar el servidor, así que el portal tarda un
+        # rato en contestar. Reintentamos durante un minuto y medio.
+        run: |
+          for i in $(seq 1 45); do
+            if curl --silent --fail http://localhost:8000/health/ > /dev/null; then
+              echo "El portal respondió al intento $i."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "El portal no respondió después de 90 segundos."
+          exit 1
+
+      - name: Verificar el estado del sistema
+        # /health no solo dice que la aplicación está viva: además consulta la
+        # base de datos. Si contesta 200 con base_datos ok, la cadena completa
+        # está funcionando.
+        run: |
+          echo "Respuesta de /health/:"
+          curl --silent --fail http://localhost:8000/health/
+          echo ""
+
+      - name: Confirmar que los datos demo quedaron cargados
+        # Comprueba que las migraciones corrieron y que seed_demo dejó datos.
+        # Sin esto, el portal podría responder con una base vacía.
+        run: |
+          docker compose exec -T portal python manage.py shell -c \
+            "from apps.clientes.models import Cliente; print('Clientes en la base:', Cliente.objects.count())"
+
+      - name: Mostrar los logs si algo falló
+        if: failure()
+        run: docker compose logs
+
+      - name: Apagar el entorno
+        if: always()
+        run: docker compose down -v

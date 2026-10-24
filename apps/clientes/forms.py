@@ -5,19 +5,24 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
 from .models import Cliente
+from .validators import validar_rut
 
 
 class RegistroClienteForm(forms.ModelForm):
+    rut = forms.CharField(label="RUT de la institución", max_length=255, validators=[validar_rut])
+
     class Meta:
         model = Cliente
         fields = ["rut", "razon_social", "giro", "direccion_facturacion", "email_contacto"]
 
 
 class EmpresaRegistroForm(forms.ModelForm):
+    rut = forms.CharField(label="RUT de la institución", max_length=255, validators=[validar_rut])
+
     class Meta:
         model = Cliente
         fields = ["razon_social", "rut"]
-        labels = {"razon_social": "Nombre de la Institución", "rut": "RUT de la Institución"}
+        labels = {"razon_social": "Nombre de la Institución"}
 
 
 class PerfilInstitucionForm(forms.ModelForm):
