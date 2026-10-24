@@ -30,7 +30,7 @@ def test_registro_redirige_a_mis_instancias(client: Client) -> None:
 @pytest.mark.django_db
 def test_seleccionar_plan_crea_suscripcion(client: Client) -> None:
     cliente = Cliente.objects.create(
-        rut="76.123.456-7",
+        rut="76123456-0",
         razon_social="Empresa Demo",
         giro="Educación",
         direccion_facturacion="Avenida Siempre Viva 123",
@@ -61,7 +61,7 @@ def test_seleccionar_plan_crea_suscripcion(client: Client) -> None:
 @pytest.mark.django_db
 def test_seleccion_plan_muestra_precio_mensual_y_limite_de_usuarios(client: Client) -> None:
     cliente = Cliente.objects.create(
-        rut="76.123.456-7",
+        rut="76123456-0",
         razon_social="Empresa Demo",
     )
     Plan.objects.create(
@@ -83,13 +83,13 @@ def test_seleccion_plan_muestra_precio_mensual_y_limite_de_usuarios(client: Clie
 def test_plan_personalizado_se_crea_por_cliente_sin_suscripcion(client: Client) -> None:
     clientes = [
         Cliente.objects.create(
-            rut=f"76.123.456-{digito}",
-            razon_social=f"Empresa Demo {digito}",
+            rut=rut,
+            razon_social=f"Empresa Demo {rut}",
             giro="Educación",
             direccion_facturacion="Avenida Siempre Viva 123",
             email_contacto="contacto@demo.cl",
         )
-        for digito in (1, 2, 3)
+        for rut in ("76123456-0", "76123457-9", "76123458-7")
     ]
 
     response = client.get(reverse("seleccionar_plan", kwargs={"cliente_id": clientes[0].id}))

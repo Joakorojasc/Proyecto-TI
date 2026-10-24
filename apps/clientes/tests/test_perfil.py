@@ -13,7 +13,7 @@ class PerfilInstitucionTests(TestCase):
             password="ClaveSegura123!",
         )
         self.cliente = Cliente.objects.create(
-            rut="76.123.456-7",
+            rut="76123456-0",
             razon_social="Institución Original",
             giro="Educación",
             direccion_facturacion="Calle Original 123",
@@ -31,7 +31,7 @@ class PerfilInstitucionTests(TestCase):
         self.assertContains(respuesta, "Perfil de Institución")
         self.assertContains(respuesta, "Institución Original")
         self.assertContains(respuesta, "Calle Original 123")
-        self.assertContains(respuesta, "76.123.456-7")
+        self.assertContains(respuesta, "76123456-0")
         self.assertNotContains(respuesta, 'name="rut"')
         self.assertContains(respuesta, 'name="confirmacion_contrasena"')
 

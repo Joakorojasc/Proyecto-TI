@@ -2,11 +2,12 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
 from apps.clientes.models import Cliente
+from apps.clientes.validators import normalizar_rut
 from apps.estadisticas.models import MedicionUsoMensual
 from apps.instancias.models import InstanciaMoodle
 from apps.planes.models import Plan, Suscripcion
@@ -96,25 +97,48 @@ class Command(BaseCommand):
         definiciones: list[dict[str, Any]] = [
             {
                 "clave": "DEMO-CLIENTE-PEQUENO",
-                "rut": "DEMO-PEQUENO-001",
+                "rut": "90000001-4",
+                "rut_anterior": "DEMO-PEQUENO-001",
                 "razon_social": "Empresa Demo Pequeña SpA",
             },
             {
                 "clave": "DEMO-CLIENTE-MEDIANO",
-                "rut": "DEMO-MEDIANO-001",
+                "rut": "90000002-2",
+                "rut_anterior": "DEMO-MEDIANO-001",
                 "razon_social": "Empresa Demo Mediana SpA",
             },
             {
                 "clave": "DEMO-CLIENTE-ANUAL",
-                "rut": "DEMO-ANUAL-001",
+                "rut": "90000003-0",
+                "rut_anterior": "DEMO-ANUAL-001",
                 "razon_social": "Organización Demo Anual SpA",
             },
         ]
         clientes: dict[str, Cliente] = {}
         for definicion in definiciones:
             clave = definicion.pop("clave")
+            rut_anterior = definicion.pop("rut_anterior")
+            definicion["rut"] = normalizar_rut(definicion["rut"])
+            existentes = list(Cliente.objects.filter(rut__in=[rut_anterior, definicion["rut"]]))
+            if len(existentes) > 1:
+                raise CommandError(
+                    f"Hay varios clientes para {clave}: IDs {[c.pk for c in existentes]}. "
+                    "Revisa los datos; no se fusionarán empresas."
+                )
+            if existentes and (
+                existentes[0].razon_social != definicion["razon_social"]
+                or existentes[0].email_contacto != "demo@ejemplo.invalid"
+            ):
+                raise CommandError(
+                    f"El RUT demo de {clave} está ocupado por el cliente ID {existentes[0].pk}. "
+                    "No se sobrescribirán sus datos."
+                )
+            # Busca por ID si ya existe: cambiar el RUT histórico no crea otra empresa.
+            busqueda: dict[str, Any] = (
+                {"pk": existentes[0].pk} if existentes else {"rut": definicion["rut"]}
+            )
             cliente, _ = Cliente.objects.update_or_create(
-                rut=definicion["rut"],
+                **busqueda,
                 defaults={
                     **definicion,
                     "giro": "Demostración de software",

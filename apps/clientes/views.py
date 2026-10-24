@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.models import Group
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -11,7 +11,8 @@ from .forms import (
     RegistroClienteForm,
     UsuarioRegistroForm,
 )
-from .models import UsuarioPortal
+from .models import Cliente, UsuarioPortal
+from .validators import RUT_DUPLICADO
 
 
 def perfil_institucion(request: HttpRequest) -> HttpResponse:
@@ -50,8 +51,15 @@ def registro_cliente(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = RegistroClienteForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect("/")
+            try:
+                with transaction.atomic():
+                    form.save()
+            except IntegrityError:
+                if not Cliente.objects.filter(rut=form.cleaned_data["rut"]).exists():
+                    raise
+                form.add_error("rut", RUT_DUPLICADO)
+            else:
+                return redirect("/")
     else:
         form = RegistroClienteForm()
     return render(request, "clientes/registro.html", {"form": form})
@@ -66,25 +74,31 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
         empresa_form = EmpresaRegistroForm(request.POST)
 
         if user_form.is_valid() and empresa_form.is_valid():
-            with transaction.atomic():
-                auth_user = user_form.save()
-                nuevo_cliente = empresa_form.save(commit=False)
-                nuevo_cliente.email_contacto = auth_user.email
-                nuevo_cliente.save()
+            try:
+                with transaction.atomic():
+                    auth_user = user_form.save()
+                    nuevo_cliente = empresa_form.save(commit=False)
+                    nuevo_cliente.email_contacto = auth_user.email
+                    nuevo_cliente.save()
 
-                grupo_cliente, _ = Group.objects.get_or_create(name="Cliente")
-                auth_user.groups.add(grupo_cliente)
+                    grupo_cliente, _ = Group.objects.get_or_create(name="Cliente")
+                    auth_user.groups.add(grupo_cliente)
 
-                UsuarioPortal.objects.create(
-                    usuario=auth_user,
-                    cliente=nuevo_cliente,
-                    nombre=auth_user.username,
-                    email=auth_user.email,
-                    rol="Admin",
-                )
+                    UsuarioPortal.objects.create(
+                        usuario=auth_user,
+                        cliente=nuevo_cliente,
+                        nombre=auth_user.username,
+                        email=auth_user.email,
+                        rol="Admin",
+                    )
 
-            login(request, auth_user, backend="django.contrib.auth.backends.ModelBackend")
-            return redirect("instancias:lista")
+            except IntegrityError:
+                if not Cliente.objects.filter(rut=empresa_form.cleaned_data["rut"]).exists():
+                    raise
+                empresa_form.add_error("rut", RUT_DUPLICADO)
+            else:
+                login(request, auth_user, backend="django.contrib.auth.backends.ModelBackend")
+                return redirect("instancias:lista")
     else:
         user_form = UsuarioRegistroForm()
         empresa_form = EmpresaRegistroForm()

@@ -2,6 +2,8 @@ import re
 
 from django.core.exceptions import ValidationError
 
+RUT_DUPLICADO = "Ya existe una institución registrada con este RUT."
+
 
 def validar_rut(value: str) -> None:
     """Valida formato y módulo 11 sin modificar el RUT ni consultar su existencia legal."""
@@ -20,3 +22,10 @@ def validar_rut(value: str) -> None:
             "El dígito verificador del RUT no es correcto. Revisa el RUT ingresado.",
             code="rut_digito_verificador",
         )
+
+
+def normalizar_rut(value: str) -> str:
+    """Devuelve un RUT validado sin puntos, sin ceros iniciales y con K mayúscula."""
+    validar_rut(value)
+    cuerpo, digito = value.replace(".", "").split("-")
+    return f"{cuerpo.lstrip('0') or '0'}-{digito.upper()}"

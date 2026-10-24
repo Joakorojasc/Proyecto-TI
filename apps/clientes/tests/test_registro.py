@@ -56,7 +56,7 @@ class RegistroClienteTests(TestCase):
         self.assertEqual(Cliente.objects.count(), 1)
         cliente = Cliente.objects.first()
         assert cliente is not None
-        self.assertEqual(cliente.rut, "76.123.456-0")
+        self.assertEqual(cliente.rut, "76123456-0")
 
 
 class RegistroUsuarioTests(TestCase):
@@ -86,7 +86,7 @@ class RegistroUsuarioTests(TestCase):
 
         self.assertEqual(respuesta.status_code, 302)
         auth_user = User.objects.get(username="admin@demo.cl")
-        cliente = Cliente.objects.get(rut="76.987.654-5")
+        cliente = Cliente.objects.get(rut="76987654-5")
         usuario_portal = UsuarioPortal.objects.get(usuario=auth_user)
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(Cliente.objects.count(), 1)
