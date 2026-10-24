@@ -5,19 +5,27 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
 from .models import Cliente
+from .validators import normalizar_rut
 
 
-class RegistroClienteForm(forms.ModelForm):
+class RutInstitucionForm(forms.ModelForm):
+    rut = forms.CharField(label="RUT de la institución", max_length=255)
+
+    def clean_rut(self) -> str:
+        return normalizar_rut(self.cleaned_data["rut"])
+
+
+class RegistroClienteForm(RutInstitucionForm):
     class Meta:
         model = Cliente
         fields = ["rut", "razon_social", "giro", "direccion_facturacion", "email_contacto"]
 
 
-class EmpresaRegistroForm(forms.ModelForm):
+class EmpresaRegistroForm(RutInstitucionForm):
     class Meta:
         model = Cliente
         fields = ["razon_social", "rut"]
-        labels = {"razon_social": "Nombre de la Institución", "rut": "RUT de la Institución"}
+        labels = {"razon_social": "Nombre de la Institución"}
 
 
 class PerfilInstitucionForm(forms.ModelForm):

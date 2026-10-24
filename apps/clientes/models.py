@@ -1,16 +1,14 @@
+from typing import Any
+
 from django.conf import settings
 from django.db import models
 
-from .validators import formatear_rut, normalizar_rut, validar_rut
+from .validators import RUT_DUPLICADO, formatear_rut, normalizar_rut, validar_rut
 
 
 class ClienteManager(models.Manager["Cliente"]):
     def por_rut(self, rut: str) -> "Cliente":
-        """Busca por RUT venga con puntos o sin ellos.
-
-        En la base el RUT se guarda normalizado, así que buscarlo tal como
-        lo escribió la persona no encuentra nada.
-        """
+        """Busca por RUT venga con puntos o sin ellos."""
         return self.get(rut=normalizar_rut(rut))
 
 
@@ -18,15 +16,11 @@ class Cliente(models.Model):
     id = models.AutoField(primary_key=True)
     rut = models.CharField(
         "RUT",
-        max_length=12,
+        max_length=255,
+        null=True,
         unique=True,
         validators=[validar_rut],
-        error_messages={
-            "unique": (
-                "Esta institución ya está registrada. Si trabajas ahí, "
-                "pídele acceso al administrador de la cuenta."
-            )
-        },
+        error_messages={"unique": RUT_DUPLICADO},
     )
     razon_social = models.CharField(max_length=255, null=True)
     giro = models.CharField(max_length=255, null=True)
@@ -36,19 +30,19 @@ class Cliente(models.Model):
 
     objects = ClienteManager()
 
-    def save(self, *args: object, **kwargs: object) -> None:
-        if self.rut:
-            self.rut = normalizar_rut(self.rut)
-        super().save(*args, **kwargs)  # type: ignore[arg-type]
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.clean()
+        super().save(*args, **kwargs)
 
     def clean(self) -> None:
         super().clean()
-        if self.rut:
-            self.rut = normalizar_rut(self.rut)
+        # Conserva los clientes sin RUT; no guarda cadenas vacías como identificadores.
+        if self.rut is not None:
+            self.rut = normalizar_rut(self.rut) if self.rut.strip() else None
 
     @property
     def rut_formateado(self) -> str:
-        """El RUT con puntos, para mostrarlo. En la base se guarda sin ellos."""
+        """El RUT con puntos para mostrarlo, sin cambiar el valor almacenado."""
         return formatear_rut(self.rut) if self.rut else ""
 
 

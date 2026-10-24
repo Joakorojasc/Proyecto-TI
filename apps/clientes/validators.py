@@ -1,24 +1,21 @@
-"""Validación de RUT chileno.
-
-El RUT se guarda normalizado, sin puntos y con el guion antes del dígito
-verificador, para que "12345678-5" y "12.345.678-5" no entren como dos
-valores distintos. La restricción de único del modelo depende de eso.
-"""
+"""Validación, almacenamiento canónico y presentación del RUT chileno."""
 
 import re
 
 from django.core.exceptions import ValidationError
 
-# Hasta 8 dígitos, guion, y el dígito verificador que puede ser un número o K.
-FORMATO_RUT = re.compile(r"^(\d{1,8})-([0-9K])$")
+RUT_DUPLICADO = (
+    "Esta institución ya está registrada. Si trabajas ahí, "
+    "pídele acceso al administrador de la cuenta."
+)
+FORMATO_RUT = re.compile(r"(?:[0-9]+|[0-9]{1,3}(?:\.[0-9]{3})+)-[0-9Kk]")
 
 
-def normalizar_rut(valor: str) -> str:
-    """Saca puntos y espacios, pone la K en mayúscula y agrega el guion si falta."""
-    limpio = valor.strip().replace(".", "").replace(" ", "").upper()
-    if "-" not in limpio and len(limpio) > 1:
-        limpio = f"{limpio[:-1]}-{limpio[-1]}"
-    return limpio
+def _con_guion(valor: str) -> str:
+    # Conserva la entrada compacta que dev ya aceptaba, sin tolerar puntuación incorrecta.
+    if "-" not in valor and len(valor) > 1:
+        return f"{valor[:-1]}-{valor[-1]}"
+    return valor
 
 
 def calcular_digito_verificador(numero: str) -> str:
@@ -28,7 +25,6 @@ def calcular_digito_verificador(numero: str) -> str:
     for digito in reversed(numero):
         suma += int(digito) * multiplicador
         multiplicador = 2 if multiplicador == 7 else multiplicador + 1
-
     resto = suma % 11
     if resto == 0:
         return "0"
@@ -38,34 +34,34 @@ def calcular_digito_verificador(numero: str) -> str:
 
 
 def validar_rut(valor: str) -> None:
-    """Revisa el formato y el dígito verificador.
-
-    Verifica que el RUT sea matemáticamente correcto. No verifica que esté
-    inscrito en el SII, para eso haría falta consultar un servicio externo.
-    """
-    rut = normalizar_rut(valor)
-
-    coincidencia = FORMATO_RUT.match(rut)
-    if not coincidencia:
+    """Verifica formato y módulo 11; no confirma existencia ante el SII."""
+    rut = _con_guion(valor)
+    if not FORMATO_RUT.fullmatch(rut):
         raise ValidationError(
-            "Escribe el RUT con el formato 12.345.678-5.",
+            "Ingresa un RUT con formato válido, por ejemplo 76.123.456-0 o 76123456-0.",
             code="rut_formato",
         )
-
-    numero, digito = coincidencia.groups()
-    if calcular_digito_verificador(numero) != digito:
+    cuerpo, digito = rut.replace(".", "").split("-")
+    if digito.upper() != calcular_digito_verificador(cuerpo):
         raise ValidationError(
-            "El RUT no es válido. Revisa el dígito verificador.",
+            "El dígito verificador del RUT no es correcto. Revisa el RUT ingresado.",
             code="rut_digito",
         )
 
 
-def formatear_rut(valor: str) -> str:
-    """Deja el RUT con puntos para mostrarlo: 12345678-5 queda 12.345.678-5."""
-    rut = normalizar_rut(valor)
-    coincidencia = FORMATO_RUT.match(rut)
-    if not coincidencia:
-        return valor
+def normalizar_rut(valor: str) -> str:
+    """Valida y devuelve el RUT sin puntos/ceros iniciales y con K mayúscula."""
+    rut = _con_guion(valor.strip().replace(" ", ""))
+    validar_rut(rut)
+    cuerpo, digito = rut.replace(".", "").split("-")
+    return f"{cuerpo.lstrip('0') or '0'}-{digito.upper()}"
 
-    numero, digito = coincidencia.groups()
-    return f"{int(numero):,}".replace(",", ".") + f"-{digito}"
+
+def formatear_rut(valor: str) -> str:
+    """Mantiene la presentación con puntos utilizada por el perfil de dev."""
+    try:
+        rut = normalizar_rut(valor)
+    except ValidationError:
+        return valor
+    cuerpo, digito = rut.split("-")
+    return f"{int(cuerpo):,}".replace(",", ".") + f"-{digito}"
