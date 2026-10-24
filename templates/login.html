@@ -1,9 +1,17 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Iniciar sesión{% endblock %}
 
 {% block content %}
 <div class="auth-panel">
+    <div class="auth-marca">
+        <span class="brand"><img src="{% static 'img/edocere-logo.png' %}" alt="Edocere"></span>
+        <h2>Portal de Instancias</h2>
+        <p>Crea y administra tus plataformas Moodle, revisa su uso y consulta tus
+        planes, pagos y facturas en un solo lugar.</p>
+    </div>
+    <div class="auth-formulario">
     <div class="auth-card">
         <h2>Iniciar Sesión en Edocere</h2>
         <form method="post" novalidate>
@@ -16,6 +24,7 @@
             <p>¿Tu institución aún no tiene cuenta?</p>
             <a href="{% url 'registro' %}">Registrar Empresa</a>
         </div>
+    </div>
     </div>
 </div>
 {% endblock %}

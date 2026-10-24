@@ -19,8 +19,8 @@ class VistaInstancias(AislamientoClienteMixin, VistaBaseInstancias):
 
 class AislamientoClienteMixinTests(TestCase):
     def setUp(self) -> None:
-        self.cliente_uno = Cliente.objects.create(razon_social="Cliente Uno")
-        self.cliente_dos = Cliente.objects.create(razon_social="Cliente Dos")
+        self.cliente_uno = Cliente.objects.create(rut="77000000-9", razon_social="Cliente Uno")
+        self.cliente_dos = Cliente.objects.create(rut="77010101-8", razon_social="Cliente Dos")
         self.instancia_uno = InstanciaMoodle.objects.create(
             cliente=self.cliente_uno,
             dominio="uno.example.com",

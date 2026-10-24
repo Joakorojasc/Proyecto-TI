@@ -13,8 +13,8 @@ from ..models import InstanciaMoodle
 
 class ListaInstanciasViewTests(TestCase):
     def setUp(self) -> None:
-        self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
-        self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
+        self.cliente_a = Cliente.objects.create(rut="77060606-3", razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(rut="77070707-2", razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
         self.instancia_a = InstanciaMoodle.objects.create(
@@ -221,8 +221,8 @@ class ListaInstanciasViewTests(TestCase):
 
 class DetalleInstanciaViewTests(TestCase):
     def setUp(self) -> None:
-        self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
-        self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
+        self.cliente_a = Cliente.objects.create(rut="77080808-1", razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(rut="77090909-0", razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
         self.instancia_a = InstanciaMoodle.objects.create(
@@ -346,8 +346,8 @@ class DetalleInstanciaViewTests(TestCase):
 
 class FiltrosListaInstanciasTests(TestCase):
     def setUp(self) -> None:
-        self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
-        self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
+        self.cliente_a = Cliente.objects.create(rut="77101010-5", razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(rut="77111111-4", razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
 

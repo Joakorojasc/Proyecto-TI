@@ -4,48 +4,155 @@
 
 {% block content %}
 <section class="home-page">
-    <header class="home-welcome">
-        <h1>Bienvenido al Portal de Instancias</h1>
-        <p class="home-intro">
-            Encuentra aquí todo lo necesario para crear tus instancias, administrarlas,
-            ver estadísticas y consultar tus planes, pagos y facturas asociadas.
-        </p>
+    <header class="home-hero">
+        <p class="home-hero-kicker">Bienvenido</p>
+        <h1>Portal de Instancias</h1>
+        {% if cliente %}
+            <p class="home-hero-cliente">{{ cliente.razon_social }}</p>
+        {% endif %}
     </header>
 
-    <section class="home-sections" aria-labelledby="home-sections-title">
-        <h2 id="home-sections-title">¿Qué puedes hacer en cada pestaña?</h2>
-        <div class="home-card-grid">
-            <a class="home-card" href="{% url 'seccion_perfil' %}">
-                <h3>Perfil de Institución</h3>
-                <p>Consulta y actualiza los datos de tu institución asociados al portal.</p>
-                <span class="home-card-status">Ir a mi Perfil<span aria-hidden="true">→</span></span>
-            </a>
+    {% if cliente %}
+    <div class="home-resumen">
+        <section class="home-metricas" aria-label="Resumen de la cuenta">
+            <article class="metrica">
+                <p class="metrica-valor">{{ total_activas }}</p>
+                <p class="metrica-etiqueta">
+                    {% if total_activas == 1 %}Instancia activa{% else %}Instancias activas{% endif %}
+                </p>
+                {% if total_archivadas %}
+                    <p class="metrica-nota">{{ total_archivadas }} archivada{{ total_archivadas|pluralize }}</p>
+                {% endif %}
+            </article>
 
-            <a class="home-card" href="{% url 'instancias:lista' %}">
-                <h3>Mis Instancias</h3>
-                <p>Crea instancias Moodle, revisa sus datos y estado, y administra su configuración.</p>
-                <span class="home-card-link">Ir a Mis Instancias <span aria-hidden="true">→</span></span>
-            </a>
+            <article class="metrica">
+                <p class="metrica-valor">{{ usuarios_activos|default:"—" }}</p>
+                <p class="metrica-etiqueta">Usuarios activos</p>
+                {% if periodo %}
+                    <p class="metrica-nota">{{ periodo }}</p>
+                {% endif %}
+            </article>
 
-            <a class="home-card" href="{% url 'seccion_suscripciones' %}">
-                <!-- <span class="home-card-label">Planes</span> -->
-                <h3>Suscripciones y Planes</h3>
-                <p>Revisa tus planes contratados y la información de tus suscripciones.</p>
-                <span class="home-card-status">Ir a Suscripciones y Planes<span aria-hidden="true">→</span></span>
-            </a>
+            <article class="metrica">
+                <p class="metrica-valor">{{ cursos|default:"—" }}</p>
+                <p class="metrica-etiqueta">Cursos</p>
+                {% if periodo %}
+                    <p class="metrica-nota">{{ periodo }}</p>
+                {% endif %}
+            </article>
+        </section>
 
-            <a class="home-card" href="{% url 'seccion_facturacion' %}">
-                <h3>Facturación y Pagos</h3>
-                <p>Consulta los pagos y las facturas asociadas a los servicios de tu institución.</p>
-                <span class="home-card-link">Ir a Facturación y Pagos <span aria-hidden="true">→</span></span>
-            </a>
+        <section class="home-bloque">
+            <h2>Tu plan</h2>
+            {% if planes %}
+                <div class="plan-lista">
+                    {% for plan in planes %}
+                        <article class="plan-tarjeta">
+                            {% if plan.tipo_plan %}
+                                <p class="plan-tipo">{{ plan.tipo_plan }}</p>
+                            {% endif %}
+                            <p class="plan-nombre">{{ plan.nombre|default:"Plan sin nombre" }}</p>
+                            {% if plan.precio_por_usuario is not None %}
+                                <p class="plan-precio">
+                                    <strong>${{ plan.precio_por_usuario|floatformat:2 }}</strong>
+                                    <span>/mes por usuario</span>
+                                </p>
+                            {% elif plan.precio_base is not None %}
+                                <p class="plan-precio">
+                                    <strong>${{ plan.precio_base|floatformat:0 }}</strong>
+                                    <span>{% if plan.tipo_plan == "anual" %}/año{% else %}/mes{% endif %}</span>
+                                </p>
+                            {% endif %}
+                            {% if plan.limite_usuarios %}
+                                <p class="plan-limite">Hasta {{ plan.limite_usuarios }} usuarios activos</p>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="home-vacio">
+                    Sin plan contratado.
+                    <a href="{% url 'seccion_suscripciones' %}">Ver planes disponibles</a>
+                </p>
+            {% endif %}
+        </section>
+    </div>
 
-            <a class="home-card" href="{% url 'seccion_estadisticas' %}">
-                <h3>Estadísticas</h3>
-                <p>Explora indicadores y estadísticas relacionados con tus instancias.</p>
-                <span class="home-card-status">Ir a Estadísticas <span aria-hidden="true">→</span></span>
-            </a>
+    <section class="home-bloque home-bloque--destacado" aria-labelledby="titulo-instancias">
+        <div class="home-bloque-header">
+            <h2 id="titulo-instancias">Tus instancias</h2>
+            <a class="btn-primary" href="{% url 'seleccionar_plan' cliente.pk %}">+ Crear instancia</a>
+        </div>
+
+        {% if instancias %}
+            <ul class="instancia-lista">
+                {% for instancia in instancias %}
+                    <li>
+                        <a href="{% url 'instancias:detalle' instancia.pk %}">
+                            <span class="instancia-lista-titulo">
+                                <span class="instancia-lista-nombre">{{ instancia.nombre|default:"Sin nombre" }}</span>
+                                <span class="instances-status instances-status--{{ instancia.estado|default:'sin-estado' }}">
+                                    {{ instancia.get_estado_display|default:"Sin estado" }}
+                                </span>
+                            </span>
+                            <span class="instancia-lista-dominio">{{ instancia.dominio_host }}</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="home-vacio">
+                Todavía no tienes instancias. Crea la primera para empezar a
+                administrar tu plataforma Moodle.
+            </p>
+        {% endif %}
+    </section>
+
+    <section class="home-funcionalidades" aria-labelledby="titulo-funcionalidades">
+        <h2 id="titulo-funcionalidades">Qué puedes hacer</h2>
+        <div class="funcionalidad-lista">
+            <details class="funcionalidad">
+                <summary>Perfil de Institución</summary>
+                <div class="funcionalidad-cuerpo">
+                    <p>Consulta y actualiza los datos de tu institución asociados al portal.</p>
+                    <a class="home-card-link" href="{% url 'seccion_perfil' %}">Ir a mi Perfil <span aria-hidden="true">&rarr;</span></a>
+                </div>
+            </details>
+            <details class="funcionalidad">
+                <summary>Mis Instancias</summary>
+                <div class="funcionalidad-cuerpo">
+                    <p>Crea instancias Moodle, revisa sus datos y estado, y administra su configuración.</p>
+                    <a class="home-card-link" href="{% url 'instancias:lista' %}">Ir a Mis Instancias <span aria-hidden="true">&rarr;</span></a>
+                </div>
+            </details>
+            <details class="funcionalidad">
+                <summary>Suscripciones y Planes</summary>
+                <div class="funcionalidad-cuerpo">
+                    <p>Revisa tus planes contratados y la información de tus suscripciones.</p>
+                    <a class="home-card-link" href="{% url 'seccion_suscripciones' %}">Ir a Suscripciones y Planes <span aria-hidden="true">&rarr;</span></a>
+                </div>
+            </details>
+            <details class="funcionalidad">
+                <summary>Facturación y Pagos</summary>
+                <div class="funcionalidad-cuerpo">
+                    <p>Consulta los pagos y las facturas asociadas a los servicios de tu institución.</p>
+                    <a class="home-card-link" href="{% url 'seccion_facturacion' %}">Ir a Facturación y Pagos <span aria-hidden="true">&rarr;</span></a>
+                </div>
+            </details>
+            <details class="funcionalidad">
+                <summary>Estadísticas</summary>
+                <div class="funcionalidad-cuerpo">
+                    <p>Explora indicadores y estadísticas relacionados con tus instancias.</p>
+                    <a class="home-card-link" href="{% url 'seccion_estadisticas' %}">Ir a Estadísticas <span aria-hidden="true">&rarr;</span></a>
+                </div>
+            </details>
         </div>
     </section>
+    {% else %}
+        <p class="home-vacio">
+            Tu cuenta todavía no está asociada a una institución. Escríbenos para
+            que la vinculemos.
+        </p>
+    {% endif %}
 </section>
-{% endblock content %}
+{% endblock %}

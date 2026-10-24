@@ -5,12 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Portal Edocere{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body class="portal-shell">
     {% if user.is_authenticated %}
     <aside class="sidebar" aria-label="Navegación principal">
-        <div class="brand">Edocere</div>
+        <a class="brand" href="{% url 'home' %}">
+            <img src="{% static 'img/edocere-logo.png' %}" alt="Edocere">
+        </a>
         <a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} class="activo" aria-current="page"{% endif %}>Inicio</a>
 
         <div class="sidebar-divider"></div>
@@ -20,8 +25,6 @@
         <a href="{% url 'seccion_suscripciones' %}"{% if request.resolver_match.url_name == 'seccion_suscripciones' %} class="activo" aria-current="page"{% endif %}>Suscripciones y Planes</a>
         <a href="{% url 'seccion_facturacion' %}"{% if request.resolver_match.url_name == 'seccion_facturacion' %} class="activo" aria-current="page"{% endif %}>Facturación y Pagos</a>
         <a href="{% url 'seccion_estadisticas' %}"{% if request.resolver_match.url_name == 'seccion_estadisticas' %} class="activo" aria-current="page"{% endif %}>Estadísticas</a>
-
-        <div class="sidebar-divider"></div>
 
         <form method="post" action="{% url 'logout' %}" class="sidebar-logout">
             {% csrf_token %}

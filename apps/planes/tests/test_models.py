@@ -10,8 +10,8 @@ from ..models import Plan, Suscripcion
 
 class SuscripcionModelTests(TestCase):
     def setUp(self) -> None:
-        self.cliente = Cliente.objects.create(razon_social="Cliente Uno")
-        self.otro_cliente = Cliente.objects.create(razon_social="Cliente Dos")
+        self.cliente = Cliente.objects.create(rut="77121212-3", razon_social="Cliente Uno")
+        self.otro_cliente = Cliente.objects.create(rut="77131313-2", razon_social="Cliente Dos")
         self.instancia = InstanciaMoodle.objects.create(
             cliente=self.cliente,
             dominio="uno.example.com",

@@ -96,17 +96,17 @@ class Command(BaseCommand):
         definiciones: list[dict[str, Any]] = [
             {
                 "clave": "DEMO-CLIENTE-PEQUENO",
-                "rut": "DEMO-PEQUENO-001",
+                "rut": "76543210-3",
                 "razon_social": "Empresa Demo Pequeña SpA",
             },
             {
                 "clave": "DEMO-CLIENTE-MEDIANO",
-                "rut": "DEMO-MEDIANO-001",
+                "rut": "77777777-7",
                 "razon_social": "Empresa Demo Mediana SpA",
             },
             {
                 "clave": "DEMO-CLIENTE-ANUAL",
-                "rut": "DEMO-ANUAL-001",
+                "rut": "65123456-5",
                 "razon_social": "Organización Demo Anual SpA",
             },
         ]
@@ -155,17 +155,28 @@ class Command(BaseCommand):
     @staticmethod
     def crear_instancias(clientes: dict[str, Cliente]) -> dict[str, InstanciaMoodle]:
         definiciones = [
-            ("PEQUENA", "DEMO-CLIENTE-PEQUENO", "pequena.demo.invalid"),
-            ("MEDIANA", "DEMO-CLIENTE-MEDIANO", "mediana.demo.invalid"),
-            ("ANUAL_PRINCIPAL", "DEMO-CLIENTE-ANUAL", "anual-principal.demo.invalid"),
-            ("ANUAL_SECUNDARIA", "DEMO-CLIENTE-ANUAL", "anual-secundaria.demo.invalid"),
+            ("PEQUENA", "DEMO-CLIENTE-PEQUENO", "pequena.demo.invalid", "Campus Pequeña"),
+            ("MEDIANA", "DEMO-CLIENTE-MEDIANO", "mediana.demo.invalid", "Campus Mediana"),
+            (
+                "ANUAL_PRINCIPAL",
+                "DEMO-CLIENTE-ANUAL",
+                "anual-principal.demo.invalid",
+                "Campus Principal",
+            ),
+            (
+                "ANUAL_SECUNDARIA",
+                "DEMO-CLIENTE-ANUAL",
+                "anual-secundaria.demo.invalid",
+                "Campus Secundaria",
+            ),
         ]
         instancias: dict[str, InstanciaMoodle] = {}
-        for clave, cliente_clave, dominio in definiciones:
+        for clave, cliente_clave, dominio, nombre in definiciones:
             instancia, _ = InstanciaMoodle.objects.update_or_create(
                 dominio=dominio,
                 defaults={
                     "cliente": clientes[cliente_clave],
+                    "nombre": nombre,
                     "version": "5.2-demo",
                     "estado": "activa",
                 },
