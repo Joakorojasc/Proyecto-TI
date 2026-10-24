@@ -9,8 +9,8 @@ from ..models import InstanciaMoodle
 
 class CrearInstanciaViewTests(TestCase):
     def setUp(self) -> None:
-        self.cliente = Cliente.objects.create(razon_social="Empresa Demo")
-        self.otro_cliente = Cliente.objects.create(razon_social="Otra Empresa")
+        self.cliente = Cliente.objects.create(rut="77020202-7", razon_social="Empresa Demo")
+        self.otro_cliente = Cliente.objects.create(rut="77030303-6", razon_social="Otra Empresa")
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="Mensual")
         self.url = reverse(
             "instancias:crear",

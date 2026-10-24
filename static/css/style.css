@@ -1,15 +1,35 @@
+/* Los colores salen de la marca de Edocere, tomados de su sitio. Si alguna vez
+   cambian la identidad, se ajustan acá y el portal entero sigue. */
 :root {
-    --edocere-blue: #0A3D62;
-    --edocere-blue-soft: #144b78;
-    --edocere-orange: #E58E26;
-    --bg-light: #F4F6F8;
-    --text-dark: #2C3E50;
+    --edocere-blue: #143454;
+    --edocere-blue-soft: #1E4D7D;
+    --edocere-blue-light: #ADCCEB;
+    --edocere-orange: #EC740C;
+    --edocere-orange-soft: #FDF1E5;
+
+    --bg-light: #EDF0F2;
+    --surface: #FBFBF9;
+    --white: #ffffff;
+
+    --text-dark: #143454;
     --text-soft: #5d6d7e;
     --border: #dfe6ee;
-    --white: #ffffff;
-    --danger: #E74C3C;
-    --white: #ffffff;
-    --border: #dfe6ee;
+    --danger: #C0392B;
+    --success: #1E7A4C;
+    --success-soft: #EDF8F0;
+    --success-borde: #A8D8B5;
+
+    /* Escala de espaciado, para que los márgenes del portal sean los mismos
+       en todas las pantallas y no un número distinto en cada tarjeta. */
+    --espacio-xs: 4px;
+    --espacio-sm: 8px;
+    --espacio-md: 16px;
+    --espacio-lg: 24px;
+    --espacio-xl: 32px;
+
+    --radio: 10px;
+    --sombra-suave: 0 1px 3px rgba(20, 52, 84, 0.08);
+    --sombra-media: 0 4px 16px rgba(20, 52, 84, 0.10);
 }
 
 * {
@@ -18,7 +38,7 @@
 
 body {
     margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: "Raleway", system-ui, -apple-system, sans-serif;
     background-color: var(--bg-light);
     color: var(--text-dark);
 }
@@ -29,24 +49,104 @@ body {
 }
 
 .sidebar {
-    width: 250px;
-    background: linear-gradient(180deg, var(--edocere-blue) 0%, var(--edocere-blue-soft) 100%);
+    /* Un poco mas ancha que antes: con 250px los nombres de dos palabras se
+       partian en dos lineas. */
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--edocere-blue);
     color: var(--white);
-    padding: 24px 20px;
+    padding: var(--espacio-lg) var(--espacio-md);
+    /* Columna para poder empujar el cierre de sesion al fondo. */
+    display: flex;
+    flex-direction: column;
 }
 
+/* El formulario de cerrar sesion se va abajo del todo, separado del menu. */
+.sidebar-logout {
+    margin-top: auto;
+    padding-top: var(--espacio-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-logout button {
+    width: 100%;
+    text-align: left;
+    padding: 10px var(--espacio-sm);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.72);
+    font-family: inherit;
+    font-size: 1.02rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-logout button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--white);
+}
+
+.sidebar-logout button:focus-visible {
+    outline: 2px solid var(--edocere-blue-light);
+    outline-offset: 2px;
+}
+
+/* El logo va sobre una franja blanca que cruza la barra de lado a lado. No se
+   le puede quitar el fondo: sus bloques y la "d" son azules y desaparecerian
+   contra el azul de la barra. Los margenes negativos anulan el relleno de la
+   barra para que la franja llegue a los bordes. */
 .brand {
-    font-size: 1.6rem;
-    font-weight: 700;
-    margin-bottom: 24px;
+    display: block;
+    margin: calc(var(--espacio-lg) * -1) calc(var(--espacio-md) * -1) var(--espacio-lg);
+    padding: var(--espacio-md);
+    background: var(--white);
+    /* Pegada al borde de arriba y curvada abajo, para que se lea como un panel
+       que baja desde el borde en vez de una caja suelta. */
+    border-radius: 0 0 18px 18px;
+    text-decoration: none;
 }
 
-.sidebar a {
-    color: var(--white);
+.brand img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.brand:focus-visible {
+    outline: 2px solid var(--edocere-orange);
+    outline-offset: 2px;
+}
+
+.sidebar a:not(.brand) {
+    color: rgba(255, 255, 255, 0.82);
     text-decoration: none;
     display: block;
-    margin-bottom: 14px;
-    opacity: 0.95;
+    padding: 10px var(--espacio-sm);
+    margin-bottom: 2px;
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+    font-size: 1.02rem;
+    font-weight: 500;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar a:not(.brand):hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--white);
+}
+
+.sidebar a:not(.brand).activo {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-left-color: var(--edocere-orange);
+    color: var(--white);
+    font-weight: 600;
+}
+
+.sidebar a:not(.brand):focus-visible {
+    outline: 2px solid var(--edocere-blue-light);
+    outline-offset: 2px;
 }
 
 .sidebar-divider {
@@ -59,24 +159,94 @@ body {
     padding: 32px;
 }
 
+/* Las pantallas de entrada ocupan el ancho completo: el relleno del main
+   dejaba un marco gris alrededor del panel azul. */
+.main-content:has(> .auth-panel) {
+    padding: 0;
+}
+
+/* Las pantallas de entrada van partidas en dos: la marca a la izquierda y el
+   formulario a la derecha. Antes la tarjeta quedaba sola al centro de una
+   pantalla vacia, que en un monitor ancho se veia a medio terminar. */
 .auth-panel {
-    min-height: calc(100vh - 64px);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.auth-marca {
+    background: var(--edocere-blue);
+    color: var(--white);
+    padding: var(--espacio-xl);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--espacio-md);
+}
+
+.auth-marca .brand {
+    width: min(240px, 60%);
+    margin-bottom: var(--espacio-sm);
+    padding: var(--espacio-sm) var(--espacio-md);
+}
+
+.auth-marca h2 {
+    margin: 0;
+    font-size: 1.9rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--white);
+    max-width: 18ch;
+}
+
+.auth-marca p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.75);
+    max-width: 44ch;
+    line-height: 1.6;
+}
+
+.auth-formulario {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: var(--espacio-xl) var(--espacio-lg);
+    background: var(--bg-light);
 }
 
 .auth-card {
     width: min(100%, 430px);
     background: var(--white);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(11, 35, 58, 0.08);
-    padding: 28px 24px;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra-media);
+    padding: var(--espacio-xl) var(--espacio-lg);
 }
 
 .auth-card-wide {
-    width: min(100%, 620px);
+    width: min(100%, 560px);
+}
+
+/* En pantallas chicas el panel de marca pasa arriba y se achica, para no
+   robarle la pantalla al formulario. */
+@media (max-width: 860px) {
+    .auth-panel {
+        grid-template-columns: 1fr;
+        min-height: auto;
+    }
+
+    .auth-marca {
+        padding: var(--espacio-lg);
+        gap: var(--espacio-sm);
+    }
+
+    .auth-marca h2 {
+        font-size: 1.4rem;
+    }
+
+    .auth-marca p {
+        display: none;
+    }
 }
 
 .auth-card h2 {
@@ -94,7 +264,7 @@ body {
 
 .login-container input {
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     border-radius: 5px;
     font-size: 16px;
     margin-top: 5px;
@@ -102,7 +272,7 @@ body {
 }
 
 .login-container button {
-    background-color: #003366; /* El azul de tu barra lateral */
+    background-color: var(--edocere-blue);
     color: white;
     padding: 10px 20px;
     border: none;
@@ -265,7 +435,7 @@ body {
 .plan-section {
     border: 1px solid var(--border);
     border-radius: 16px;
-    background: #f9fbfd;
+    background: var(--surface);
     padding: 18px;
     box-sizing: border-box;
 }
@@ -353,13 +523,30 @@ body {
     display: none;
 }
 
+/* Se usa tanto en <button> como en <a>. Sin text-decoration el enlace salia
+   subrayado y no parecia un boton. */
 .btn-primary {
+    display: inline-block;
     background-color: var(--edocere-orange);
     color: var(--white);
-    padding: 10px 20px;
+    padding: 10px 18px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    white-space: nowrap;
     cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+    background-color: color-mix(in srgb, var(--edocere-orange) 85%, black);
+}
+
+.btn-primary:focus-visible {
+    outline: 2px solid var(--edocere-blue);
+    outline-offset: 2px;
 }
 
 .instances-page {
@@ -379,9 +566,9 @@ body {
 
 .instances-table-wrapper {
     overflow-x: auto;
-    background-color: white;
-    border: 1px solid #dfe5eb;
-    border-radius: 4px;
+    background-color: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radio);
 }
 
 .instances-table {
@@ -392,12 +579,22 @@ body {
 
 .instances-table th,
 .instances-table td {
-    padding: 15px 18px;
-    border-bottom: 1px solid #e8edf1;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    /* La tabla tiene scroll horizontal, asi que las celdas no necesitan partir
+       su contenido: el dominio y su etiqueta quedan siempre en una linea. */
+    white-space: nowrap;
+}
+
+/* El plan es lo unico que puede ser largo de verdad, y ahi si conviene que
+   ocupe dos lineas antes que estirar la tabla. */
+.instances-table td.celda-plan {
+    white-space: normal;
+    min-width: 180px;
 }
 
 .instances-table th {
-    background-color: #edf2f5;
+    background-color: var(--bg-light);
     color: var(--edocere-blue);
     font-weight: 600;
 }
@@ -407,109 +604,384 @@ body {
 }
 
 .instances-empty {
-    padding: 24px;
-    background-color: white;
-    border: 1px solid #dfe5eb;
-    border-radius: 4px;
+    padding: var(--espacio-lg);
+    background-color: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radio);
 }
 
 .home-page {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
-.home-welcome {
-    padding: 36px;
-    margin-bottom: 36px;
-    background: linear-gradient(120deg, var(--white), #eaf2f8);
-    border: 1px solid var(--border);
-    border-left: 5px solid var(--edocere-orange);
-    border-radius: 12px;
+/* Encabezado: "Bienvenido" chico arriba y el nombre del portal grande debajo,
+   con el naranjo de la marca como acento. */
+.home-hero {
+    margin-bottom: var(--espacio-xl);
+    padding-bottom: var(--espacio-lg);
+    border-bottom: 1px solid var(--border);
 }
 
-.home-welcome h1 {
-    margin: 0;
-    color: var(--edocere-blue);
-    font-size: clamp(2rem, 4vw, 2.8rem);
-}
-
-.home-intro {
-    max-width: 760px;
-    margin: 14px 0 0;
-    color: var(--text-soft);
-    font-size: 1.1rem;
-    line-height: 1.7;
-}
-
-.home-sections h2 {
-    margin: 0 0 18px;
-    color: var(--edocere-blue);
-    font-size: 1.5rem;
-}
-
-.home-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 18px;
-}
-
-.home-card {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-height: 220px;
-    padding: 22px;
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--text-dark);
-    text-decoration: none;
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
-}
-
-.home-card:hover,
-.home-card:focus-visible {
-    border-color: var(--edocere-blue-soft);
-    box-shadow: 0 8px 20px rgba(10, 61, 98, 0.1);
-    transform: translateY(-2px);
-}
-
-.home-card-label {
-    color: var(--text-soft);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+.home-hero-kicker {
+    margin: 0 0 var(--espacio-xs);
+    color: var(--edocere-orange);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
 }
 
-.home-card h3 {
-    margin: 10px 0 8px;
+.home-hero h1 {
+    margin: 0;
     color: var(--edocere-blue);
-    font-size: 1.2rem;
-}
-
-.home-card p {
-    margin: 0 0 18px;
-    color: var(--text-soft);
-    line-height: 1.55;
-}
-
-.home-card-status,
-.home-card-link {
-    margin-top: auto;
-    font-size: 0.85rem;
+    font-size: clamp(2rem, 4vw, 3rem);
     font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
 }
 
-.home-card-status {
-    padding: 5px 10px;
-    background: rgba(229, 142, 38, 0.12);
-    border-radius: 999px;
-    color: #8a520e;
+.home-hero-cliente {
+    margin: var(--espacio-sm) 0 0;
+    color: var(--text-soft);
+    font-size: 1.05rem;
+}
+
+.home-hero-cliente span {
+    color: var(--text-soft);
+    opacity: 0.8;
+}
+
+/* Los indicadores y el plan comparten una fila y se estiran al mismo alto, para
+   que los bordes de abajo queden parejos. */
+.home-resumen {
+    display: grid;
+    grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+    gap: var(--espacio-lg);
+    align-items: stretch;
+    margin-bottom: var(--espacio-lg);
+}
+
+/* Los indicadores van sobre un panel azul en vez de tres cajas blancas: le da
+   un ancla oscura a la portada y corta el exceso de blanco. */
+.home-metricas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    background: var(--edocere-blue-soft);
+    border-radius: var(--radio);
+    overflow: hidden;
+}
+
+.metrica {
+    padding: var(--espacio-lg);
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.metrica:first-child {
+    border-left: none;
+}
+
+.metrica-valor {
+    margin: 0;
+    font-variant-numeric: lining-nums tabular-nums;
+    color: var(--white);
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.metrica-etiqueta {
+    margin: var(--espacio-sm) 0 0;
+    color: var(--edocere-blue-light);
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.metrica-nota {
+    margin: var(--espacio-xs) 0 0;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.8rem;
+}
+
+.home-bloque {
+    padding: var(--espacio-lg);
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra-suave);
+}
+
+.plan-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-md);
+}
+
+.plan-tarjeta {
+    padding: var(--espacio-md);
+    background: var(--edocere-orange-soft);
+    border-radius: var(--radio);
+}
+
+.plan-tipo {
+    margin: 0 0 var(--espacio-xs);
+    color: var(--edocere-orange);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.plan-nombre {
+    margin: 0;
+    color: var(--edocere-blue);
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.plan-precio {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: var(--espacio-sm) 0 0;
+}
+
+.plan-precio strong {
+    font-variant-numeric: lining-nums tabular-nums;
+    color: var(--edocere-blue);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.plan-precio span {
+    color: var(--text-soft);
+    font-size: 0.85rem;
+}
+
+.plan-limite {
+    margin: var(--espacio-xs) 0 0;
+    color: var(--text-soft);
+    font-size: 0.82rem;
+}
+
+/* El bloque de instancias es lo principal de la portada, asi que lleva un
+   fondo azul suave para destacarlo del resto. */
+.home-bloque--destacado {
+    background: color-mix(in srgb, var(--edocere-blue-light) 55%, var(--white));
+    border-color: color-mix(in srgb, var(--edocere-blue-light) 85%, var(--white));
+}
+
+.home-bloque h2 {
+    margin: 0 0 var(--espacio-md);
+    color: var(--edocere-blue);
+    font-size: 1.15rem;
+}
+
+.home-bloque-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--espacio-md);
+}
+
+.home-bloque-header h2 {
+    margin: 0;
+}
+
+.instancia-lista,
+.lista-simple,
+.lista-enlaces {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.instancia-lista li {
+    padding: var(--espacio-md) 0;
+    border-top: 1px solid var(--border);
+}
+
+.instancia-lista li:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+.instancia-lista a {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    text-decoration: none;
+}
+
+/* El estado va pegado al nombre. Antes quedaba al otro extremo de la fila, a
+   medio ancho de pantalla del dato al que pertenece. */
+.instancia-lista-titulo {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-sm);
+    flex-wrap: wrap;
+}
+
+.instancia-lista-nombre {
+    color: var(--edocere-blue);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.instancia-lista a:hover .instancia-lista-nombre {
+    text-decoration: underline;
+}
+
+.instancia-lista-dominio {
+    color: var(--text-soft);
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.lista-simple li {
+    padding: var(--espacio-sm) 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-dark);
+    font-size: 0.92rem;
+}
+
+.lista-simple li:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+.lista-enlaces li {
+    border-top: 1px solid var(--border);
+}
+
+.lista-enlaces li:first-child {
+    border-top: none;
+}
+
+.lista-enlaces a {
+    display: block;
+    padding: 11px 0;
+    color: var(--edocere-blue);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.lista-enlaces a:hover {
+    color: var(--edocere-orange);
+}
+
+.home-vacio {
+    margin: 0;
+    color: var(--text-soft);
+    line-height: 1.6;
+}
+
+/* Las tarjetas de funcionalidades, al final de la portada. */
+.home-funcionalidades {
+    margin-top: var(--espacio-xl);
+    padding-top: var(--espacio-lg);
+    border-top: 1px solid var(--border);
+}
+
+.home-funcionalidades h2 {
+    margin: 0 0 var(--espacio-md);
+    color: var(--edocere-blue);
+    font-size: 1.3rem;
+}
+
+.funcionalidad-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-sm);
+    /* Sin tope, cada fila quedaba de mas de 1000px de ancho por 53 de alto, con
+       el titulo a un extremo y la flecha al otro. */
+    max-width: 720px;
+}
+
+.funcionalidad {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radio);
+    overflow: hidden;
+}
+
+.funcionalidad summary {
+    padding: var(--espacio-md) var(--espacio-lg);
+    color: var(--edocere-blue);
+    font-weight: 600;
+    font-size: 1.02rem;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-md);
+    transition: background-color 0.15s ease;
+}
+
+/* Oculta el triangulo por defecto en los navegadores que lo dibujan aparte. */
+.funcionalidad summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Y dibuja el nuestro, que gira al abrir. */
+.funcionalidad summary::after {
+    content: "";
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid var(--edocere-orange);
+    border-bottom: 2px solid var(--edocere-orange);
+    transform: rotate(45deg) translate(-2px, -2px);
+    transition: transform 0.2s ease;
+}
+
+.funcionalidad[open] summary::after {
+    transform: rotate(225deg) translate(-2px, -2px);
+}
+
+.funcionalidad summary:hover {
+    background-color: var(--bg-light);
+}
+
+.funcionalidad summary:focus-visible {
+    outline: 2px solid var(--edocere-orange);
+    outline-offset: -2px;
+}
+
+.funcionalidad-cuerpo {
+    padding: 0 var(--espacio-lg) var(--espacio-md);
+}
+
+.funcionalidad-cuerpo p {
+    margin: 0 0 var(--espacio-sm);
+    color: var(--text-soft);
+    line-height: 1.6;
 }
 
 .home-card-link {
-    color: var(--edocere-blue);
+    color: var(--edocere-orange);
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.home-card-link:hover {
+    text-decoration: underline;
+}
+
+/* En pantallas angostas la columna lateral pasa abajo. */
+@media (max-width: 980px) {
+    .home-resumen {
+        grid-template-columns: 1fr;
+    }
 }
 
 .subscriptions-page {
@@ -584,7 +1056,7 @@ body {
 
 .subscriptions-custom-plan {
     margin-top: 20px;
-    background: #f9fbfd;
+    background: var(--surface);
     border-left: 4px solid var(--edocere-orange);
 }
 
@@ -607,10 +1079,10 @@ body {
 .profile-success {
     margin-bottom: 20px;
     padding: 14px 16px;
-    border: 1px solid #a8d8b5;
+    border: 1px solid var(--success-borde);
     border-radius: 8px;
-    background: #edf8f0;
-    color: #205c32;
+    background: var(--success-soft);
+    color: var(--success);
     font-weight: 600;
 }
 
@@ -672,17 +1144,29 @@ body {
 }
 
 .instances-status {
-    display: inline-block;
-    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 11px;
     border-radius: 999px;
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.02em;
 }
 
+/* El punto toma el color del texto de cada estado. */
+.instances-status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
 .instances-status--activa {
     background: rgba(30, 126, 52, 0.12);
-    color: #1e7e34;
+    color: var(--success);
 }
 
 .instances-status--archivada {
@@ -696,35 +1180,20 @@ body {
     color: var(--edocere-orange);
 }
 
+/* Discreta y pegada al dominio: antes era una pildora con color que saltaba
+   de linea y desordenaba la fila. */
 .domain-tag {
-    margin-left: 8px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    background: rgba(10, 61, 98, 0.1);
-    color: var(--edocere-blue);
-    font-size: 0.7rem;
-    font-weight: 700;
+    margin-left: 6px;
+    color: var(--text-soft);
+    font-size: 0.68rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
 }
 
 .domain-tag--propio {
-    background: rgba(229, 142, 38, 0.15);
-    color: var(--edocere-orange);
-}
-
-.sidebar-logout button {
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--white);
-    font: inherit;
-    cursor: pointer;
-    opacity: 0.95;
-}
-
-.sidebar-logout button:hover {
-    text-decoration: underline;
+    color: var(--text-soft);
 }
 
 .instance-header {
@@ -789,25 +1258,6 @@ body {
     letter-spacing: 0.04em;
 }
 
-.sidebar a {
-    padding: 8px 12px;
-    margin-bottom: 6px;
-    border-left: 3px solid transparent;
-    border-radius: 4px;
-    transition: background 0.15s ease;
-}
-
-.sidebar a:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.sidebar a.activo {
-    background: rgba(255, 255, 255, 0.14);
-    border-left-color: var(--edocere-orange);
-    font-weight: 700;
-    opacity: 1;
-}
-
 .instance-header {
     justify-content: space-between;
 }
@@ -855,18 +1305,18 @@ body {
 .instances-filters label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #0b3d5c;
+    color: var(--edocere-blue);
 }
 
 .instances-filters input[type="text"],
 .instances-filters select {
     height: 38px;
     padding: 0 10px;
-    border: 1px solid #cfd8dc;
+    border: 1px solid var(--border);
     border-radius: 6px;
-    background: #fff;
+    background: var(--white);
     font-size: 0.95rem;
-    color: #263238;
+    color: var(--text-dark);
 }
 
 .instances-filters input[type="text"] {
@@ -876,7 +1326,7 @@ body {
 .instances-filters input[type="text"]:focus,
 .instances-filters select:focus {
     outline: none;
-    border-color: #e88f27;
+    border-color: var(--edocere-orange);
     box-shadow: 0 0 0 3px rgba(232, 143, 39, 0.2);
 }
 
@@ -885,15 +1335,15 @@ body {
     padding: 0 18px;
     border: none;
     border-radius: 6px;
-    background: #e88f27;
-    color: #fff;
+    background: var(--edocere-orange);
+    color: var(--white);
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
 }
 
 .btn-filtrar:hover {
-    background: #d17f1d;
+    background: var(--edocere-blue-soft);
 }
 
 .btn-limpiar {
@@ -901,16 +1351,16 @@ body {
     align-items: center;
     height: 38px;
     padding: 0 18px;
-    border: 1px solid #0b3d5c;
+    border: 1px solid var(--edocere-blue);
     border-radius: 6px;
-    background: #fff;
-    color: #0b3d5c;
+    background: var(--white);
+    color: var(--edocere-blue);
     font-weight: 600;
     font-size: 0.95rem;
     text-decoration: none;
 }
 
 .btn-limpiar:hover {
-    background: #0b3d5c;
-    color: #fff;
+    background: var(--edocere-blue);
+    color: var(--white);
 }

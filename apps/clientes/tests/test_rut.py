@@ -36,7 +36,6 @@ def test_validador_acepta_rut_valido(rut: str) -> None:
     "rut",
     [
         "",
-        "761234560",
         "76.123.456",
         "76.12.3456-0",
         "76123.456-0",
@@ -66,7 +65,7 @@ def test_validador_rechaza_digito_incorrecto(rut: str) -> None:
     with pytest.raises(ValidationError) as error:
         validar_rut(rut)
 
-    assert error.value.code == "rut_digito_verificador"
+    assert error.value.code == "rut_digito"
     assert "dígito verificador" in error.value.message
 
 
@@ -143,7 +142,7 @@ def test_normalizar_rut(rut: str, esperado: str) -> None:
     assert normalizar_rut(rut) == esperado
 
 
-@pytest.mark.parametrize("rut", ["DEMO-PEQUENO-001", "76.123.456-7", "761234560"])
+@pytest.mark.parametrize("rut", ["DEMO-PEQUENO-001", "76.123.456-7", "76123456-X"])
 def test_normalizar_no_corrige_rut_invalido(rut: str) -> None:
     with pytest.raises(ValidationError):
         normalizar_rut(rut)

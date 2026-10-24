@@ -41,7 +41,7 @@ class SeedDemoTests(TestCase):
 
     def test_seed_actualiza_rut_historico_sin_recrear_clientes_o_relaciones(self) -> None:
         call_command("seed_demo", verbosity=0)
-        cliente = Cliente.objects.get(rut="90000001-4")
+        cliente = Cliente.objects.get(rut="76543210-3")
         usuario = User.objects.create_user(username="admin-demo")
         UsuarioPortal.objects.create(usuario=usuario, cliente=cliente)
         ids = dict(Cliente.objects.values_list("rut", "pk"))
@@ -53,9 +53,9 @@ class SeedDemoTests(TestCase):
         ]
         relaciones = [list(consulta.order_by("pk").values()) for consulta in consultas]
         anteriores = {
-            "90000001-4": "DEMO-PEQUENO-001",
-            "90000002-2": "DEMO-MEDIANO-001",
-            "90000003-0": "DEMO-ANUAL-001",
+            "76543210-3": "DEMO-PEQUENO-001",
+            "77777777-7": "DEMO-MEDIANO-001",
+            "65123456-5": "DEMO-ANUAL-001",
         }
         # Reproduce el contenido histórico sin pasar por el save() nuevo.
         for rut, anterior in anteriores.items():
@@ -71,7 +71,7 @@ class SeedDemoTests(TestCase):
 
     def test_seed_no_sobrescribe_institucion_que_ocupa_rut_demo(self) -> None:
         cliente = Cliente.objects.create(
-            rut="90000001-4", razon_social="Institución ajena", email_contacto="ajena@demo.cl"
+            rut="76543210-3", razon_social="Institución ajena", email_contacto="ajena@demo.cl"
         )
 
         with self.assertRaisesRegex(CommandError, "No se sobrescribirán"):
