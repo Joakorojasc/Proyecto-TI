@@ -1,14 +1,18 @@
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import FileResponse, Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods, require_safe
 
+from . import terminos
 from .forms import (
+    AceptacionTerminosForm,
     EmpresaRegistroForm,
     PerfilInstitucionForm,
-    RegistroClienteForm,
     UsuarioRegistroForm,
 )
 from .models import Cliente, UsuarioPortal
@@ -48,21 +52,8 @@ def perfil_institucion(request: HttpRequest) -> HttpResponse:
 
 
 def registro_cliente(request: HttpRequest) -> HttpResponse:
-    if request.method == "POST":
-        form = RegistroClienteForm(request.POST)
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    form.save()
-            except IntegrityError:
-                if not Cliente.objects.filter(rut=form.cleaned_data["rut"]).exists():
-                    raise
-                form.add_error("rut", RUT_DUPLICADO)
-            else:
-                return redirect("/")
-    else:
-        form = RegistroClienteForm()
-    return render(request, "clientes/registro.html", {"form": form})
+    # El alta antigua no creaba usuario y no podía identificar a quien aceptó.
+    return redirect("registro")
 
 
 def registro_usuario(request: HttpRequest) -> HttpResponse:
@@ -91,7 +82,12 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
                         email=auth_user.email,
                         rol="Admin",
                     )
+                    terminos.registrar_aceptacion(
+                        nuevo_cliente, auth_user, empresa_form.cleaned_data["version_terminos"]
+                    )
 
+            except ValidationError as error:
+                empresa_form.add_error("version_terminos", error)
             except IntegrityError:
                 if not Cliente.objects.filter(rut=empresa_form.cleaned_data["rut"]).exists():
                     raise
@@ -109,5 +105,52 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
         {
             "user_form": user_form,
             "empresa_form": empresa_form,
+        },
+    )
+
+
+@require_safe
+def documento_terminos(request: HttpRequest, version: str) -> FileResponse:
+    documento = terminos.DOCUMENTOS_TERMINOS.get(version)
+    if documento is None:
+        raise Http404("El documento solicitado no está disponible.")
+    respuesta = FileResponse(
+        documento.open("rb"), content_type="application/pdf", filename="T&C Moodle.pdf"
+    )
+    respuesta["Cache-Control"] = "public, max-age=31536000, immutable"
+    return respuesta
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def aceptar_terminos(request: HttpRequest) -> HttpResponse:
+    perfil = get_object_or_404(
+        UsuarioPortal.objects.select_related("cliente"), usuario=request.user
+    )
+    if perfil.cliente is None:
+        raise Http404("El usuario no tiene una institución asociada.")
+    cliente = perfil.cliente
+    form = AceptacionTerminosForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            with transaction.atomic():
+                terminos.registrar_aceptacion(
+                    cliente, request.user, form.cleaned_data["version_terminos"]
+                )
+        except ValidationError as error:
+            form.add_error("version_terminos", error)
+        else:
+            messages.success(request, "La aceptación de términos y condiciones quedó registrada.")
+            return redirect("aceptar_terminos")
+    return render(
+        request,
+        "clientes/terminos.html",
+        {
+            "cliente": cliente,
+            "form": form,
+            "aceptacion": cliente.aceptaciones_terminos.filter(
+                version_documento=terminos.VERSION_TERMINOS
+            ).first(),
+            "version_terminos": terminos.VERSION_TERMINOS,
         },
     )

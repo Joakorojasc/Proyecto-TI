@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from apps.clientes.forms import RegistroClienteForm
 from apps.clientes.models import Cliente, UsuarioPortal
+from apps.clientes.terminos import VERSION_TERMINOS
 
 
 class RegistroClienteTests(TestCase):
@@ -26,13 +27,14 @@ class RegistroClienteTests(TestCase):
         """Prueba que al entrar a la URL por GET, la página cargue correctamente (código 200)"""
         url = reverse("registro_cliente")
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "clientes/registro.html")
+        self.assertRedirects(response, reverse("registro"))
 
     def test_formulario_acepta_datos_correctos(self) -> None:
         """Prueba que el formulario entienda cuando le pasamos datos válidos"""
         datos = {
             "rut": "76.123.456-0",
+            "acepta_terminos": "on",
+            "version_terminos": VERSION_TERMINOS,
             "razon_social": "Empresa Prueba",
             "giro": "Educación",
             "direccion_facturacion": "Avenida Siempre Viva 123",
@@ -43,9 +45,14 @@ class RegistroClienteTests(TestCase):
 
     def test_registro_guarda_en_base_de_datos(self) -> None:
         """Prueba que al enviar los datos por POST, se cree el Cliente en la BD"""
-        url = reverse("registro_cliente")
+        url = reverse("registro")
         datos = {
+            "username": "admin@prueba.cl",
+            "password1": "ClaveSegura123!",
+            "password2": "ClaveSegura123!",
             "rut": "76.123.456-0",
+            "acepta_terminos": "on",
+            "version_terminos": VERSION_TERMINOS,
             "razon_social": "Empresa Prueba",
             "giro": "Educación",
             "direccion_facturacion": "Avenida Siempre Viva 123",
@@ -70,6 +77,8 @@ class RegistroUsuarioTests(TestCase):
             "password2": "ClaveSegura123!",
             "razon_social": "Empresa Demo",
             "rut": "76.987.654-5",
+            "acepta_terminos": "on",
+            "version_terminos": VERSION_TERMINOS,
         }
 
     def test_pagina_registro_pide_correo(self) -> None:

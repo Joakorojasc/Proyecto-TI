@@ -4,6 +4,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path("terminos/", views.aceptar_terminos, name="aceptar_terminos"),
+    path("terminos/documento/<slug:version>/", views.documento_terminos, name="documento_terminos"),
     path("registro/", views.registro_cliente, name="registro_cliente"),
     path("login/", auth_views.LoginView.as_view(template_name="clientes/login.html"), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
