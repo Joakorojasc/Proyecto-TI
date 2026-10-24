@@ -24,7 +24,7 @@
 
             <div class="form-section">
                 <h3>Datos de la Institución</h3>
-                {{ empresa_form.as_p }}
+                {% include "clientes/formulario_con_terminos.html" with form=empresa_form only %}
             </div>
 
             <button type="submit">Crear Cuenta</button>

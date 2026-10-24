@@ -63,3 +63,19 @@ class UsuarioPortal(models.Model):
     nombre = models.CharField(max_length=255, null=True)
     email = models.CharField(max_length=255, null=True)
     rol = models.CharField(max_length=255, null=True)
+
+
+class AceptacionTerminos(models.Model):
+    cliente = models.ForeignKey(
+        Cliente, on_delete=models.PROTECT, related_name="aceptaciones_terminos"
+    )
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    version_documento = models.CharField(max_length=80)
+    fecha_aceptacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cliente", "version_documento"], name="aceptacion_cliente_version_unica"
+            ),
+        ]

@@ -6,6 +6,7 @@ from django.test import Client
 from django.urls import reverse
 
 from apps.clientes.models import Cliente
+from apps.clientes.terminos import VERSION_TERMINOS
 from apps.planes.models import Plan, Suscripcion
 
 
@@ -17,6 +18,8 @@ def test_registro_redirige_a_mis_instancias(client: Client) -> None:
         "password2": "Password123!",
         "razon_social": "Empresa Demo",
         "rut": "76.123.456-0",
+        "acepta_terminos": "on",
+        "version_terminos": VERSION_TERMINOS,
     }
 
     response = client.post(reverse("registro"), data=data)

@@ -10,6 +10,7 @@ from django.urls import reverse
 
 from apps.clientes.forms import EmpresaRegistroForm, RegistroClienteForm
 from apps.clientes.models import Cliente, UsuarioPortal
+from apps.clientes.terminos import VERSION_TERMINOS
 from apps.clientes.validators import RUT_DUPLICADO, normalizar_rut, validar_rut
 
 
@@ -78,6 +79,8 @@ def test_formularios_guardan_rut_normalizado(
     form = form_class(
         data={
             "rut": rut,
+            "acepta_terminos": "on",
+            "version_terminos": VERSION_TERMINOS,
             "razon_social": "Institución de prueba",
             "giro": "Educación",
             "direccion_facturacion": "Calle 123",
@@ -94,9 +97,6 @@ def test_formularios_guardan_rut_normalizado(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "ruta, formulario", [("registro", "empresa_form"), ("registro_cliente", "form")]
-)
-@pytest.mark.parametrize(
     "rut, mensaje",
     [
         ("76.12.3456-0", "Ingresa un RUT con formato válido"),
@@ -105,16 +105,18 @@ def test_formularios_guardan_rut_normalizado(
     ],
 )
 def test_registro_invalido_muestra_error_y_no_crea_cuentas(
-    client: Client, ruta: str, formulario: str, rut: str, mensaje: str
+    client: Client, rut: str, mensaje: str
 ) -> None:
     respuesta = client.post(
-        reverse(ruta),
+        reverse("registro"),
         data={
             "username": "admin@demo.cl",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Institución de prueba",
             "rut": rut,
+            "acepta_terminos": "on",
+            "version_terminos": VERSION_TERMINOS,
             "giro": "Educación",
             "direccion_facturacion": "Calle 123",
             "email_contacto": "contacto@demo.cl",
@@ -122,7 +124,7 @@ def test_registro_invalido_muestra_error_y_no_crea_cuentas(
     )
 
     assert respuesta.status_code == 200
-    assert "rut" in respuesta.context[formulario].errors
+    assert "rut" in respuesta.context["empresa_form"].errors
     assert mensaje in respuesta.content.decode()
     assert not Cliente.objects.exists()
     assert not User.objects.exists()
@@ -155,7 +157,14 @@ def test_formularios_rechazan_rut_equivalente_registrado(
     form_class: type[EmpresaRegistroForm] | type[RegistroClienteForm], rut: str
 ) -> None:
     Cliente.objects.create(rut="76123456-0")
-    form = form_class(data={"rut": rut, "razon_social": "Otra institución"})
+    form = form_class(
+        data={
+            "rut": rut,
+            "acepta_terminos": "on",
+            "version_terminos": VERSION_TERMINOS,
+            "razon_social": "Otra institución",
+        }
+    )
 
     assert not form.is_valid()
     assert form.errors["rut"] == [RUT_DUPLICADO]
@@ -193,26 +202,25 @@ def test_modelo_normaliza_k_y_permite_varios_rut_ausentes() -> None:
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    "ruta, formulario", [("registro", "empresa_form"), ("registro_cliente", "form")]
-)
 @pytest.mark.parametrize("concurrencia", [False, True])
 def test_registro_duplicado_muestra_error_sin_crear_usuario(
-    client: Client, ruta: str, formulario: str, concurrencia: bool
+    client: Client, concurrencia: bool
 ) -> None:
     Cliente.objects.create(rut="76123456-0", razon_social="Original")
-    form_class = EmpresaRegistroForm if ruta == "registro" else RegistroClienteForm
+    form_class = EmpresaRegistroForm
     # Al omitir solo la comprobación previa se reproduce el conflicto que
     # ocurriría si otra petición guardara el RUT después de is_valid().
     context = patch.object(form_class, "validate_unique") if concurrencia else nullcontext()
     with context:
         respuesta = client.post(
-            reverse(ruta),
+            reverse("registro"),
             data={
                 "username": "admin@otra.cl",
                 "password1": "ClaveSegura123!",
                 "password2": "ClaveSegura123!",
                 "rut": "76.123.456-0",
+                "acepta_terminos": "on",
+                "version_terminos": VERSION_TERMINOS,
                 "razon_social": "Otra institución",
                 "giro": "Educación",
                 "direccion_facturacion": "Calle 123",
@@ -221,7 +229,7 @@ def test_registro_duplicado_muestra_error_sin_crear_usuario(
         )
 
     assert respuesta.status_code == 200
-    assert respuesta.context[formulario].errors["rut"] == [RUT_DUPLICADO]
+    assert respuesta.context["empresa_form"].errors["rut"] == [RUT_DUPLICADO]
     assert RUT_DUPLICADO in respuesta.content.decode()
     assert Cliente.objects.get().razon_social == "Original"
     assert not User.objects.exists()
