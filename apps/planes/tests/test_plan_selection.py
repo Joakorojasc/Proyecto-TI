@@ -89,9 +89,7 @@ def test_plan_personalizado_se_crea_por_cliente_sin_suscripcion(client: Client) 
             direccion_facturacion="Avenida Siempre Viva 123",
             email_contacto="contacto@demo.cl",
         )
-        for numero, rut in enumerate(
-            ("76.123.456-0", "76.987.654-5", "77.777.777-7"), start=1
-        )
+        for numero, rut in enumerate(("76.123.456-0", "76.987.654-5", "77.777.777-7"), start=1)
     ]
 
     response = client.get(reverse("seleccionar_plan", kwargs={"cliente_id": clientes[0].id}))
