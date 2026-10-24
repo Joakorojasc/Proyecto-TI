@@ -41,7 +41,7 @@
                 <tr>
                     <td>
                         <a href="{% url 'instancias:detalle' instancia.pk %}">
-                            {{ instancia.nombre|default:instancia.dominio_host|default:"Sin nombre" }}
+                            {{ instancia.nombre|default:"Sin nombre" }}
                         </a>
                     </td>
                     <td>
@@ -58,7 +58,7 @@
                         </span>
                     </td>
                     <td>{{ instancia.version|default:"Sin versión" }}</td>
-                    <td>
+                    <td class="celda-plan">
                         {% with suscripciones_activas=instancia.suscripciones_activas %}
                             {% if suscripciones_activas|length == 1 %}
                                 {{ suscripciones_activas.0.plan.nombre|default:"Sin plan activo" }}
