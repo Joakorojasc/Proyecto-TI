@@ -27,7 +27,11 @@
     --espacio-lg: 24px;
     --espacio-xl: 32px;
 
+    --ancho-contenido: 1100px;
+
+    --radio-sm: 6px;
     --radio: 10px;
+    --radio-pill: 999px;
     --sombra-suave: 0 1px 3px rgba(20, 52, 84, 0.08);
     --sombra-media: 0 4px 16px rgba(20, 52, 84, 0.10);
 }
@@ -96,7 +100,7 @@ body {
     padding: 10px var(--espacio-sm);
     background: transparent;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     color: rgba(255, 255, 255, 0.72);
     font-family: inherit;
     font-size: 1.02rem;
@@ -106,7 +110,7 @@ body {
 }
 
 .sidebar-logout button:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.14);
     color: var(--white);
 }
 
@@ -127,7 +131,7 @@ body {
     padding: 10px var(--espacio-sm);
     background: transparent;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     color: rgba(255, 255, 255, 0.72);
     font-family: inherit;
     font-size: 1.02rem;
@@ -170,7 +174,7 @@ body {
     display: block;
     padding: 10px var(--espacio-sm);
     margin-bottom: 2px;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     border-left: 3px solid transparent;
     font-size: 1.02rem;
     font-weight: 500;
@@ -178,7 +182,7 @@ body {
 }
 
 .sidebar a:not(.brand):hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.14);
     color: var(--white);
 }
 
@@ -201,7 +205,7 @@ body {
 
 .main-content {
     flex: 1;
-    padding: 32px;
+    padding: var(--espacio-xl);
 }
 
 /* Las pantallas de entrada ocupan el ancho completo: el relleno del main
@@ -305,14 +309,14 @@ body {
 .auth-card form p {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--espacio-sm);
     margin-bottom: 16px;
 }
 
 .login-container input {
     padding: 10px;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: var(--radio-sm);
     font-size: 16px;
     margin-top: 5px;
     background: var(--white);
@@ -323,7 +327,7 @@ body {
     color: white;
     padding: 10px 20px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radio);
     cursor: pointer;
     font-size: 16px;
     width: 100%;
@@ -341,7 +345,7 @@ body {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     font-size: 1rem;
 }
 
@@ -350,7 +354,7 @@ body {
     background-color: var(--edocere-blue);
     color: var(--white);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     padding: 12px 18px;
     cursor: pointer;
     font-size: 1rem;
@@ -401,9 +405,9 @@ body {
     width: min(780px, 100%);
     background: var(--white);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    box-shadow: 0 12px 24px rgba(10, 61, 98, 0.08);
-    padding: 32px;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra-media);
+    padding: var(--espacio-xl);
     box-sizing: border-box;
 }
 
@@ -425,7 +429,7 @@ body {
 .client-summary {
     background: var(--bg-light);
     border-left: 4px solid var(--edocere-orange);
-    border-radius: 12px;
+    border-radius: var(--radio);
     padding: 18px 20px;
     margin-bottom: 24px;
 }
@@ -434,7 +438,7 @@ body {
     display: inline-block;
     background: rgba(229, 142, 38, 0.12);
     color: var(--edocere-orange-dark);
-    border-radius: 999px;
+    border-radius: var(--radio-pill);
     padding: 6px 10px;
     font-size: 0.76rem;
     font-weight: 700;
@@ -458,13 +462,13 @@ body {
 .plan-form {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--espacio-lg);
 }
 
 .field-group {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: var(--espacio-md);
 }
 
 .field-label {
@@ -476,14 +480,14 @@ body {
 .plan-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+    gap: var(--espacio-lg);
 }
 
 .plan-section {
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: var(--radio);
     background: var(--surface);
-    padding: 18px;
+    padding: var(--espacio-lg);
     box-sizing: border-box;
 }
 
@@ -509,24 +513,24 @@ body {
 
 .plan-option-list {
     display: grid;
-    gap: 14px;
+    gap: var(--espacio-md);
 }
 
 .plan-option {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: var(--espacio-md);
     padding: 18px 16px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radio);
     background: var(--white);
     cursor: pointer;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .plan-option:hover {
-    border-color: rgba(10, 61, 98, 0.35);
-    box-shadow: 0 6px 18px rgba(10, 61, 98, 0.08);
+    border-color: color-mix(in srgb, var(--edocere-blue) 35%, transparent);
+    box-shadow: var(--sombra-media);
     transform: translateY(-1px);
 }
 
@@ -578,17 +582,24 @@ body {
     color: var(--white);
     padding: 10px 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     font-weight: 600;
     font-size: 0.92rem;
     text-decoration: none;
     white-space: nowrap;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-primary:hover {
     background-color: color-mix(in srgb, var(--edocere-orange) 85%, black);
+    transform: translateY(-1px);
+    box-shadow: var(--sombra-media);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 .btn-primary:focus-visible {
@@ -597,7 +608,7 @@ body {
 }
 
 .instances-page {
-    max-width: 1100px;
+    max-width: var(--ancho-contenido);
     margin: 0 auto;
 }
 
@@ -658,7 +669,7 @@ body {
 }
 
 .home-page {
-    max-width: 1200px;
+    max-width: var(--ancho-contenido);
     margin: 0 auto;
 }
 
@@ -716,7 +727,6 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     background: var(--edocere-blue-soft);
     border-radius: var(--radio);
-    overflow: hidden;
 }
 
 .metrica {
@@ -726,6 +736,11 @@ body {
 
 .metrica:first-child {
     border-left: none;
+    border-radius: var(--radio) 0 0 var(--radio);
+}
+
+.metrica:last-child {
+    border-radius: 0 var(--radio) var(--radio) 0;
 }
 
 .metrica-valor {
@@ -851,6 +866,11 @@ body {
 .instancia-lista li {
     padding: var(--espacio-md) 0;
     border-top: 1px solid var(--border);
+    transition: padding-left 0.15s ease;
+}
+
+.instancia-lista li:hover {
+    padding-left: var(--espacio-sm);
 }
 
 .instancia-lista li:first-child {
@@ -1032,7 +1052,7 @@ body {
 }
 
 .subscriptions-page {
-    max-width: 1100px;
+    max-width: var(--ancho-contenido);
     margin: 0 auto;
 }
 
@@ -1047,15 +1067,15 @@ body {
 .subscriptions-plan-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+    gap: var(--espacio-lg);
 }
 
 .subscriptions-plan-section,
 .subscriptions-custom-plan {
-    padding: 22px;
+    padding: var(--espacio-lg);
     background: var(--white);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radio);
 }
 
 .subscriptions-plan-section h2,
@@ -1074,13 +1094,13 @@ body {
 
 .subscriptions-plan-list {
     display: grid;
-    gap: 12px;
+    gap: var(--espacio-md);
 }
 
 .subscriptions-plan-card {
-    padding: 16px;
+    padding: var(--espacio-md);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radio);
 }
 
 .subscriptions-plan-card h3 {
@@ -1112,8 +1132,14 @@ body {
 }
 
 .profile-page {
-    max-width: 850px;
+    max-width: var(--ancho-contenido);
     margin: 0 auto;
+}
+
+/* La tarjeta del formulario si se acota: lineas de 850px son mas comodas de
+   leer que de 1100. Lo que se alinea con el resto es el encabezado. */
+.profile-card {
+    max-width: 850px;
 }
 
 .profile-intro {
@@ -1127,7 +1153,7 @@ body {
     margin-bottom: 20px;
     padding: 14px 16px;
     border: 1px solid var(--success-borde);
-    border-radius: 8px;
+    border-radius: var(--radio);
     background: var(--success-soft);
     color: var(--success);
     font-weight: 600;
@@ -1148,7 +1174,7 @@ body {
     gap: 5px;
     padding: 12px 14px;
     background: var(--bg-light);
-    border-radius: 8px;
+    border-radius: var(--radio);
     color: var(--text-dark);
 }
 
@@ -1160,9 +1186,9 @@ body {
 .profile-card dialog {
     width: min(440px, calc(100% - 32px));
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 12px 30px rgba(11, 35, 58, 0.2);
+    border-radius: var(--radio);
+    padding: var(--espacio-lg);
+    box-shadow: var(--sombra-media);
 }
 
 .profile-card dialog::backdrop {
@@ -1195,7 +1221,7 @@ body {
     align-items: center;
     gap: 7px;
     padding: 4px 11px;
-    border-radius: 999px;
+    border-radius: var(--radio-pill);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -1246,14 +1272,14 @@ body {
 .instance-header {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--espacio-md);
 }
 
 .instances-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: var(--espacio-md);
 }
 
 .btn-crear-instancia {
@@ -1261,7 +1287,7 @@ body {
     background-color: var(--edocere-orange);
     color: var(--white);
     padding: 10px 18px;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     font-weight: 700;
     text-decoration: none;
 }
@@ -1273,7 +1299,7 @@ body {
 .auth-card #id_tipo_dominio {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--espacio-sm);
 }
 
 .auth-card #id_tipo_dominio label {
@@ -1312,7 +1338,7 @@ body {
 .instance-title {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--espacio-md);
 }
 
 .btn-editar-instancia {
@@ -1320,7 +1346,7 @@ body {
     background-color: var(--edocere-orange);
     color: var(--white);
     padding: 10px 18px;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     font-weight: 700;
     text-decoration: none;
 }
@@ -1339,7 +1365,7 @@ body {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
-    gap: 12px;
+    gap: var(--espacio-md);
     margin-bottom: 16px;
 }
 
@@ -1360,7 +1386,7 @@ body {
     height: 38px;
     padding: 0 10px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     background: var(--white);
     font-size: 0.95rem;
     color: var(--text-dark);
@@ -1374,14 +1400,14 @@ body {
 .instances-filters select:focus {
     outline: none;
     border-color: var(--edocere-orange);
-    box-shadow: 0 0 0 3px rgba(232, 143, 39, 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--edocere-orange) 25%, transparent);
 }
 
 .btn-filtrar {
     height: 38px;
     padding: 0 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     background: var(--edocere-orange);
     color: var(--white);
     font-weight: 600;
@@ -1399,7 +1425,7 @@ body {
     height: 38px;
     padding: 0 18px;
     border: 1px solid var(--edocere-blue);
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     background: var(--white);
     color: var(--edocere-blue);
     font-weight: 600;
@@ -1410,4 +1436,143 @@ body {
 .btn-limpiar:hover {
     background: var(--edocere-blue);
     color: var(--white);
+}
+/* Migas de pan. La ultima entrada es la pagina actual y va sin enlace, que es
+   lo que esperan los lectores de pantalla. El separador lo dibuja el CSS para
+   que no lo lean en voz alta. */
+.migas {
+    margin-bottom: var(--espacio-md);
+}
+
+.migas ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-sm);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.88rem;
+}
+
+.migas li {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-sm);
+    color: var(--text-soft);
+}
+
+.migas li + li::before {
+    content: "/";
+    color: var(--border);
+}
+
+.migas a {
+    color: var(--edocere-blue-soft);
+    text-decoration: none;
+}
+
+.migas a:hover {
+    color: var(--edocere-orange);
+    text-decoration: underline;
+}
+
+.migas a:focus-visible {
+    outline: 2px solid var(--edocere-orange);
+    outline-offset: 2px;
+    border-radius: var(--radio-sm);
+}
+
+.migas [aria-current="page"] {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+/* Detalle de cada indicador. Aparece al pasar el mouse y tambien al llegar con
+   el teclado, por eso la tarjeta es enfocable. */
+.metrica {
+    position: relative;
+    cursor: default;
+    transition: background-color 0.2s ease;
+}
+
+.metrica:hover,
+.metrica:focus {
+    background-color: rgba(255, 255, 255, 0.06);
+    outline: none;
+}
+
+.metrica:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--edocere-orange);
+}
+
+.metrica-detalle {
+    position: absolute;
+    top: calc(100% - 6px);
+    left: var(--espacio-md);
+    right: var(--espacio-md);
+    z-index: 5;
+    margin: 0;
+    padding: var(--espacio-md);
+    background: var(--edocere-blue);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra-media);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+
+.metrica:hover .metrica-detalle,
+.metrica:focus .metrica-detalle {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Variacion respecto del periodo anterior. */
+.variacion {
+    display: inline-block;
+    margin-left: var(--espacio-sm);
+    padding: 1px 6px;
+    border-radius: var(--radio-pill);
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-variant-numeric: lining-nums;
+}
+
+.variacion--sube {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--white);
+}
+
+.variacion--baja {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--edocere-blue-light);
+}
+
+.variacion--igual {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Quien prefiere menos movimiento no ve las transiciones. */
+@media (prefers-reduced-motion: reduce) {
+    .metrica-detalle,
+    .metrica-detalle:where(:hover, :focus),
+    .metrica,
+    .btn-primary,
+    .home-card,
+    .instancia-lista li,
+    .funcionalidad summary {
+        transition: none;
+    }
+
+    .btn-primary:hover {
+        transform: none;
+    }
 }
