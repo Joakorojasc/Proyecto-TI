@@ -15,7 +15,7 @@
     {% if cliente %}
     <div class="home-resumen">
         <section class="home-metricas" aria-label="Resumen de la cuenta">
-            <article class="metrica">
+            <article class="metrica" tabindex="0">
                 <p class="metrica-valor">{{ total_activas }}</p>
                 <p class="metrica-etiqueta">
                     {% if total_activas == 1 %}Instancia activa{% else %}Instancias activas{% endif %}
@@ -23,22 +23,40 @@
                 {% if total_archivadas %}
                     <p class="metrica-nota">{{ total_archivadas }} archivada{{ total_archivadas|pluralize }}</p>
                 {% endif %}
+                <p class="metrica-detalle">
+                    Plataformas Moodle en funcionamiento. Las archivadas no se cuentan
+                    aquí ni se facturan.
+                </p>
             </article>
 
-            <article class="metrica">
+            <article class="metrica" tabindex="0">
                 <p class="metrica-valor">{{ usuarios_activos|default:"—" }}</p>
                 <p class="metrica-etiqueta">Usuarios activos</p>
                 {% if periodo %}
-                    <p class="metrica-nota">{{ periodo }}</p>
+                    <p class="metrica-nota">
+                        {{ periodo }}
+                        {% if variacion_usuarios is not None %}
+                            <span class="variacion variacion--{% if variacion_usuarios > 0 %}sube{% elif variacion_usuarios < 0 %}baja{% else %}igual{% endif %}">{% if variacion_usuarios > 0 %}+{% endif %}{{ variacion_usuarios }}%</span>
+                        {% endif %}
+                    </p>
                 {% endif %}
+                <p class="metrica-detalle">
+                    Personas que entraron al menos una vez en el período, sumando todas
+                    tus instancias.{% if periodo_previo %} En {{ periodo_previo|lower }} fueron {{ usuarios_previos }}.{% endif %}
+                </p>
             </article>
 
-            <article class="metrica">
+            <article class="metrica" tabindex="0">
                 <p class="metrica-valor">{{ cursos|default:"—" }}</p>
                 <p class="metrica-etiqueta">Cursos</p>
                 {% if periodo %}
-                    <p class="metrica-nota">{{ periodo }}</p>
+                    <p class="metrica-nota">
+                        {{ periodo }}
+                    </p>
                 {% endif %}
+                <p class="metrica-detalle">
+                    Cursos publicados en el período, sumando todas tus instancias.{% if periodo_previo %} En {{ periodo_previo|lower }} fueron {{ cursos_previos }}.{% endif %}
+                </p>
             </article>
         </section>
 
@@ -54,13 +72,13 @@
                             <p class="plan-nombre">{{ plan.nombre|default:"Plan sin nombre" }}</p>
                             {% if plan.precio_por_usuario is not None %}
                                 <p class="plan-precio">
-                                    <strong>${{ plan.precio_por_usuario|floatformat:2 }}</strong>
-                                    <span>/mes por usuario</span>
+                                    <strong>US${{ plan.precio_por_usuario|floatformat:2 }}</strong>
+                                    <span>/mes por usuario, más IVA</span>
                                 </p>
                             {% elif plan.precio_base is not None %}
                                 <p class="plan-precio">
-                                    <strong>${{ plan.precio_base|floatformat:0 }}</strong>
-                                    <span>{% if plan.tipo_plan == "anual" %}/año{% else %}/mes{% endif %}</span>
+                                    <strong>US${{ plan.precio_base|floatformat:0 }}</strong>
+                                    <span>{% if plan.tipo_plan == "anual" %}/año{% else %}/mes{% endif %}, más IVA</span>
                                 </p>
                             {% endif %}
                             {% if plan.limite_usuarios %}
@@ -133,16 +151,16 @@
                 </div>
             </details>
             <details class="funcionalidad">
-                <summary>Facturación y Pagos</summary>
+                <summary>Facturación y Pagos <span class="etiqueta-pronto">Próximamente</span></summary>
                 <div class="funcionalidad-cuerpo">
-                    <p>Consulta los pagos y las facturas asociadas a los servicios de tu institución.</p>
+                    <p>Consulta los pagos y las facturas asociadas a los servicios de tu institución. Esta sección todavía está en desarrollo.</p>
                     <a class="home-card-link" href="{% url 'seccion_facturacion' %}">Ir a Facturación y Pagos <span aria-hidden="true">&rarr;</span></a>
                 </div>
             </details>
             <details class="funcionalidad">
-                <summary>Estadísticas</summary>
+                <summary>Estadísticas <span class="etiqueta-pronto">Próximamente</span></summary>
                 <div class="funcionalidad-cuerpo">
-                    <p>Explora indicadores y estadísticas relacionados con tus instancias.</p>
+                    <p>Explora indicadores y estadísticas relacionados con tus instancias. Esta sección todavía está en desarrollo. Mientras tanto, el uso de cada instancia se ve en su detalle.</p>
                     <a class="home-card-link" href="{% url 'seccion_estadisticas' %}">Ir a Estadísticas <span aria-hidden="true">&rarr;</span></a>
                 </div>
             </details>

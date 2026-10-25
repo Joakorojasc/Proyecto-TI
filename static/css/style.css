@@ -27,7 +27,11 @@
     --espacio-lg: 24px;
     --espacio-xl: 32px;
 
+    --ancho-contenido: 1100px;
+
+    --radio-sm: 6px;
     --radio: 10px;
+    --radio-pill: 999px;
     --sombra-suave: 0 1px 3px rgba(20, 52, 84, 0.08);
     --sombra-media: 0 4px 16px rgba(20, 52, 84, 0.10);
 }
@@ -39,13 +43,36 @@
 body {
     margin: 0;
     font-family: "Raleway", system-ui, -apple-system, sans-serif;
+    font-variant-numeric: lining-nums;
     background-color: var(--bg-light);
     color: var(--text-dark);
 }
 
+/* Franja de acento y barra con el logo, las dos cruzando el ancho completo.
+   La barra lateral azul empieza debajo. */
+.franja-acento {
+    height: 5px;
+    background: var(--edocere-orange);
+}
+
+.barra-superior {
+    display: flex;
+    align-items: center;
+    padding: var(--espacio-sm) var(--espacio-lg);
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+}
+
+.barra-superior .brand img {
+    width: auto;
+    height: 34px;
+}
+
 .portal-shell {
     display: flex;
-    min-height: 100vh;
+    /* Descuenta lo que ocupan la franja y la barra, para que la pantalla no
+       quede con scroll de sobra. */
+    min-height: calc(100vh - 56px);
 }
 
 .sidebar {
@@ -55,7 +82,7 @@ body {
     flex-shrink: 0;
     background: var(--edocere-blue);
     color: var(--white);
-    padding: var(--espacio-lg) var(--espacio-md);
+    padding: var(--espacio-md);
     /* Columna para poder empujar el cierre de sesion al fondo. */
     display: flex;
     flex-direction: column;
@@ -74,7 +101,38 @@ body {
     padding: 10px var(--espacio-sm);
     background: transparent;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
+    color: rgba(255, 255, 255, 0.72);
+    font-family: inherit;
+    font-size: 1.02rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-logout button:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+    color: var(--white);
+}
+
+.sidebar-logout button:focus-visible {
+    outline: 2px solid var(--edocere-blue-light);
+    outline-offset: 2px;
+}
+
+.sidebar-logout {
+    margin-top: auto;
+    padding-top: var(--espacio-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-logout button {
+    width: 100%;
+    text-align: left;
+    padding: 10px var(--espacio-sm);
+    background: transparent;
+    border: none;
+    border-radius: var(--radio-sm);
     color: rgba(255, 255, 255, 0.72);
     font-family: inherit;
     font-size: 1.02rem;
@@ -93,18 +151,10 @@ body {
     outline-offset: 2px;
 }
 
-/* El logo va sobre una franja blanca que cruza la barra de lado a lado. No se
-   le puede quitar el fondo: sus bloques y la "d" son azules y desaparecerian
-   contra el azul de la barra. Los margenes negativos anulan el relleno de la
-   barra para que la franja llegue a los bordes. */
+/* Base del logo. Cada lugar donde aparece le da su tamano: la barra superior
+   del portal y el panel de las pantallas de entrada. */
 .brand {
     display: block;
-    margin: calc(var(--espacio-lg) * -1) calc(var(--espacio-md) * -1) var(--espacio-lg);
-    padding: var(--espacio-md);
-    background: var(--white);
-    /* Pegada al borde de arriba y curvada abajo, para que se lea como un panel
-       que baja desde el borde en vez de una caja suelta. */
-    border-radius: 0 0 18px 18px;
     text-decoration: none;
 }
 
@@ -116,7 +166,7 @@ body {
 
 .brand:focus-visible {
     outline: 2px solid var(--edocere-orange);
-    outline-offset: 2px;
+    outline-offset: 4px;
 }
 
 .sidebar a:not(.brand) {
@@ -125,7 +175,7 @@ body {
     display: block;
     padding: 10px var(--espacio-sm);
     margin-bottom: 2px;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     border-left: 3px solid transparent;
     font-size: 1.02rem;
     font-weight: 500;
@@ -133,7 +183,7 @@ body {
 }
 
 .sidebar a:not(.brand):hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.14);
     color: var(--white);
 }
 
@@ -154,9 +204,26 @@ body {
     margin: 18px 0;
 }
 
+/* El ancho de contenido se fija una sola vez, aca. Las migas y la pantalla
+   quedan dentro del mismo contenedor, asi comparten borde izquierdo en
+   cualquier resolucion. */
+.contenido {
+    max-width: var(--ancho-contenido);
+    margin: 0 auto;
+}
+
 .main-content {
     flex: 1;
-    padding: 32px;
+    min-width: 0;
+    padding: var(--espacio-xl);
+}
+
+/* Pantallas de formulario dentro del portal: la tarjeta va centrada en la
+   columna de contenido. No usan auth-panel, que es la pantalla partida en dos
+   del login y dejaba la tarjeta pegada a un costado. */
+.formulario-pagina {
+    display: flex;
+    justify-content: center;
 }
 
 /* Las pantallas de entrada ocupan el ancho completo: el relleno del main
@@ -179,31 +246,86 @@ body {
     color: var(--white);
     padding: var(--espacio-xl);
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
+}
+
+/* El contenido se agrupa y se centra dentro del panel. Antes quedaba pegado al
+   borde izquierdo y en un monitor ancho se veia desbalanceado. */
+.auth-marca-contenido {
+    display: flex;
+    flex-direction: column;
     gap: var(--espacio-md);
+    width: min(100%, 420px);
 }
 
 .auth-marca .brand {
-    width: min(240px, 60%);
-    margin-bottom: var(--espacio-sm);
+    width: min(230px, 70%);
+    margin-bottom: var(--espacio-xs);
     padding: var(--espacio-sm) var(--espacio-md);
+    background: var(--white);
+    border-radius: var(--radio);
 }
 
 .auth-marca h2 {
     margin: 0;
-    font-size: 1.9rem;
-    font-weight: 600;
-    line-height: 1.25;
+    font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
     color: var(--white);
-    max-width: 18ch;
+}
+
+/* Una palabra del titular en naranjo: da color sin recargar el panel. */
+.auth-marca h2 span {
+    color: var(--edocere-orange);
 }
 
 .auth-marca p {
     margin: 0;
-    color: rgba(255, 255, 255, 0.75);
-    max-width: 44ch;
-    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 1.02rem;
+    line-height: 1.65;
+}
+
+/* Lo que se puede hacer, en lineas cortas en vez de un parrafo corrido. Cada
+   una lleva una marca naranja a la izquierda. */
+.auth-marca-puntos {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-sm);
+}
+
+.auth-marca-puntos li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--espacio-sm);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.auth-marca-puntos li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--edocere-orange);
+    transform: translateY(-2px);
+}
+
+/* Linea de marca al pie del panel, separada del resto. */
+.auth-marca-lema {
+    margin-top: var(--espacio-sm);
+    padding-top: var(--espacio-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
 
 .auth-formulario {
@@ -244,6 +366,11 @@ body {
         font-size: 1.4rem;
     }
 
+    .auth-marca-lema,
+    .auth-marca-puntos {
+        display: none;
+    }
+
     .auth-marca p {
         display: none;
     }
@@ -258,14 +385,14 @@ body {
 .auth-card form p {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--espacio-sm);
     margin-bottom: 16px;
 }
 
 .login-container input {
     padding: 10px;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: var(--radio-sm);
     font-size: 16px;
     margin-top: 5px;
     background: var(--white);
@@ -276,7 +403,7 @@ body {
     color: white;
     padding: 10px 20px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radio);
     cursor: pointer;
     font-size: 16px;
     width: 100%;
@@ -294,7 +421,7 @@ body {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     font-size: 1rem;
 }
 
@@ -303,7 +430,7 @@ body {
     background-color: var(--edocere-blue);
     color: var(--white);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     padding: 12px 18px;
     cursor: pointer;
     font-size: 1rem;
@@ -344,9 +471,6 @@ body {
 }
 
 .plan-selection-page {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
     min-height: 70vh;
 }
 
@@ -354,9 +478,9 @@ body {
     width: min(780px, 100%);
     background: var(--white);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    box-shadow: 0 12px 24px rgba(10, 61, 98, 0.08);
-    padding: 32px;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra-media);
+    padding: var(--espacio-xl);
     box-sizing: border-box;
 }
 
@@ -370,15 +494,19 @@ body {
 }
 
 .plan-selection-card h2 {
-    margin: 0 0 20px;
-    font-size: clamp(1.8rem, 2vw, 2.4rem);
+    margin: 0 0 var(--espacio-lg);
+    font-size: clamp(1.6rem, 2vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
     color: var(--edocere-blue);
+    max-width: 22ch;
 }
 
 .client-summary {
     background: var(--bg-light);
     border-left: 4px solid var(--edocere-orange);
-    border-radius: 12px;
+    border-radius: var(--radio);
     padding: 18px 20px;
     margin-bottom: 24px;
 }
@@ -387,7 +515,7 @@ body {
     display: inline-block;
     background: rgba(229, 142, 38, 0.12);
     color: var(--edocere-orange-dark);
-    border-radius: 999px;
+    border-radius: var(--radio-pill);
     padding: 6px 10px;
     font-size: 0.76rem;
     font-weight: 700;
@@ -411,13 +539,13 @@ body {
 .plan-form {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--espacio-lg);
 }
 
 .field-group {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: var(--espacio-md);
 }
 
 .field-label {
@@ -429,15 +557,34 @@ body {
 .plan-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+    gap: var(--espacio-lg);
 }
 
 .plan-section {
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: var(--radio);
     background: var(--surface);
-    padding: 18px;
+    padding: var(--espacio-lg);
     box-sizing: border-box;
+}
+
+.plan-section--mensual {
+    background: color-mix(in srgb, var(--edocere-blue-light) 28%, var(--white));
+    border-color: color-mix(in srgb, var(--edocere-blue-light) 55%, var(--white));
+}
+
+.plan-section--anual {
+    background: color-mix(in srgb, var(--edocere-blue-light) 60%, var(--white));
+    border-color: color-mix(in srgb, var(--edocere-blue-soft) 35%, var(--white));
+}
+
+/* Nota al lado de un titulo: aclara a quien apunta sin competir con el. */
+.plan-nota {
+    font-style: italic;
+    font-weight: 400;
+    font-size: 0.86rem;
+    color: var(--text-soft);
+    opacity: 0.75;
 }
 
 .plan-section-personalizado {
@@ -462,24 +609,24 @@ body {
 
 .plan-option-list {
     display: grid;
-    gap: 14px;
+    gap: var(--espacio-md);
 }
 
 .plan-option {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: var(--espacio-md);
     padding: 18px 16px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radio);
     background: var(--white);
     cursor: pointer;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .plan-option:hover {
-    border-color: rgba(10, 61, 98, 0.35);
-    box-shadow: 0 6px 18px rgba(10, 61, 98, 0.08);
+    border-color: color-mix(in srgb, var(--edocere-blue) 35%, transparent);
+    box-shadow: var(--sombra-media);
     transform: translateY(-1px);
 }
 
@@ -531,17 +678,24 @@ body {
     color: var(--white);
     padding: 10px 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     font-weight: 600;
     font-size: 0.92rem;
     text-decoration: none;
     white-space: nowrap;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-primary:hover {
     background-color: color-mix(in srgb, var(--edocere-orange) 85%, black);
+    transform: translateY(-1px);
+    box-shadow: var(--sombra-media);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 .btn-primary:focus-visible {
@@ -550,8 +704,6 @@ body {
 }
 
 .instances-page {
-    max-width: 1100px;
-    margin: 0 auto;
 }
 
 .instances-header {
@@ -611,8 +763,6 @@ body {
 }
 
 .home-page {
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
 /* Encabezado: "Bienvenido" chico arriba y el nombre del portal grande debajo,
@@ -669,7 +819,6 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     background: var(--edocere-blue-soft);
     border-radius: var(--radio);
-    overflow: hidden;
 }
 
 .metrica {
@@ -679,11 +828,16 @@ body {
 
 .metrica:first-child {
     border-left: none;
+    border-radius: var(--radio) 0 0 var(--radio);
+}
+
+.metrica:last-child {
+    border-radius: 0 var(--radio) var(--radio) 0;
 }
 
 .metrica-valor {
     margin: 0;
-    font-variant-numeric: lining-nums tabular-nums;
+    font-variant-numeric: tabular-nums;
     color: var(--white);
     font-size: 2.4rem;
     font-weight: 700;
@@ -749,7 +903,7 @@ body {
 }
 
 .plan-precio strong {
-    font-variant-numeric: lining-nums tabular-nums;
+    font-variant-numeric: tabular-nums;
     color: var(--edocere-blue);
     font-size: 1.5rem;
     font-weight: 700;
@@ -804,6 +958,11 @@ body {
 .instancia-lista li {
     padding: var(--espacio-md) 0;
     border-top: 1px solid var(--border);
+    transition: padding-left 0.15s ease;
+}
+
+.instancia-lista li:hover {
+    padding-left: var(--espacio-sm);
 }
 
 .instancia-lista li:first-child {
@@ -985,8 +1144,6 @@ body {
 }
 
 .subscriptions-page {
-    max-width: 1100px;
-    margin: 0 auto;
 }
 
 .subscriptions-intro {
@@ -1000,15 +1157,15 @@ body {
 .subscriptions-plan-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+    gap: var(--espacio-lg);
 }
 
 .subscriptions-plan-section,
 .subscriptions-custom-plan {
-    padding: 22px;
+    padding: var(--espacio-lg);
     background: var(--white);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radio);
 }
 
 .subscriptions-plan-section h2,
@@ -1027,13 +1184,13 @@ body {
 
 .subscriptions-plan-list {
     display: grid;
-    gap: 12px;
+    gap: var(--espacio-md);
 }
 
 .subscriptions-plan-card {
-    padding: 16px;
+    padding: var(--espacio-md);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radio);
 }
 
 .subscriptions-plan-card h3 {
@@ -1065,8 +1222,12 @@ body {
 }
 
 .profile-page {
+}
+
+/* La tarjeta del formulario si se acota: lineas de 850px son mas comodas de
+   leer que de 1100. Lo que se alinea con el resto es el encabezado. */
+.profile-card {
     max-width: 850px;
-    margin: 0 auto;
 }
 
 .profile-intro {
@@ -1080,7 +1241,7 @@ body {
     margin-bottom: 20px;
     padding: 14px 16px;
     border: 1px solid var(--success-borde);
-    border-radius: 8px;
+    border-radius: var(--radio);
     background: var(--success-soft);
     color: var(--success);
     font-weight: 600;
@@ -1101,7 +1262,7 @@ body {
     gap: 5px;
     padding: 12px 14px;
     background: var(--bg-light);
-    border-radius: 8px;
+    border-radius: var(--radio);
     color: var(--text-dark);
 }
 
@@ -1113,9 +1274,9 @@ body {
 .profile-card dialog {
     width: min(440px, calc(100% - 32px));
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 12px 30px rgba(11, 35, 58, 0.2);
+    border-radius: var(--radio);
+    padding: var(--espacio-lg);
+    box-shadow: var(--sombra-media);
 }
 
 .profile-card dialog::backdrop {
@@ -1148,7 +1309,7 @@ body {
     align-items: center;
     gap: 7px;
     padding: 4px 11px;
-    border-radius: 999px;
+    border-radius: var(--radio-pill);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -1199,14 +1360,14 @@ body {
 .instance-header {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--espacio-md);
 }
 
 .instances-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: var(--espacio-md);
 }
 
 .btn-crear-instancia {
@@ -1214,7 +1375,7 @@ body {
     background-color: var(--edocere-orange);
     color: var(--white);
     padding: 10px 18px;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     font-weight: 700;
     text-decoration: none;
 }
@@ -1226,7 +1387,7 @@ body {
 .auth-card #id_tipo_dominio {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--espacio-sm);
 }
 
 .auth-card #id_tipo_dominio label {
@@ -1265,7 +1426,7 @@ body {
 .instance-title {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--espacio-md);
 }
 
 .btn-editar-instancia {
@@ -1273,7 +1434,7 @@ body {
     background-color: var(--edocere-orange);
     color: var(--white);
     padding: 10px 18px;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     font-weight: 700;
     text-decoration: none;
 }
@@ -1292,7 +1453,7 @@ body {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
-    gap: 12px;
+    gap: var(--espacio-md);
     margin-bottom: 16px;
 }
 
@@ -1313,7 +1474,7 @@ body {
     height: 38px;
     padding: 0 10px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     background: var(--white);
     font-size: 0.95rem;
     color: var(--text-dark);
@@ -1327,14 +1488,14 @@ body {
 .instances-filters select:focus {
     outline: none;
     border-color: var(--edocere-orange);
-    box-shadow: 0 0 0 3px rgba(232, 143, 39, 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--edocere-orange) 25%, transparent);
 }
 
 .btn-filtrar {
     height: 38px;
     padding: 0 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     background: var(--edocere-orange);
     color: var(--white);
     font-weight: 600;
@@ -1352,7 +1513,7 @@ body {
     height: 38px;
     padding: 0 18px;
     border: 1px solid var(--edocere-blue);
-    border-radius: 6px;
+    border-radius: var(--radio-sm);
     background: var(--white);
     color: var(--edocere-blue);
     font-weight: 600;
@@ -1363,4 +1524,158 @@ body {
 .btn-limpiar:hover {
     background: var(--edocere-blue);
     color: var(--white);
+}
+/* Migas de pan. La ultima entrada es la pagina actual y va sin enlace, que es
+   lo que esperan los lectores de pantalla. El separador lo dibuja el CSS para
+   que no lo lean en voz alta. */
+.migas {
+    margin-bottom: var(--espacio-md);
+}
+
+.migas ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-sm);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.88rem;
+}
+
+.migas li {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-sm);
+    color: var(--text-soft);
+}
+
+.migas li + li::before {
+    content: "/";
+    color: var(--border);
+}
+
+.migas a {
+    color: var(--edocere-blue-soft);
+    text-decoration: none;
+}
+
+.migas a:hover {
+    color: var(--edocere-orange);
+    text-decoration: underline;
+}
+
+.migas a:focus-visible {
+    outline: 2px solid var(--edocere-orange);
+    outline-offset: 2px;
+    border-radius: var(--radio-sm);
+}
+
+.migas [aria-current="page"] {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+/* Detalle de cada indicador. Aparece al pasar el mouse y tambien al llegar con
+   el teclado, por eso la tarjeta es enfocable. */
+.metrica {
+    position: relative;
+    cursor: default;
+    transition: background-color 0.2s ease;
+}
+
+.metrica:hover,
+.metrica:focus {
+    background-color: rgba(255, 255, 255, 0.06);
+    outline: none;
+}
+
+.metrica:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--edocere-orange);
+}
+
+.metrica-detalle {
+    position: absolute;
+    top: calc(100% - 6px);
+    left: var(--espacio-md);
+    right: var(--espacio-md);
+    z-index: 5;
+    margin: 0;
+    padding: var(--espacio-md);
+    background: var(--edocere-blue);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra-media);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+
+.metrica:hover .metrica-detalle,
+.metrica:focus .metrica-detalle {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Variacion respecto del periodo anterior. */
+.variacion {
+    display: inline-block;
+    margin-left: var(--espacio-sm);
+    padding: 1px 6px;
+    border-radius: var(--radio-pill);
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-variant-numeric: lining-nums;
+}
+
+.variacion--sube {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--white);
+}
+
+.variacion--baja {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--edocere-blue-light);
+}
+
+.variacion--igual {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Quien prefiere menos movimiento no ve las transiciones. */
+@media (prefers-reduced-motion: reduce) {
+    .metrica-detalle,
+    .metrica-detalle:where(:hover, :focus),
+    .metrica,
+    .btn-primary,
+    .home-card,
+    .instancia-lista li,
+    .funcionalidad summary {
+        transition: none;
+    }
+
+    .btn-primary:hover {
+        transform: none;
+    }
+}
+
+/* Marca las secciones que todavia no estan implementadas, para que no haya que
+   entrar a descubrirlo. */
+.etiqueta-pronto {
+    margin-left: var(--espacio-sm);
+    padding: 2px 8px;
+    border-radius: var(--radio-pill);
+    background: var(--edocere-orange-soft);
+    color: var(--edocere-orange);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }

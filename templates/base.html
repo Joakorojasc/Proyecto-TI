@@ -10,34 +10,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body class="portal-shell">
+<body>
     {% if user.is_authenticated %}
-    <aside class="sidebar" aria-label="Navegación principal">
+    <div class="franja-acento" aria-hidden="true"></div>
+
+    <header class="barra-superior">
         <a class="brand" href="{% url 'home' %}">
             <img src="{% static 'img/edocere-logo.png' %}" alt="Edocere">
         </a>
-        <a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} class="activo" aria-current="page"{% endif %}>Inicio</a>
-
-        <div class="sidebar-divider"></div>
-
-        <a href="{% url 'seccion_perfil' %}"{% if request.resolver_match.url_name == 'seccion_perfil' %} class="activo" aria-current="page"{% endif %}>Perfil de Institución</a>
-        <a href="{% url 'instancias:lista' %}"{% if request.resolver_match.namespace == 'instancias' %} class="activo" aria-current="page"{% endif %}>Mis Instancias</a>
-        <a href="{% url 'seccion_suscripciones' %}"{% if request.resolver_match.url_name == 'seccion_suscripciones' %} class="activo" aria-current="page"{% endif %}>Suscripciones y Planes</a>
-        <a href="{% url 'seccion_facturacion' %}"{% if request.resolver_match.url_name == 'seccion_facturacion' %} class="activo" aria-current="page"{% endif %}>Facturación y Pagos</a>
-        <a href="{% url 'seccion_estadisticas' %}"{% if request.resolver_match.url_name == 'seccion_estadisticas' %} class="activo" aria-current="page"{% endif %}>Estadísticas</a>
-
-        <form method="post" action="{% url 'logout' %}" class="sidebar-logout">
-            {% csrf_token %}
-            <button type="submit">Cerrar Sesión</button>
-        </form>
-    </aside>
+    </header>
     {% endif %}
 
-    <main class="main-content">
-        <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
-        <div id="global-loader">Cargando...</div>
+    <div class="portal-shell">
+        {% if user.is_authenticated %}
+        <aside class="sidebar" aria-label="Navegación principal">
+            <a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} class="activo" aria-current="page"{% endif %}>Inicio</a>
 
-        {% block content %}{% endblock content %}
-    </main>
+            <div class="sidebar-divider"></div>
+
+            <a href="{% url 'seccion_perfil' %}"{% if request.resolver_match.url_name == 'seccion_perfil' %} class="activo" aria-current="page"{% endif %}>Perfil de Institución</a>
+            <a href="{% url 'instancias:lista' %}"{% if request.resolver_match.namespace == 'instancias' %} class="activo" aria-current="page"{% endif %}>Mis Instancias</a>
+            <a href="{% url 'seccion_suscripciones' %}"{% if request.resolver_match.url_name == 'seccion_suscripciones' %} class="activo" aria-current="page"{% endif %}>Suscripciones y Planes</a>
+            <a href="{% url 'seccion_facturacion' %}"{% if request.resolver_match.url_name == 'seccion_facturacion' %} class="activo" aria-current="page"{% endif %}>Facturación y Pagos</a>
+            <a href="{% url 'seccion_estadisticas' %}"{% if request.resolver_match.url_name == 'seccion_estadisticas' %} class="activo" aria-current="page"{% endif %}>Estadísticas</a>
+
+            <form method="post" action="{% url 'logout' %}" class="sidebar-logout">
+                {% csrf_token %}
+                <button type="submit">Cerrar Sesión</button>
+            </form>
+        </aside>
+        {% endif %}
+
+        <main class="main-content">
+            <div class="contenido">
+                <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
+                <div id="global-loader">Cargando...</div>
+
+                {# Cada pantalla declara su ruta; la última entrada va sin enlace. #}
+                {% block migas %}{% endblock migas %}
+
+                {% block content %}{% endblock content %}
+            </div>
+        </main>
+    </div>
 </body>
 </html>

@@ -13,6 +13,17 @@ from apps.instancias.models import EstadoInstancia, InstanciaMoodle
 from apps.planes.models import Suscripcion
 
 
+def _variacion(actual: int | None, previo: int | None) -> int | None:
+    """Cambio porcentual entre dos períodos, redondeado.
+
+    Devuelve None cuando falta alguno de los dos o cuando el período anterior
+    fue cero, porque ahí el porcentaje no significa nada.
+    """
+    if actual is None or not previo:
+        return None
+    return round((actual - previo) / previo * 100)
+
+
 @login_required(login_url="/login/")
 def home(request: HttpRequest) -> HttpResponse:
     """Portada del portal: el estado de la cuenta de un vistazo.
@@ -58,6 +69,24 @@ def home(request: HttpRequest) -> HttpResponse:
             contexto["periodo"] = date_format(date(ultimo.anio, ultimo.mes, 1), "F Y").capitalize()
         contexto["usuarios_activos"] = totales["usuarios"]
         contexto["cursos"] = totales["cursos"]
+
+        # El período anterior permite mostrar la variación. Sale de las mismas
+        # mediciones, no hay que calcular ni pedir nada nuevo.
+        anterior = (
+            mediciones.exclude(anio=ultimo.anio, mes=ultimo.mes).order_by("-anio", "-mes").first()
+        )
+        if anterior is not None:
+            previos = mediciones.filter(anio=anterior.anio, mes=anterior.mes).aggregate(
+                usuarios=Sum("usuarios_activos"),
+                cursos=Sum("cantidad_cursos"),
+            )
+            if anterior.mes and anterior.anio:
+                contexto["periodo_previo"] = date_format(
+                    date(anterior.anio, anterior.mes, 1), "F Y"
+                ).capitalize()
+            contexto["usuarios_previos"] = previos["usuarios"]
+            contexto["cursos_previos"] = previos["cursos"]
+            contexto["variacion_usuarios"] = _variacion(totales["usuarios"], previos["usuarios"])
 
     return render(request, "inicio.html", contexto)
 

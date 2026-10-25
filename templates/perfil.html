@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 
+{% block migas %}
+<nav class="migas" aria-label="Ruta de navegación">
+    <ol>
+        <li><a href="{% url 'home' %}">Inicio</a></li>
+        <li aria-current="page">Perfil de Institución</li>
+    </ol>
+</nav>
+{% endblock migas %}
+
 {% block content %}
 <section class="profile-page">
     <header class="instances-header">
