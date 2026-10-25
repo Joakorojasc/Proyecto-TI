@@ -19,7 +19,7 @@
         <div class="client-summary">
             <!-- <span class="client-badge">Cliente</span> -->
             <h3>{{ cliente.razon_social }}</h3>
-            <p>{{ cliente.rut }}</p>
+            <p>{{ cliente.rut_formateado }}</p>
         </div>
 
         <form method="post" class="plan-form">
@@ -30,7 +30,7 @@
 
                 <div class="plan-grid">
                     {% for section in form.plan_sections %}
-                    <div class="plan-section{% if section.key == 'Personalizado' %} plan-section-personalizado{% endif %}">
+                    <div class="plan-section plan-section--{{ section.key|lower }}{% if section.key == 'Personalizado' %} plan-section-personalizado{% endif %}">
                         <div class="plan-section-header">
                             <h3>{{ section.title }}</h3>
                             <p>{{ section.description }}</p>
@@ -66,7 +66,7 @@
             </center>
             <div class="plan-section plan-section-personalizado">
                         <div class="plan-section-header">
-                            <h3>Plan personalizado</h3>
+                            <h3>Plan personalizado <span class="plan-nota">para empresas con necesidades mayores</span></h3>
                             <p>Si los planes que ofrecemos no se ajustan a tus necesidades y te has comunicado con nosotros para acceder a un plan personalizado, presiona aquí:</p>
                         </div>
                         <button type="submit" class="btn-primary" name="personalized_plan" value="1">Tengo un plan personalizado</button>

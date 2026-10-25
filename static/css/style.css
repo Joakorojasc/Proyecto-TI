@@ -43,6 +43,7 @@
 body {
     margin: 0;
     font-family: "Raleway", system-ui, -apple-system, sans-serif;
+    font-variant-numeric: lining-nums;
     background-color: var(--bg-light);
     color: var(--text-dark);
 }
@@ -203,9 +204,26 @@ body {
     margin: 18px 0;
 }
 
+/* El ancho de contenido se fija una sola vez, aca. Las migas y la pantalla
+   quedan dentro del mismo contenedor, asi comparten borde izquierdo en
+   cualquier resolucion. */
+.contenido {
+    max-width: var(--ancho-contenido);
+    margin: 0 auto;
+}
+
 .main-content {
     flex: 1;
+    min-width: 0;
     padding: var(--espacio-xl);
+}
+
+/* Pantallas de formulario dentro del portal: la tarjeta va centrada en la
+   columna de contenido. No usan auth-panel, que es la pantalla partida en dos
+   del login y dejaba la tarjeta pegada a un costado. */
+.formulario-pagina {
+    display: flex;
+    justify-content: center;
 }
 
 /* Las pantallas de entrada ocupan el ancho completo: el relleno del main
@@ -228,14 +246,22 @@ body {
     color: var(--white);
     padding: var(--espacio-xl);
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
+}
+
+/* El contenido se agrupa y se centra dentro del panel. Antes quedaba pegado al
+   borde izquierdo y en un monitor ancho se veia desbalanceado. */
+.auth-marca-contenido {
+    display: flex;
+    flex-direction: column;
     gap: var(--espacio-md);
+    width: min(100%, 420px);
 }
 
 .auth-marca .brand {
-    width: min(240px, 60%);
-    margin-bottom: var(--espacio-sm);
+    width: min(230px, 70%);
+    margin-bottom: var(--espacio-xs);
     padding: var(--espacio-sm) var(--espacio-md);
     background: var(--white);
     border-radius: var(--radio);
@@ -243,18 +269,63 @@ body {
 
 .auth-marca h2 {
     margin: 0;
-    font-size: 1.9rem;
-    font-weight: 600;
-    line-height: 1.25;
+    font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
     color: var(--white);
-    max-width: 18ch;
+}
+
+/* Una palabra del titular en naranjo: da color sin recargar el panel. */
+.auth-marca h2 span {
+    color: var(--edocere-orange);
 }
 
 .auth-marca p {
     margin: 0;
-    color: rgba(255, 255, 255, 0.75);
-    max-width: 44ch;
-    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 1.02rem;
+    line-height: 1.65;
+}
+
+/* Lo que se puede hacer, en lineas cortas en vez de un parrafo corrido. Cada
+   una lleva una marca naranja a la izquierda. */
+.auth-marca-puntos {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-sm);
+}
+
+.auth-marca-puntos li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--espacio-sm);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.auth-marca-puntos li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--edocere-orange);
+    transform: translateY(-2px);
+}
+
+/* Linea de marca al pie del panel, separada del resto. */
+.auth-marca-lema {
+    margin-top: var(--espacio-sm);
+    padding-top: var(--espacio-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
 
 .auth-formulario {
@@ -293,6 +364,11 @@ body {
 
     .auth-marca h2 {
         font-size: 1.4rem;
+    }
+
+    .auth-marca-lema,
+    .auth-marca-puntos {
+        display: none;
     }
 
     .auth-marca p {
@@ -395,9 +471,6 @@ body {
 }
 
 .plan-selection-page {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
     min-height: 70vh;
 }
 
@@ -421,9 +494,13 @@ body {
 }
 
 .plan-selection-card h2 {
-    margin: 0 0 20px;
-    font-size: clamp(1.8rem, 2vw, 2.4rem);
+    margin: 0 0 var(--espacio-lg);
+    font-size: clamp(1.6rem, 2vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
     color: var(--edocere-blue);
+    max-width: 22ch;
 }
 
 .client-summary {
@@ -489,6 +566,25 @@ body {
     background: var(--surface);
     padding: var(--espacio-lg);
     box-sizing: border-box;
+}
+
+.plan-section--mensual {
+    background: color-mix(in srgb, var(--edocere-blue-light) 28%, var(--white));
+    border-color: color-mix(in srgb, var(--edocere-blue-light) 55%, var(--white));
+}
+
+.plan-section--anual {
+    background: color-mix(in srgb, var(--edocere-blue-light) 60%, var(--white));
+    border-color: color-mix(in srgb, var(--edocere-blue-soft) 35%, var(--white));
+}
+
+/* Nota al lado de un titulo: aclara a quien apunta sin competir con el. */
+.plan-nota {
+    font-style: italic;
+    font-weight: 400;
+    font-size: 0.86rem;
+    color: var(--text-soft);
+    opacity: 0.75;
 }
 
 .plan-section-personalizado {
@@ -608,8 +704,6 @@ body {
 }
 
 .instances-page {
-    max-width: var(--ancho-contenido);
-    margin: 0 auto;
 }
 
 .instances-header {
@@ -669,8 +763,6 @@ body {
 }
 
 .home-page {
-    max-width: var(--ancho-contenido);
-    margin: 0 auto;
 }
 
 /* Encabezado: "Bienvenido" chico arriba y el nombre del portal grande debajo,
@@ -745,7 +837,7 @@ body {
 
 .metrica-valor {
     margin: 0;
-    font-variant-numeric: lining-nums tabular-nums;
+    font-variant-numeric: tabular-nums;
     color: var(--white);
     font-size: 2.4rem;
     font-weight: 700;
@@ -811,7 +903,7 @@ body {
 }
 
 .plan-precio strong {
-    font-variant-numeric: lining-nums tabular-nums;
+    font-variant-numeric: tabular-nums;
     color: var(--edocere-blue);
     font-size: 1.5rem;
     font-weight: 700;
@@ -1052,8 +1144,6 @@ body {
 }
 
 .subscriptions-page {
-    max-width: var(--ancho-contenido);
-    margin: 0 auto;
 }
 
 .subscriptions-intro {
@@ -1132,8 +1222,6 @@ body {
 }
 
 .profile-page {
-    max-width: var(--ancho-contenido);
-    margin: 0 auto;
 }
 
 /* La tarjeta del formulario si se acota: lineas de 850px son mas comodas de
@@ -1575,4 +1663,19 @@ body {
     .btn-primary:hover {
         transform: none;
     }
+}
+
+/* Marca las secciones que todavia no estan implementadas, para que no haya que
+   entrar a descubrirlo. */
+.etiqueta-pronto {
+    margin-left: var(--espacio-sm);
+    padding: 2px 8px;
+    border-radius: var(--radio-pill);
+    background: var(--edocere-orange-soft);
+    color: var(--edocere-orange);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }

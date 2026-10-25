@@ -42,13 +42,15 @@
         {% endif %}
 
         <main class="main-content">
-            <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
-            <div id="global-loader">Cargando...</div>
+            <div class="contenido">
+                <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
+                <div id="global-loader">Cargando...</div>
 
-            {# Cada pantalla declara su ruta; la última entrada va sin enlace. #}
-            {% block migas %}{% endblock migas %}
+                {# Cada pantalla declara su ruta; la última entrada va sin enlace. #}
+                {% block migas %}{% endblock migas %}
 
-            {% block content %}{% endblock content %}
+                {% block content %}{% endblock content %}
+            </div>
         </main>
     </div>
 </body>
