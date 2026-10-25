@@ -43,9 +43,31 @@ body {
     color: var(--text-dark);
 }
 
+/* Franja de acento y barra con el logo, las dos cruzando el ancho completo.
+   La barra lateral azul empieza debajo. */
+.franja-acento {
+    height: 5px;
+    background: var(--edocere-orange);
+}
+
+.barra-superior {
+    display: flex;
+    align-items: center;
+    padding: var(--espacio-sm) var(--espacio-lg);
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+}
+
+.barra-superior .brand img {
+    width: auto;
+    height: 34px;
+}
+
 .portal-shell {
     display: flex;
-    min-height: 100vh;
+    /* Descuenta lo que ocupan la franja y la barra, para que la pantalla no
+       quede con scroll de sobra. */
+    min-height: calc(100vh - 56px);
 }
 
 .sidebar {
@@ -55,7 +77,7 @@ body {
     flex-shrink: 0;
     background: var(--edocere-blue);
     color: var(--white);
-    padding: var(--espacio-lg) var(--espacio-md);
+    padding: var(--espacio-md);
     /* Columna para poder empujar el cierre de sesion al fondo. */
     display: flex;
     flex-direction: column;
@@ -93,18 +115,41 @@ body {
     outline-offset: 2px;
 }
 
-/* El logo va sobre una franja blanca que cruza la barra de lado a lado. No se
-   le puede quitar el fondo: sus bloques y la "d" son azules y desaparecerian
-   contra el azul de la barra. Los margenes negativos anulan el relleno de la
-   barra para que la franja llegue a los bordes. */
+.sidebar-logout {
+    margin-top: auto;
+    padding-top: var(--espacio-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-logout button {
+    width: 100%;
+    text-align: left;
+    padding: 10px var(--espacio-sm);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.72);
+    font-family: inherit;
+    font-size: 1.02rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-logout button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--white);
+}
+
+.sidebar-logout button:focus-visible {
+    outline: 2px solid var(--edocere-blue-light);
+    outline-offset: 2px;
+}
+
+/* Base del logo. Cada lugar donde aparece le da su tamano: la barra superior
+   del portal y el panel de las pantallas de entrada. */
 .brand {
     display: block;
-    margin: calc(var(--espacio-lg) * -1) calc(var(--espacio-md) * -1) var(--espacio-lg);
-    padding: var(--espacio-md);
-    background: var(--white);
-    /* Pegada al borde de arriba y curvada abajo, para que se lea como un panel
-       que baja desde el borde en vez de una caja suelta. */
-    border-radius: 0 0 18px 18px;
     text-decoration: none;
 }
 
@@ -116,7 +161,7 @@ body {
 
 .brand:focus-visible {
     outline: 2px solid var(--edocere-orange);
-    outline-offset: 2px;
+    outline-offset: 4px;
 }
 
 .sidebar a:not(.brand) {
@@ -188,6 +233,8 @@ body {
     width: min(240px, 60%);
     margin-bottom: var(--espacio-sm);
     padding: var(--espacio-sm) var(--espacio-md);
+    background: var(--white);
+    border-radius: var(--radio);
 }
 
 .auth-marca h2 {
