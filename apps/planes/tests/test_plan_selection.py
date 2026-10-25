@@ -1,13 +1,20 @@
 from decimal import Decimal
 
 import pytest
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.test import Client
 from django.urls import reverse
 
-from apps.clientes.models import Cliente
+from apps.clientes.models import Cliente, UsuarioPortal
 from apps.clientes.terminos import VERSION_TERMINOS
 from apps.planes.models import Plan, Suscripcion
+
+
+def autenticar_cliente(client: Client, cliente: Cliente) -> None:
+    usuario, _ = User.objects.get_or_create(username=f"cliente-{cliente.pk}")
+    UsuarioPortal.objects.get_or_create(usuario=usuario, defaults={"cliente": cliente})
+    client.force_login(usuario)
 
 
 @pytest.mark.django_db
@@ -46,6 +53,7 @@ def test_seleccionar_plan_crea_suscripcion(client: Client) -> None:
         precio_por_usuario=2000,
         limite_usuarios=20,
     )
+    autenticar_cliente(client, cliente)
 
     response = client.post(
         reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id}),
@@ -73,6 +81,7 @@ def test_seleccion_plan_muestra_precio_mensual_y_limite_de_usuarios(client: Clie
         precio_por_usuario=0,
         limite_usuarios=10,
     )
+    autenticar_cliente(client, cliente)
 
     response = client.get(reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id}))
 
@@ -95,11 +104,13 @@ def test_plan_personalizado_se_crea_por_cliente_sin_suscripcion(client: Client) 
         for numero, rut in enumerate(("76.123.456-0", "76.987.654-5", "77.777.777-7"), start=1)
     ]
 
+    autenticar_cliente(client, clientes[0])
     response = client.get(reverse("seleccionar_plan", kwargs={"cliente_id": clientes[0].id}))
     assert response.status_code == 200
     assert b"Tengo un plan personalizado" in response.content
 
     for cliente in clientes[:2]:
+        autenticar_cliente(client, cliente)
         response = client.post(
             reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id}),
             {"personalized_plan": "1"},
@@ -126,6 +137,7 @@ def test_plan_personalizado_se_crea_por_cliente_sin_suscripcion(client: Client) 
     assert planes_cliente[0].precio_base == Decimal("800.00")
     assert planes_cliente[1].precio_base == Decimal("400.00")
 
+    autenticar_cliente(client, clientes[2])
     response = client.post(
         reverse("seleccionar_plan", kwargs={"cliente_id": clientes[2].id}),
         {"plan": planes_cliente[0].id},

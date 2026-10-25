@@ -1,8 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 
-from apps.clientes.models import Cliente
+from apps.clientes.permisos import obtener_cliente_autorizado
 
 from .forms import SeleccionarPlanForm
 from .models import Plan
@@ -25,8 +25,9 @@ def planes_disponibles(request: HttpRequest) -> HttpResponse:
     )
 
 
+@login_required(login_url="/login/")
 def seleccionar_plan(request: HttpRequest, cliente_id: int) -> HttpResponse:
-    cliente = get_object_or_404(Cliente, id=cliente_id)
+    cliente = obtener_cliente_autorizado(request, cliente_id)
 
     if request.method == "POST" and "personalized_plan" in request.POST:
         plan, _ = Plan.objects.get_or_create(
