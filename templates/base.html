@@ -45,6 +45,9 @@
             <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
             <div id="global-loader">Cargando...</div>
 
+            {# Cada pantalla declara su ruta; la última entrada va sin enlace. #}
+            {% block migas %}{% endblock migas %}
+
             {% block content %}{% endblock content %}
         </main>
     </div>
