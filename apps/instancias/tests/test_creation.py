@@ -1,7 +1,8 @@
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.clientes.models import Cliente
+from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
 from ..models import InstanciaMoodle
@@ -11,6 +12,9 @@ class CrearInstanciaViewTests(TestCase):
     def setUp(self) -> None:
         self.cliente = Cliente.objects.create(rut="77020202-7", razon_social="Empresa Demo")
         self.otro_cliente = Cliente.objects.create(rut="77030303-6", razon_social="Otra Empresa")
+        usuario = User.objects.create_user(username="propietario")
+        UsuarioPortal.objects.create(usuario=usuario, cliente=self.cliente)
+        self.client.force_login(usuario)
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="Mensual")
         self.url = reverse(
             "instancias:crear",
