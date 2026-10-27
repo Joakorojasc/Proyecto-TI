@@ -1,7 +1,7 @@
 """Regresión del acceso por cliente_id a planes y creación de instancias."""
 
 import pytest
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, Permission, User
 from django.test import Client
 from django.urls import reverse
 
@@ -29,17 +29,42 @@ def solicitud(navegador: Client, operacion: str, metodo: str, cliente: Cliente, 
 
 @pytest.mark.parametrize("operacion", ["seleccionar", "personalizado", "crear"])
 @pytest.mark.parametrize("metodo", ["get", "post"])
-@pytest.mark.parametrize("actor", ["anonimo", "ajeno", "sin-portal", "sin-cliente"])
+@pytest.mark.parametrize(
+    "actor",
+    [
+        "anonimo",
+        "ajeno",
+        "sin-portal",
+        "sin-cliente",
+        "staff-sin-portal",
+        "staff-sin-cliente",
+        "staff-ajeno",
+        "rol-superadmin",
+        "grupo-y-permisos",
+    ],
+)
 def test_acceso_denegado_no_expone_ni_crea_datos(
     client: Client, usuario_cliente: User, operacion: str, metodo: str, actor: str
 ) -> None:
     ajena = Cliente.objects.create(rut="76987654-5", razon_social="Institución Ajena")
     plan = Plan.objects.create(nombre="Plan Base", tipo_plan="Mensual")
-    if actor == "ajeno":
+    if actor in ("ajeno", "staff-ajeno", "rol-superadmin", "grupo-y-permisos"):
+        if actor == "staff-ajeno":
+            usuario_cliente.is_staff = True
+            usuario_cliente.save(update_fields=["is_staff"])
+        elif actor == "rol-superadmin":
+            perfil = usuario_cliente.usuarioportal
+            perfil.rol = "Superadmin"
+            perfil.save(update_fields=["rol"])
+        elif actor == "grupo-y-permisos":
+            usuario_cliente.groups.add(Group.objects.create(name="Superadministradores"))
+            usuario_cliente.user_permissions.add(*Permission.objects.all())
         client.force_login(usuario_cliente)
-    elif actor in ("sin-portal", "sin-cliente"):
-        usuario = User.objects.create_user(username="sin-asociacion")
-        if actor == "sin-cliente":
+    elif actor != "anonimo":
+        usuario = User.objects.create_user(
+            username="sin-asociacion", is_staff=actor.startswith("staff-")
+        )
+        if actor.endswith("sin-cliente"):
             UsuarioPortal.objects.create(usuario=usuario, cliente=None)
         client.force_login(usuario)
 
@@ -53,21 +78,28 @@ def test_acceso_denegado_no_expone_ni_crea_datos(
 
 @pytest.mark.parametrize("operacion", ["seleccionar", "personalizado", "crear"])
 @pytest.mark.parametrize("metodo", ["get", "post"])
-@pytest.mark.parametrize("actor", ["propietario", "staff", "superusuario"])
+@pytest.mark.parametrize(
+    "actor", ["propietario", "staff-propietario", "superusuario", "superusuario-asociado"]
+)
 def test_acceso_permitido_respeta_los_permisos_existentes(
     client: Client, usuario_cliente: User, operacion: str, metodo: str, actor: str
 ) -> None:
     cliente = usuario_cliente.usuarioportal.cliente
     assert cliente is not None
-    if actor != "propietario":
-        # Administrador sin institución propia: mismo acceso global que el mixin.
+    if actor.startswith("superusuario"):
         usuario = User.objects.create_user(
             username="administrador",
-            is_staff=actor == "staff",
-            is_superuser=actor == "superusuario",
+            is_staff=True,
+            is_superuser=True,
         )
+        if actor == "superusuario-asociado":
+            otra = Cliente.objects.create(rut="76987654-5", razon_social="Otra Institución")
+            UsuarioPortal.objects.create(usuario=usuario, cliente=otra)
     else:
         usuario = usuario_cliente
+        if actor == "staff-propietario":
+            usuario.is_staff = True
+            usuario.save(update_fields=["is_staff"])
     client.force_login(usuario)
     plan = Plan.objects.create(nombre="Plan Base", tipo_plan="Mensual")
 
