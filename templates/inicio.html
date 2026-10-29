@@ -99,7 +99,7 @@
     <section class="home-bloque home-bloque--destacado" aria-labelledby="titulo-instancias">
         <div class="home-bloque-header">
             <h2 id="titulo-instancias">Tus instancias</h2>
-            <a class="btn-primary" href="{% url 'seleccionar_plan' cliente.pk %}">+ Crear instancia</a>
+            <a class="btn-primary" href="{% url 'planes:seleccionar_plan' cliente.pk %}">+ Crear instancia</a>
         </div>
 
         {% if instancias %}
@@ -151,9 +151,9 @@
                 </div>
             </details>
             <details class="funcionalidad">
-                <summary>Facturación y Pagos <span class="etiqueta-pronto">Próximamente</span></summary>
+                <summary>Facturación y Pagos</summary>
                 <div class="funcionalidad-cuerpo">
-                    <p>Consulta los pagos y las facturas asociadas a los servicios de tu institución. Esta sección todavía está en desarrollo.</p>
+                    <p>Consulta los pagos y los comprobantes asociados a los servicios de tu institución.</p>
                     <a class="home-card-link" href="{% url 'seccion_facturacion' %}">Ir a Facturación y Pagos <span aria-hidden="true">&rarr;</span></a>
                 </div>
             </details>

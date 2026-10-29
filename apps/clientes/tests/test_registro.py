@@ -127,7 +127,7 @@ class RegistroUsuarioTests(TestCase):
         respuesta = self.client.get(reverse("instancias:lista"))
 
         self.assertContains(respuesta, "Aún no tienes instancias Moodle asociadas.")
-        self.assertContains(respuesta, reverse("seleccionar_plan", args=[cliente.pk]))
+        self.assertContains(respuesta, reverse("planes:seleccionar_plan", args=[cliente.pk]))
 
     def test_correo_se_normaliza_a_minusculas(self) -> None:
         self.client.post(self.url, data={**self.datos, "username": "Admin@Demo.CL"})

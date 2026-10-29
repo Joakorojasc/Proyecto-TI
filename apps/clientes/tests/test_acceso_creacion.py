@@ -17,17 +17,15 @@ def solicitud(navegador: Client, operacion: str, metodo: str, cliente: Cliente, 
         url = reverse("instancias:crear", args=[cliente.pk, plan.pk])
         datos = {"nombre": "Campus Prueba", "tipo_dominio": "edocere", "subdominio": "campus"}
     else:
-        url = reverse("seleccionar_plan", args=[cliente.pk])
-        datos = (
-            {"personalized_plan": "1"} if operacion == "personalizado" else {"plan": str(plan.pk)}
-        )
+        url = reverse("planes:seleccionar_plan", args=[cliente.pk])
+        datos = {"plan": str(plan.pk)}
     respuesta = getattr(navegador, metodo)(url, datos if metodo == "post" else {})
     if respuesta.status_code == 302 and "_auth_user_id" not in navegador.session:
         assert respuesta["Location"] == f"{reverse('login')}?next={url}"
     return respuesta.status_code
 
 
-@pytest.mark.parametrize("operacion", ["seleccionar", "personalizado", "crear"])
+@pytest.mark.parametrize("operacion", ["seleccionar", "crear"])
 @pytest.mark.parametrize("metodo", ["get", "post"])
 @pytest.mark.parametrize(
     "actor",
@@ -76,7 +74,7 @@ def test_acceso_denegado_no_expone_ni_crea_datos(
     assert [list(modelo.objects.order_by("pk").values()) for modelo in modelos] == inicial
 
 
-@pytest.mark.parametrize("operacion", ["seleccionar", "personalizado", "crear"])
+@pytest.mark.parametrize("operacion", ["seleccionar", "crear"])
 @pytest.mark.parametrize("metodo", ["get", "post"])
 @pytest.mark.parametrize(
     "actor", ["propietario", "staff-propietario", "superusuario", "superusuario-asociado"]
@@ -111,10 +109,6 @@ def test_acceso_permitido_respeta_los_permisos_existentes(
         assert suscripcion.cliente_id == cliente.pk
         assert suscripcion.instancia_id == instancia.pk
         assert suscripcion.plan_id == plan.pk
-    elif operacion == "personalizado" and metodo == "post":
-        assert Plan.objects.filter(cliente=cliente, tipo_plan="personalizado").count() == 1
-        assert not InstanciaMoodle.objects.exists()
-        assert not Suscripcion.objects.exists()
     else:
         assert not Plan.objects.filter(cliente=cliente).exists()
         assert not InstanciaMoodle.objects.exists()

@@ -189,14 +189,18 @@ class SeccionesPendientesTests(TestCase):
     def test_marca_las_secciones_en_desarrollo(self) -> None:
         respuesta = self.client.get(reverse("home"))
 
-        # Dos de las cinco secciones son pantallas vacías todavía.
-        self.assertContains(respuesta, "Próximamente", count=2)
+        self.assertContains(respuesta, "Próximamente", count=1)
 
     def test_no_marca_las_secciones_que_ya_funcionan(self) -> None:
         respuesta = self.client.get(reverse("home"))
         html = respuesta.content.decode()
 
-        for titulo in ("Perfil de Institución", "Mis Instancias", "Suscripciones y Planes"):
+        for titulo in (
+            "Perfil de Institución",
+            "Mis Instancias",
+            "Suscripciones y Planes",
+            "Facturación y Pagos",
+        ):
             posicion = html.index(f"<summary>{titulo}")
             fragmento = html[posicion : posicion + 120]
             self.assertNotIn("Próximamente", fragmento)

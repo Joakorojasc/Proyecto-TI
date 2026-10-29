@@ -15,6 +15,38 @@
         <h1>Facturación y Pagos</h1>
     </header>
 
-    <p class="instances-empty">Esta sección estará disponible próximamente.</p>
+    {% if messages %}
+    {% for message in messages %}
+    <p class="plan-section">{{ message }}</p>
+    {% endfor %}
+    {% endif %}
+
+    {% if pagos %}
+    <div class="subscriptions-plan-list">
+        {% for pago in pagos %}
+        <article class="subscriptions-plan-card">
+            <h2>Pago {{ pago.get_estado_display|default:pago.estado }}</h2>
+            <p>Fecha: {{ pago.fecha_pago|date:"d/m/Y H:i" }}</p>
+            <p>Monto: USD {{ pago.monto|stringformat:"s" }} más IVA</p>
+            <p>Suscripción: {{ pago.suscripcion.plan.nombre }}</p>
+            <p>Instancia:
+                {% if pago.suscripcion.instancia %}
+                {{ pago.suscripcion.instancia.nombre|default:pago.suscripcion.instancia.dominio }}
+                {% else %}
+                Sin instancia asociada
+                {% endif %}
+            </p>
+            {% if pago.estado == "aprobado" and pago.documentotributario %}
+            <p>
+                <strong>Comprobante simulado - No válido como documento tributario (DTE)</strong>
+                · Folio {{ pago.documentotributario.folio }}
+            </p>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="instances-empty">Aún no hay pagos registrados.</p>
+    {% endif %}
 </section>
 {% endblock content %}

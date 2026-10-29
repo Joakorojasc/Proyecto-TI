@@ -15,7 +15,7 @@
     <header class="instances-header">
         <h1>Mis Instancias</h1>
         {% if cliente_id %}
-        <a class="btn-crear-instancia" href="{% url 'seleccionar_plan' cliente_id %}">+ Crear instancia</a>
+        <a class="btn-crear-instancia" href="{% url 'planes:seleccionar_plan' cliente_id %}">+ Crear instancia</a>
         {% endif %}
     </header>
     
@@ -42,6 +42,7 @@
                     <th scope="col">Estado</th>
                     <th scope="col">Versión</th>
                     <th scope="col">Plan</th>
+                    <th scope="col">Pago</th>
                     <th scope="col">Creada</th>
                 </tr>
             </thead>
@@ -75,6 +76,17 @@
                                 Múltiples planes activos
                             {% else %}
                                 Sin plan activo
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% with suscripciones_activas=instancia.suscripciones_activas %}
+                            {% if suscripciones_activas|length == 1 %}
+                            <a class="btn-crear-instancia" href="{% url 'pagos:checkout' suscripciones_activas.0.id %}">
+                                Ingresar tarjeta
+                            </a>
+                            {% else %}
+                            Sin suscripción activa
                             {% endif %}
                         {% endwith %}
                     </td>

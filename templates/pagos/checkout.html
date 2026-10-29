@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="plan-selection-page">
+    <div class="plan-selection-card">
+        <h2>Checkout de prueba</h2>
+        <p>Suscripción: {{ suscripcion.plan.display_label }}</p>
+        <p>Institución: {{ cliente.razon_social }}</p>
+
+        {% if messages %}
+        <div class="plan-section">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {{ form.as_p }}
+            <button type="submit" name="resultado" value="aprobado" class="btn-primary">
+                Simular Pago Aprobado
+            </button>
+            <button type="submit" name="resultado" value="rechazado" class="btn-primary">
+                Simular Pago Rechazado
+            </button>
+        </form>
+    </div>
+</section>
+{% endblock %}
