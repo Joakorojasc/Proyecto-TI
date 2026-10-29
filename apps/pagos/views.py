@@ -45,9 +45,7 @@ def facturacion(request: HttpRequest) -> HttpResponse:
 
 
 @login_required(login_url="/login/")
-def checkout_suscripcion(
-    request: HttpRequest, suscripcion_id: int
-) -> HttpResponse:
+def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpResponse:
     suscripcion = get_object_or_404(
         Suscripcion.objects.select_related("cliente", "plan"),
         id=suscripcion_id,
@@ -63,9 +61,7 @@ def checkout_suscripcion(
             with transaction.atomic():
                 medio_pago, _ = MedioPago.objects.update_or_create(
                     cliente=cliente,
-                    token_simulado=(
-                        form.cleaned_data["token_simulado"] or token_urlsafe(24)
-                    ),
+                    token_simulado=(form.cleaned_data["token_simulado"] or token_urlsafe(24)),
                     defaults={
                         "ultimos_4_digitos": form.cleaned_data["ultimos_4_digitos"],
                         "marca_tarjeta": form.cleaned_data["marca_tarjeta"],
@@ -78,9 +74,7 @@ def checkout_suscripcion(
                     monto=Decimal("0.00"),
                     fecha_pago=timezone.now(),
                     estado=(
-                        Pago.ESTADO_APROBADO
-                        if resultado == "aprobado"
-                        else Pago.ESTADO_RECHAZADO
+                        Pago.ESTADO_APROBADO if resultado == "aprobado" else Pago.ESTADO_RECHAZADO
                     ),
                 )
                 if resultado == "aprobado":
@@ -99,9 +93,7 @@ def checkout_suscripcion(
                         request,
                         "Pago rechazado: el medio de pago no fue aprobado. Puedes reintentar.",
                     )
-            return redirect(
-                f"{reverse('seccion_facturacion')}?cliente_id={cliente.id}"
-            )
+            return redirect(f"{reverse('seccion_facturacion')}?cliente_id={cliente.id}")
 
     return render(
         request,

@@ -124,9 +124,7 @@ def test_plan_personalizado_requiere_contacto_y_no_se_autocrea(client: Client) -
         nombre="Plan especial",
         tipo_plan="personalizado",
     )
-    response = client.get(
-        reverse("planes:seleccionar_plan", kwargs={"cliente_id": clientes[0].id})
-    )
+    response = client.get(reverse("planes:seleccionar_plan", kwargs={"cliente_id": clientes[0].id}))
     assert response.status_code == 200
     assert "Plan especial" in response.content.decode()
 

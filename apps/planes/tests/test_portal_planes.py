@@ -43,8 +43,7 @@ def test_pestana_suscripciones_muestra_planes_publicos_por_periodicidad(
     assert b"Hasta 25 usuarios activos" in respuesta.content
     assert (
         b"Los primeros 10 usuarios son gratuitos. A partir del usuario 11, "
-        b"se cobrar\xc3\xa1 USD 1,50 por la totalidad de los usuarios activos."
-        in respuesta.content
+        b"se cobrar\xc3\xa1 USD 1,50 por la totalidad de los usuarios activos." in respuesta.content
     )
     assert b"Plan anual institucional" in respuesta.content
     assert b"USD 120,000.00/a\xc3\xb1o, m\xc3\xa1s IVA" in respuesta.content

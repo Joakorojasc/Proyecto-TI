@@ -5,6 +5,7 @@ from django.http import Http404, HttpRequest
 from django.shortcuts import get_object_or_404
 
 from .models import Cliente
+from .permisos import es_superadministrador
 
 
 def get_cliente_autorizado(request: HttpRequest, cliente_id: int) -> Cliente:
@@ -19,8 +20,6 @@ def get_cliente_autorizado(request: HttpRequest, cliente_id: int) -> Cliente:
         raise Http404("No tienes acceso a esta institución.")
 
     return cliente
-
-from .permisos import es_superadministrador
 
 
 class AislamientoClienteMixin:

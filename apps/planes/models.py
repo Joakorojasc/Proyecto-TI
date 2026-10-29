@@ -40,9 +40,9 @@ class Plan(models.Model):
         """Calcula el cobro mensual aplicando la tarifa a todos los usuarios."""
         if usuarios_activos <= 10:
             return Decimal("0.00")
-        return (
-            Decimal(usuarios_activos) * self.PRECIO_MENSUAL_POR_USUARIO
-        ).quantize(Decimal("0.01"))
+        return (Decimal(usuarios_activos) * self.PRECIO_MENSUAL_POR_USUARIO).quantize(
+            Decimal("0.01")
+        )
 
 
 class Suscripcion(models.Model):
