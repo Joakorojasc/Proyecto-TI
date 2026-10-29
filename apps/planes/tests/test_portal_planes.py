@@ -26,7 +26,7 @@ def test_pestana_suscripciones_muestra_planes_publicos_por_periodicidad(
         precio_base=120000,
         limite_usuarios=100,
     )
-    cliente = Cliente.objects.create(rut="76.123.456-7", razon_social="Institución")
+    cliente = Cliente.objects.create(rut="76123456-0", razon_social="Institución")
     Plan.objects.create(
         nombre="Plan privado",
         tipo_plan="Mensual",

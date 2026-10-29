@@ -10,9 +10,9 @@ from ..models import InstanciaMoodle
 
 class CrearInstanciaViewTests(TestCase):
     def setUp(self) -> None:
-        self.cliente = Cliente.objects.create(razon_social="Empresa Demo")
-        self.otro_cliente = Cliente.objects.create(razon_social="Otra Empresa")
-        usuario = User.objects.create_user(username="cliente", password="Password123!")
+        self.cliente = Cliente.objects.create(rut="77020202-7", razon_social="Empresa Demo")
+        self.otro_cliente = Cliente.objects.create(rut="77030303-6", razon_social="Otra Empresa")
+        usuario = User.objects.create_user(username="propietario")
         UsuarioPortal.objects.create(usuario=usuario, cliente=self.cliente)
         self.client.force_login(usuario)
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="Mensual")

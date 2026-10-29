@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
-from apps.clientes.mixins import get_cliente_autorizado
+from apps.clientes.permisos import obtener_cliente_autorizado
 from apps.pagos.views import pagos_del_cliente
 
 from .forms import ContactoPlanPersonalizadoForm, SeleccionarPlanForm
@@ -43,7 +43,7 @@ def contacto_plan_personalizado(request: HttpRequest) -> HttpResponse:
 
 @login_required(login_url="/login/")
 def seleccionar_plan(request: HttpRequest, cliente_id: int) -> HttpResponse:
-    cliente = get_cliente_autorizado(request, cliente_id)
+    cliente = obtener_cliente_autorizado(request, cliente_id)
     form = SeleccionarPlanForm(request.POST or None, cliente_id=cliente.id)
 
     if request.method == "POST" and form.is_valid():
