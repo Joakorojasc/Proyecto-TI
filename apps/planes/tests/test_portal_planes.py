@@ -21,10 +21,10 @@ def test_pestana_suscripciones_muestra_planes_publicos_por_periodicidad(
         limite_usuarios=25,
     )
     Plan.objects.create(
-        nombre="Plan anual institucional",
+        nombre="Plan anual hasta 1000",
         tipo_plan="Anual",
         precio_base=120000,
-        limite_usuarios=100,
+        limite_usuarios=1000,
     )
     cliente = Cliente.objects.create(rut="76123456-0", razon_social="Institución")
     Plan.objects.create(
@@ -45,9 +45,9 @@ def test_pestana_suscripciones_muestra_planes_publicos_por_periodicidad(
         b"Los primeros 10 usuarios son gratuitos. A partir del usuario 11, "
         b"se cobrar\xc3\xa1 USD 1,50 por la totalidad de los usuarios activos." in respuesta.content
     )
-    assert b"Plan anual institucional" in respuesta.content
+    assert b"Plan anual hasta 1000" in respuesta.content
     assert b"USD 120,000.00/a\xc3\xb1o, m\xc3\xa1s IVA" in respuesta.content
-    assert b"Hasta 100 usuarios activos" in respuesta.content
+    assert b"Hasta 1000 usuarios activos" in respuesta.content
     assert b"Plan privado" not in respuesta.content
     assert b"previamente con Edocere" in respuesta.content
     assert b'href="/planes/contacto/"' in respuesta.content

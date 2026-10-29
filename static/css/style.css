@@ -1220,6 +1220,10 @@ body {
     overflow: hidden;
 }
 
+.subscriptions-page-custom-plan {
+    margin-bottom: 20px;
+}
+
 .subscriptions-custom-plan p {
     display: block;
     position: static;
