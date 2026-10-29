@@ -2,6 +2,8 @@ from typing import Any
 
 from django.db.models import QuerySet
 
+from .permisos import es_superadministrador
+
 
 class AislamientoClienteMixin:
     request: Any
@@ -13,7 +15,7 @@ class AislamientoClienteMixin:
         if user is None or not getattr(user, "is_authenticated", False):
             return queryset.none()
 
-        if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+        if es_superadministrador(user):
             return queryset
 
         usuario_portal = getattr(user, "usuarioportal", None)

@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods, require_safe
 
 from . import terminos
@@ -16,19 +16,20 @@ from .forms import (
     UsuarioRegistroForm,
 )
 from .models import Cliente, UsuarioPortal
+from .permisos import obtener_cliente_propio
 from .validators import RUT_DUPLICADO
 
 
+@login_required
+@require_http_methods(["GET", "POST"])
 def perfil_institucion(request: HttpRequest) -> HttpResponse:
-    usuario_portal = get_object_or_404(
-        UsuarioPortal.objects.select_related("cliente"),
-        usuario_id=request.user.pk,
-    )
-    if usuario_portal.cliente is None:
-        raise Http404("El usuario no tiene una institución asociada.")
+    cliente = obtener_cliente_propio(request)
+    if cliente is None:
+        return render(request, "clientes/sin_institucion.html", status=404)
 
-    cliente = usuario_portal.cliente
-    form = PerfilInstitucionForm(request.POST or None, instance=cliente)
+    form = PerfilInstitucionForm(
+        request.POST if request.method == "POST" else None, instance=cliente
+    )
 
     if request.method == "POST" and form.is_valid():
         if not request.user.check_password(form.cleaned_data["confirmacion_contrasena"]):
@@ -78,7 +79,7 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
                     UsuarioPortal.objects.create(
                         usuario=auth_user,
                         cliente=nuevo_cliente,
-                        nombre=auth_user.username,
+                        # No pedimos nombre personal: no usar el correo como nombre.
                         email=auth_user.email,
                         rol="Admin",
                     )
@@ -124,12 +125,9 @@ def documento_terminos(request: HttpRequest, version: str) -> FileResponse:
 @login_required
 @require_http_methods(["GET", "POST"])
 def aceptar_terminos(request: HttpRequest) -> HttpResponse:
-    perfil = get_object_or_404(
-        UsuarioPortal.objects.select_related("cliente"), usuario=request.user
-    )
-    if perfil.cliente is None:
-        raise Http404("El usuario no tiene una institución asociada.")
-    cliente = perfil.cliente
+    cliente = obtener_cliente_propio(request)
+    if cliente is None:
+        return render(request, "clientes/sin_institucion.html", status=404)
     form = AceptacionTerminosForm(request.POST if request.method == "POST" else None)
     if request.method == "POST" and form.is_valid():
         try:

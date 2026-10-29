@@ -284,6 +284,7 @@ def test_cuenta_sin_institucion_no_accede_a_otra(
         },
     )
     assert respuesta.status_code == 404
+    assert "Tu cuenta no tiene una institución asociada" in respuesta.content.decode()
     assert otra.razon_social is not None
     assert otra.email_contacto is not None
     assert otra.razon_social not in respuesta.content.decode()

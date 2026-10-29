@@ -48,7 +48,7 @@ urlpatterns = [
     ),
     path(
         "perfil/",
-        login_required(perfil_institucion, login_url="/login/"),
+        perfil_institucion,
         name="seccion_perfil",
     ),
 ]
