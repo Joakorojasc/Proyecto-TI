@@ -31,7 +31,7 @@ def planes_disponibles(request: HttpRequest) -> HttpResponse:
 def contacto_plan_personalizado(request: HttpRequest) -> HttpResponse:
     form = ContactoPlanPersonalizadoForm(
         request.POST or None,
-        initial={"correo": request.user.email},
+        initial={"correo": getattr(request.user, "email", "")},
     )
     enviado = request.method == "POST" and form.is_valid()
     return render(
