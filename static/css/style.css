@@ -586,10 +586,38 @@ body {
     margin-top: 20px;
     background: #f9fbfd;
     border-left: 4px solid var(--edocere-orange);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .subscriptions-custom-plan p {
-    margin-bottom: 0;
+    display: block;
+    position: static;
+    float: none;
+    height: auto;
+    margin: 0 0 20px;
+    overflow: visible;
+}
+
+.subscriptions-custom-plan-action {
+    display: block;
+    clear: both;
+    position: relative;
+    z-index: 1;
+    margin-top: 0;
+}
+
+.subscriptions-custom-plan-action .btn-primary {
+    position: static;
+    display: block;
+    align-self: flex-start;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    line-height: 1.2;
 }
 
 .profile-page {

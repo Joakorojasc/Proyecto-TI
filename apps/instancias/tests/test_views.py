@@ -91,6 +91,7 @@ class ListaInstanciasViewTests(TestCase):
 
         assert self.plan_a.nombre is not None
         self.assertContains(respuesta, self.plan_a.nombre)
+        self.assertContains(respuesta, "Ingresar tarjeta")
 
     def test_suscripcion_historica_no_reemplaza_al_plan_activo(self) -> None:
         plan_historico = Plan.objects.create(nombre="Plan Histórico")
@@ -188,7 +189,10 @@ class ListaInstanciasViewTests(TestCase):
 
         respuesta = self.client.get(self.url)
 
-        self.assertContains(respuesta, reverse("seleccionar_plan", args=[self.cliente_a.pk]))
+        self.assertContains(
+            respuesta,
+            reverse("planes:seleccionar_plan", args=[self.cliente_a.pk]),
+        )
 
     def test_lista_vacia_tambien_muestra_el_boton(self) -> None:
         InstanciaMoodle.objects.filter(cliente=self.cliente_a).delete()
@@ -197,7 +201,10 @@ class ListaInstanciasViewTests(TestCase):
         respuesta = self.client.get(self.url)
 
         self.assertContains(respuesta, "Aún no tienes instancias Moodle asociadas.")
-        self.assertContains(respuesta, reverse("seleccionar_plan", args=[self.cliente_a.pk]))
+        self.assertContains(
+            respuesta,
+            reverse("planes:seleccionar_plan", args=[self.cliente_a.pk]),
+        )
 
     def test_usuario_sin_cliente_no_ve_el_boton(self) -> None:
         usuario = User.objects.create_user(username="sin-perfil", password="clave")

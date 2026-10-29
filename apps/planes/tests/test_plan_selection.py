@@ -1,11 +1,10 @@
-from decimal import Decimal
-
 import pytest
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.test import Client
 from django.urls import reverse
 
-from apps.clientes.models import Cliente
+from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
 
@@ -36,6 +35,9 @@ def test_seleccionar_plan_crea_suscripcion(client: Client) -> None:
         direccion_facturacion="Avenida Siempre Viva 123",
         email_contacto="contacto@demo.cl",
     )
+    usuario = User.objects.create_user(username="cliente", password="Password123!")
+    UsuarioPortal.objects.create(usuario=usuario, cliente=cliente)
+    client.force_login(usuario)
     plan = Plan.objects.create(
         nombre="Plan Pro",
         tipo_plan="Mensual",
@@ -45,7 +47,7 @@ def test_seleccionar_plan_crea_suscripcion(client: Client) -> None:
     )
 
     response = client.post(
-        reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id}),
+        reverse("planes:seleccionar_plan", kwargs={"cliente_id": cliente.id}),
         {"plan": plan.id},
     )
 
@@ -64,6 +66,9 @@ def test_seleccion_plan_muestra_precio_mensual_y_limite_de_usuarios(client: Clie
         rut="76.123.456-7",
         razon_social="Empresa Demo",
     )
+    usuario = User.objects.create_user(username="cliente", password="Password123!")
+    UsuarioPortal.objects.create(usuario=usuario, cliente=cliente)
+    client.force_login(usuario)
     Plan.objects.create(
         nombre="Plan Demo",
         tipo_plan="Mensual",
@@ -71,16 +76,16 @@ def test_seleccion_plan_muestra_precio_mensual_y_limite_de_usuarios(client: Clie
         limite_usuarios=10,
     )
 
-    response = client.get(reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id}))
+    response = client.get(reverse("planes:seleccionar_plan", kwargs={"cliente_id": cliente.id}))
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Plan Demo · $0.00/usuario/mes" in content
+    assert "Plan Demo · USD 0.00/usuario/mes, más IVA" in content
     assert "Hasta 10 usuarios activos" in content
 
 
 @pytest.mark.django_db
-def test_plan_personalizado_se_crea_por_cliente_sin_suscripcion(client: Client) -> None:
+def test_plan_personalizado_requiere_contacto_y_no_se_autocrea(client: Client) -> None:
     clientes = [
         Cliente.objects.create(
             rut=f"76.123.456-{digito}",
@@ -92,41 +97,45 @@ def test_plan_personalizado_se_crea_por_cliente_sin_suscripcion(client: Client) 
         for digito in (1, 2, 3)
     ]
 
-    response = client.get(reverse("seleccionar_plan", kwargs={"cliente_id": clientes[0].id}))
+    usuario = User.objects.create_user(username="cliente", password="Password123!")
+    UsuarioPortal.objects.create(usuario=usuario, cliente=clientes[0])
+    client.force_login(usuario)
+
+    response = client.get(reverse("planes:seleccionar_plan", kwargs={"cliente_id": clientes[0].id}))
     assert response.status_code == 200
-    assert b"Tengo un plan personalizado" in response.content
-
-    for cliente in clientes[:2]:
-        response = client.post(
-            reverse("seleccionar_plan", kwargs={"cliente_id": cliente.id}),
-            {"personalized_plan": "1"},
-        )
-        assert response.status_code == 302
-        assert isinstance(response, HttpResponseRedirect)
-        plan_personalizado = Plan.objects.get(cliente=cliente)
-        assert response.url == reverse(
-            "instancias:crear",
-            kwargs={"cliente_id": cliente.id, "plan_id": plan_personalizado.id},
-        )
-
-    planes_cliente = [Plan.objects.get(cliente=cliente) for cliente in clientes[:2]]
-    assert [plan.cliente for plan in planes_cliente] == clientes[:2]
-    assert planes_cliente[0].pk != planes_cliente[1].pk
-    assert not Suscripcion.objects.filter(cliente__in=clientes[:2]).exists()
-
-    planes_cliente[0].precio_base = Decimal("800.00")
-    planes_cliente[0].save()
-    planes_cliente[1].precio_base = Decimal("400.00")
-    planes_cliente[1].save()
-    planes_cliente[0].refresh_from_db()
-    planes_cliente[1].refresh_from_db()
-    assert planes_cliente[0].precio_base == Decimal("800.00")
-    assert planes_cliente[1].precio_base == Decimal("400.00")
+    assert b"Contactar para solicitarlo" in response.content
+    assert b'href="/planes/contacto/"' in response.content
 
     response = client.post(
-        reverse("seleccionar_plan", kwargs={"cliente_id": clientes[2].id}),
-        {"plan": planes_cliente[0].id},
+        reverse("planes:seleccionar_plan", kwargs={"cliente_id": clientes[0].id}),
+        {"personalized_plan": "1"},
     )
     assert response.status_code == 200
-    assert not Suscripcion.objects.filter(cliente=clientes[2]).exists()
-    assert not Plan.objects.filter(cliente=clientes[2]).exists()
+    assert not Plan.objects.filter(cliente=clientes[0]).exists()
+
+    plan_personalizado = Plan.objects.create(
+        cliente=clientes[0],
+        nombre="Plan especial",
+        tipo_plan="personalizado",
+    )
+    response = client.get(
+        reverse("planes:seleccionar_plan", kwargs={"cliente_id": clientes[0].id})
+    )
+    assert response.status_code == 200
+    assert "Plan especial" in response.content.decode()
+
+    response = client.post(
+        reverse("planes:seleccionar_plan", kwargs={"cliente_id": clientes[0].id}),
+        {"plan": plan_personalizado.id},
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"] == reverse(
+        "instancias:crear",
+        kwargs={"cliente_id": clientes[0].id, "plan_id": plan_personalizado.id},
+    )
+
+    response = client.post(
+        reverse("planes:seleccionar_plan", kwargs={"cliente_id": clientes[1].id}),
+        {"plan": plan_personalizado.id},
+    )
+    assert response.status_code == 404
