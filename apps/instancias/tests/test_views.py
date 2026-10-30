@@ -15,6 +15,7 @@ from ..models import (
     InstanciaMoodle,
     SolicitudAprovisionamiento,
 )
+from ..services import AprovisionamientoError
 
 
 class ListaInstanciasViewTests(TestCase):
@@ -503,6 +504,40 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
             1,
         )
 
+    def test_reintento_que_vuelve_a_fallar_mantiene_estado_fallido(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            dominio="https://cliente-a.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(
+            instancia=instancia,
+            estado=EstadoAprovisionamiento.FALLIDA,
+        )
+        Suscripcion.objects.create(
+            cliente=self.cliente_a,
+            instancia=instancia,
+            plan=self.plan,
+            estado="activa",
+        )
+        url = reverse("instancias:reintentar", args=[instancia.pk])
+
+        with (
+            patch(
+                "apps.instancias.views.estado_cliente_para_instancia",
+                return_value="aprobada",
+            ),
+            patch(
+                "apps.instancias.views.AprovisionamientoService.enviar_solicitud",
+                side_effect=AprovisionamientoError("Fallo simulado"),
+            ),
+        ):
+            respuesta = self.client.post(url, follow=True)
+
+        self.assertContains(respuesta, "El reintento falló.")
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.FALLIDA)
+        self.assertIsNone(solicitud.operation_id)
+
     def test_no_reintenta_si_ya_no_esta_fallida(self) -> None:
         instancia = InstanciaMoodle.objects.create(
             cliente=self.cliente_a,
@@ -568,6 +603,21 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         respuesta = self.client.post(url)
 
         self.assertEqual(respuesta.status_code, 404)
+
+    def test_reintento_solo_acepta_post(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            dominio="https://cliente-a.edocere.com",
+        )
+        SolicitudAprovisionamiento.objects.create(
+            instancia=instancia,
+            estado=EstadoAprovisionamiento.FALLIDA,
+        )
+        url = reverse("instancias:reintentar", args=[instancia.pk])
+
+        respuesta = self.client.get(url)
+
+        self.assertEqual(respuesta.status_code, 405)
 
     def test_reintento_no_crea_operacion_concurrente(self) -> None:
         instancia = InstanciaMoodle.objects.create(

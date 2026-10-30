@@ -120,6 +120,44 @@ class CrearInstanciaViewTests(TestCase):
         with self.assertRaises(AprovisionamientoError):
             AprovisionamientoService.construir_tenant_slug(10**63)
 
+    def test_respuesta_no_202_no_persiste_una_operacion(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente,
+            dominio="https://campus.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
+        proveedor = Mock()
+        proveedor.enviar_solicitud.return_value = RespuestaAprovisionamiento(
+            status_code=503,
+            body={"operation_id": "SIM-42", "status": "PENDING"},
+        )
+
+        with self.assertRaises(AprovisionamientoError):
+            AprovisionamientoService(proveedor).enviar_solicitud(solicitud)
+
+        solicitud.refresh_from_db()
+        self.assertIsNone(solicitud.operation_id)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+
+    def test_respuesta_202_mal_formada_no_persiste_una_operacion(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente,
+            dominio="https://campus.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
+        proveedor = Mock()
+        proveedor.enviar_solicitud.return_value = RespuestaAprovisionamiento(
+            status_code=202,
+            body={"operation_id": "SIM-42", "status": "RUNNING"},
+        )
+
+        with self.assertRaises(AprovisionamientoError):
+            AprovisionamientoService(proveedor).enviar_solicitud(solicitud)
+
+        solicitud.refresh_from_db()
+        self.assertIsNone(solicitud.operation_id)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+
     def test_simulador_responde_con_aceptacion_asincrona(self) -> None:
         respuesta = SimuladorAprovisionamientoAPI().enviar_solicitud(
             {

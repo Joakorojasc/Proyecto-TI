@@ -114,7 +114,7 @@ def test_instancias_aplican_el_mismo_limite_de_acceso_que_creacion(
                 {
                     "nombre": "Actualizada",
                     "logo_url": "",
-                    "estado": "activa",
+                    "estado": "pendiente",
                     "confirmacion_contrasena": CLAVE,
                 },
             )
