@@ -49,6 +49,14 @@
                 {# Cada pantalla declara su ruta; la última entrada va sin enlace. #}
                 {% block migas %}{% endblock migas %}
 
+                {% if messages %}
+                <div class="mensajes" role="status" aria-live="polite">
+                    {% for message in messages %}
+                    <p class="mensaje mensaje--{{ message.tags }}">{{ message }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 {% block content %}{% endblock content %}
             </div>
         </main>

@@ -7,7 +7,7 @@ from django.db.models import Q
 from apps.planes.forms import PlanChoiceField
 from apps.planes.models import Plan, Suscripcion
 
-from .models import EstadoInstancia, InstanciaMoodle
+from .models import EstadoAprovisionamiento, EstadoInstancia, InstanciaMoodle
 
 DOMINIO_BASE_EDOCERE = "edocere.com"
 SUBDOMINIO_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
@@ -216,6 +216,19 @@ class EditarInstanciaForm(forms.ModelForm):
         if not contrasena:
             raise forms.ValidationError("Ingresa tu contraseña para confirmar los cambios.")
         return contrasena
+
+    def clean_estado(self) -> str:
+        estado = self.cleaned_data["estado"]
+        if estado == EstadoInstancia.ACTIVA and self.instance.estado != EstadoInstancia.ACTIVA:
+            solicitud = self.instance.solicitudes_aprovisionamiento.order_by(
+                "-created_at",
+                "-pk",
+            ).first()
+            if solicitud is None or solicitud.estado != EstadoAprovisionamiento.ACTIVA:
+                raise forms.ValidationError(
+                    "La instancia solo puede activarse después de confirmar su aprovisionamiento."
+                )
+        return estado
 
 
 class FiltroInstanciasForm(forms.Form):

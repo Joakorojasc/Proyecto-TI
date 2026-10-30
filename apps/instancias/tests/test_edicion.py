@@ -6,7 +6,12 @@ from django.utils import timezone
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
-from ..models import InstanciaMoodle
+from ..models import (
+    EstadoAprovisionamiento,
+    EstadoInstancia,
+    InstanciaMoodle,
+    SolicitudAprovisionamiento,
+)
 
 
 class EditarInstanciaViewTests(TestCase):
@@ -151,6 +156,35 @@ class EditarInstanciaViewTests(TestCase):
         self.assertEqual(self.instancia_a.dominio, "https://a.edocere.com")
         self.assertEqual(self.instancia_a.version, "5.2")
         self.assertEqual(self.instancia_a.estado, "archivada")
+
+    def test_no_puede_activar_instancia_sin_aprovisionamiento_confirmado(self) -> None:
+        instancia_pendiente = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            nombre="Campus pendiente",
+            dominio="https://pendiente.edocere.com",
+            estado=EstadoInstancia.PENDIENTE,
+        )
+        SolicitudAprovisionamiento.objects.create(
+            instancia=instancia_pendiente,
+            estado=EstadoAprovisionamiento.PENDIENTE,
+        )
+        url = reverse("instancias:editar", args=[instancia_pendiente.pk])
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.post(
+            url,
+            {
+                "nombre": instancia_pendiente.nombre,
+                "logo_url": "",
+                "estado": EstadoInstancia.ACTIVA,
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["form"].errors["estado"])
+        instancia_pendiente.refresh_from_db()
+        self.assertEqual(instancia_pendiente.estado, EstadoInstancia.PENDIENTE)
 
     def test_cambia_plan_cerrando_suscripcion_anterior_y_creando_una_nueva(self) -> None:
         self.client.force_login(self.usuario_a)

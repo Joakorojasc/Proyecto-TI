@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -8,7 +9,12 @@ from apps.clientes.models import Cliente, UsuarioPortal
 from apps.estadisticas.models import MedicionUsoMensual
 from apps.planes.models import Plan, Suscripcion
 
-from ..models import InstanciaMoodle
+from ..models import (
+    EstadoAprovisionamiento,
+    EstadoInstancia,
+    InstanciaMoodle,
+    SolicitudAprovisionamiento,
+)
 
 
 class ListaInstanciasViewTests(TestCase):
@@ -349,6 +355,244 @@ class DetalleInstanciaViewTests(TestCase):
         respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
 
         self.assertContains(respuesta, "Creada el: 05/03/2026")
+
+    def test_detalle_muestra_reintento_solo_para_solicitud_fallida(self) -> None:
+        solicitud = SolicitudAprovisionamiento.objects.create(
+            instancia=self.instancia_a,
+            estado=EstadoAprovisionamiento.FALLIDA,
+        )
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
+
+        self.assertContains(respuesta, "Reintentar aprovisionamiento")
+        self.assertContains(
+            respuesta,
+            reverse("instancias:reintentar", args=[self.instancia_a.pk]),
+        )
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.FALLIDA)
+
+
+class CreacionYReintentoAprovisionamientoTests(TestCase):
+    def setUp(self) -> None:
+        self.cliente_a = Cliente.objects.create(rut="77121212-3", razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(rut="77131313-2", razon_social="Cliente B")
+        self.usuario_a = User.objects.create_user(username="usuario-a", password="Password123!")
+        UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
+        self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="mensual")
+        self.client.force_login(self.usuario_a)
+        self.data_creacion = {
+            "nombre": "Campus Cliente A",
+            "tipo_dominio": "edocere",
+            "subdominio": "cliente-a",
+            "dominio_propio": "",
+            "logo_url": "",
+        }
+
+    def test_creacion_pendiente_no_invoca_proveedor_hasta_aprobar_pago(self) -> None:
+        url = reverse(
+            "instancias:crear",
+            kwargs={"cliente_id": self.cliente_a.pk, "plan_id": self.plan.pk},
+        )
+
+        with (
+            patch(
+                "apps.instancias.views.estado_cliente_para_instancia",
+                return_value="pendiente",
+            ),
+            patch("apps.instancias.views.AprovisionamientoService.enviar_solicitud") as enviar,
+        ):
+            respuesta = self.client.post(url, self.data_creacion, follow=True)
+
+        self.assertContains(respuesta, "Se procesará cuando se confirme el pago.")
+        enviar.assert_not_called()
+        instancia = InstanciaMoodle.objects.get(cliente=self.cliente_a)
+        solicitud = SolicitudAprovisionamiento.objects.get(instancia=instancia)
+        suscripcion = Suscripcion.objects.get(instancia=instancia)
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDIENTE)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+        self.assertIsNone(solicitud.operation_id)
+        self.assertEqual(suscripcion.estado, "pendiente")
+
+    def test_creacion_con_autorizacion_aprobada_envia_solicitud(self) -> None:
+        url = reverse(
+            "instancias:crear",
+            kwargs={"cliente_id": self.cliente_a.pk, "plan_id": self.plan.pk},
+        )
+
+        with patch(
+            "apps.instancias.views.estado_cliente_para_instancia",
+            return_value="aprobada",
+        ):
+            respuesta = self.client.post(url, self.data_creacion, follow=True)
+
+        self.assertContains(respuesta, "pendiente de aprovisionamiento")
+        instancia = InstanciaMoodle.objects.get(cliente=self.cliente_a)
+        solicitud = SolicitudAprovisionamiento.objects.get(instancia=instancia)
+        suscripcion = Suscripcion.objects.get(instancia=instancia)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+        self.assertEqual(solicitud.operation_id, f"SIM-{instancia.pk}")
+        self.assertEqual(suscripcion.estado, "activa")
+
+    def test_creacion_rechazada_no_invoca_proveedor(self) -> None:
+        url = reverse(
+            "instancias:crear",
+            kwargs={"cliente_id": self.cliente_a.pk, "plan_id": self.plan.pk},
+        )
+
+        with (
+            patch(
+                "apps.instancias.views.estado_cliente_para_instancia",
+                return_value="rechazada",
+            ),
+            patch("apps.instancias.views.AprovisionamientoService.enviar_solicitud") as enviar,
+        ):
+            respuesta = self.client.post(url, self.data_creacion, follow=True)
+
+        self.assertContains(respuesta, "Revisa el estado de tu pago.")
+        enviar.assert_not_called()
+        instancia = InstanciaMoodle.objects.get(cliente=self.cliente_a)
+        solicitud = SolicitudAprovisionamiento.objects.get(instancia=instancia)
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDIENTE)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+        self.assertIsNone(solicitud.operation_id)
+
+    def test_cliente_no_puede_crear_instancia_para_otro_cliente(self) -> None:
+        url = reverse(
+            "instancias:crear",
+            kwargs={"cliente_id": self.cliente_b.pk, "plan_id": self.plan.pk},
+        )
+
+        respuesta = self.client.post(url, self.data_creacion)
+
+        self.assertEqual(respuesta.status_code, 404)
+        self.assertFalse(InstanciaMoodle.objects.exists())
+        self.assertFalse(SolicitudAprovisionamiento.objects.exists())
+
+    def test_reintenta_solicitud_fallida_con_nueva_clave(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            dominio="https://cliente-a.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(
+            instancia=instancia,
+            estado=EstadoAprovisionamiento.FALLIDA,
+        )
+        clave_anterior = solicitud.idempotency_key
+        Suscripcion.objects.create(
+            cliente=self.cliente_a,
+            instancia=instancia,
+            plan=self.plan,
+            estado="activa",
+        )
+        url = reverse("instancias:reintentar", args=[instancia.pk])
+
+        with patch(
+            "apps.instancias.views.estado_cliente_para_instancia",
+            return_value="aprobada",
+        ):
+            respuesta = self.client.post(url)
+
+        self.assertRedirects(respuesta, reverse("instancias:detalle", args=[instancia.pk]))
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+        self.assertEqual(solicitud.operation_id, f"SIM-{instancia.pk}")
+        self.assertNotEqual(solicitud.idempotency_key, clave_anterior)
+        self.assertEqual(
+            SolicitudAprovisionamiento.objects.filter(instancia=instancia).count(),
+            1,
+        )
+
+    def test_no_reintenta_si_ya_no_esta_fallida(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            dominio="https://cliente-a.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(
+            instancia=instancia,
+            estado=EstadoAprovisionamiento.PENDIENTE,
+        )
+        url = reverse("instancias:reintentar", args=[instancia.pk])
+
+        with patch("apps.instancias.views.AprovisionamientoService.enviar_solicitud") as enviar:
+            respuesta = self.client.post(url, follow=True)
+
+        self.assertContains(respuesta, "Solo se pueden reintentar")
+        enviar.assert_not_called()
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+
+    def test_reintento_fallido_no_se_envia_si_pago_no_aprobado(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            dominio="https://cliente-a.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(
+            instancia=instancia,
+            estado=EstadoAprovisionamiento.FALLIDA,
+        )
+        Suscripcion.objects.create(
+            cliente=self.cliente_a,
+            instancia=instancia,
+            plan=self.plan,
+            estado="pendiente",
+        )
+        url = reverse("instancias:reintentar", args=[instancia.pk])
+
+        with (
+            patch(
+                "apps.instancias.views.estado_cliente_para_instancia",
+                return_value="pendiente",
+            ),
+            patch("apps.instancias.views.AprovisionamientoService.enviar_solicitud") as enviar,
+        ):
+            respuesta = self.client.post(url, follow=True)
+
+        self.assertContains(respuesta, "hasta que el pago esté aprobado")
+        enviar.assert_not_called()
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.FALLIDA)
+        self.assertIsNone(solicitud.operation_id)
+
+    def test_cliente_no_puede_reintentar_instancia_de_otro_cliente(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente_b,
+            dominio="https://cliente-b.edocere.com",
+        )
+        SolicitudAprovisionamiento.objects.create(
+            instancia=instancia,
+            estado=EstadoAprovisionamiento.FALLIDA,
+        )
+        url = reverse("instancias:reintentar", args=[instancia.pk])
+
+        respuesta = self.client.post(url)
+
+        self.assertEqual(respuesta.status_code, 404)
+
+    def test_reintento_no_crea_operacion_concurrente(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            dominio="https://cliente-a.edocere.com",
+        )
+        SolicitudAprovisionamiento.objects.create(
+            instancia=instancia,
+            estado=EstadoAprovisionamiento.PENDIENTE,
+        )
+        SolicitudAprovisionamiento.objects.create(
+            instancia=instancia,
+            estado=EstadoAprovisionamiento.FALLIDA,
+        )
+        url = reverse("instancias:reintentar", args=[instancia.pk])
+
+        with patch("apps.instancias.views.AprovisionamientoService.enviar_solicitud") as enviar:
+            respuesta = self.client.post(url, follow=True)
+
+        self.assertContains(respuesta, "otra operación de aprovisionamiento en curso")
+        enviar.assert_not_called()
+        self.assertEqual(
+            SolicitudAprovisionamiento.objects.filter(instancia=instancia).count(),
+            2,
+        )
 
 
 class FiltrosListaInstanciasTests(TestCase):

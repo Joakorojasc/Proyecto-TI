@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -5,7 +7,18 @@ from django.urls import reverse
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
-from ..models import InstanciaMoodle
+from ..models import (
+    EstadoAprovisionamiento,
+    EstadoInstancia,
+    InstanciaMoodle,
+    SolicitudAprovisionamiento,
+)
+from ..services import (
+    AprovisionamientoError,
+    AprovisionamientoService,
+    RespuestaAprovisionamiento,
+    SimuladorAprovisionamientoAPI,
+)
 
 
 class CrearInstanciaViewTests(TestCase):
@@ -53,12 +66,76 @@ class CrearInstanciaViewTests(TestCase):
         self.assertEqual(instancia.nombre, "Campus Duoc")
         self.assertEqual(instancia.dominio, "https://duoc.edocere.com")
         self.assertEqual(instancia.logo_url, "https://empresa.cl/logo.png")
-        self.assertEqual(instancia.estado, "activa")
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDIENTE)
+        solicitud = SolicitudAprovisionamiento.objects.get(instancia=instancia)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+        self.assertIsNone(solicitud.operation_id)
+        self.assertTrue(solicitud.idempotency_key)
         suscripcion = Suscripcion.objects.get(instancia=instancia)
         self.assertEqual(suscripcion.cliente, self.cliente)
         self.assertEqual(suscripcion.plan, self.plan)
-        self.assertEqual(suscripcion.estado, "activa")
+        self.assertEqual(suscripcion.estado, "pendiente")
         self.assertIsNotNone(suscripcion.fecha_inicio)
+
+    def test_servicio_envia_contrato_y_persiste_aceptacion(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente,
+            dominio="https://campus.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
+        proveedor = Mock()
+        proveedor.enviar_solicitud.return_value = RespuestaAprovisionamiento(
+            status_code=202,
+            body={"operation_id": "SIM-42", "status": "PENDING"},
+        )
+        servicio = AprovisionamientoService(proveedor)
+
+        payload = servicio.construir_payload(solicitud)
+        respuesta = servicio.enviar_solicitud(solicitud)
+
+        self.assertEqual(
+            payload,
+            {
+                "operation_type": "PROVISION",
+                "tenant_slug": f"tenant-{instancia.pk}",
+                "hostname": "campus.edocere.com",
+                "owner_ref": str(self.cliente.pk),
+            },
+        )
+        self.assertLessEqual(len(payload["tenant_slug"]), 63)
+        self.assertRegex(payload["tenant_slug"], r"^[a-z0-9]+(-[a-z0-9]+)*$")
+        proveedor.enviar_solicitud.assert_called_once_with(
+            payload,
+            idempotency_key=str(solicitud.idempotency_key),
+        )
+        self.assertEqual(respuesta.status_code, 202)
+        self.assertEqual(respuesta.body["status"], "PENDING")
+        solicitud.refresh_from_db()
+        instancia.refresh_from_db()
+        self.assertEqual(solicitud.operation_id, "SIM-42")
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDIENTE)
+
+    def test_rechaza_tenant_slug_mayor_a_63_caracteres(self) -> None:
+        with self.assertRaises(AprovisionamientoError):
+            AprovisionamientoService.construir_tenant_slug(10**63)
+
+    def test_simulador_responde_con_aceptacion_asincrona(self) -> None:
+        respuesta = SimuladorAprovisionamientoAPI().enviar_solicitud(
+            {
+                "operation_type": "PROVISION",
+                "tenant_slug": "tenant-42",
+                "hostname": "campus.edocere.com",
+                "owner_ref": str(self.cliente.pk),
+            },
+            idempotency_key="test-key",
+        )
+
+        self.assertEqual(respuesta.status_code, 202)
+        self.assertEqual(
+            respuesta.body,
+            {"operation_id": "SIM-42", "status": "PENDING"},
+        )
 
     def test_crea_instancia_con_dominio_propio(self) -> None:
         response = self.client.post(

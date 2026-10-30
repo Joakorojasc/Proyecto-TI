@@ -1,23 +1,33 @@
 from typing import Any
+from uuid import uuid4
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q, QuerySet
 from django.db.models.functions import Lower
-from django.http import HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, UpdateView
 
 from apps.clientes.mixins import AislamientoClienteMixin
 from apps.clientes.models import UsuarioPortal
 from apps.clientes.permisos import obtener_cliente_autorizado
+from apps.pagos.services import estado_cliente_para_instancia
 from apps.planes.models import Plan, Suscripcion
 
 from .forms import CrearInstanciaForm, EditarInstanciaForm, FiltroInstanciasForm
-from .models import InstanciaMoodle
+from .models import (
+    EstadoAprovisionamiento,
+    EstadoInstancia,
+    InstanciaMoodle,
+    SolicitudAprovisionamiento,
+)
+from .services import AprovisionamientoError, AprovisionamientoService
 
 
 @login_required(login_url="/login/")
@@ -33,16 +43,50 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
         with transaction.atomic():
             instancia = form.save(commit=False)
             instancia.cliente = cliente
-            instancia.estado = "activa"
+            instancia.estado = EstadoInstancia.PENDIENTE
             instancia.save()
-            Suscripcion.objects.create(
+            solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
+            suscripcion = Suscripcion.objects.create(
                 cliente=cliente,
                 instancia=instancia,
                 plan=plan,
-                estado="activa",
+                estado="pendiente",
                 fecha_inicio=timezone.now(),
             )
 
+        estado_comercial = estado_cliente_para_instancia(
+            cliente_id=cliente.pk,
+            suscripcion_id=suscripcion.pk,
+            plan_id=plan.pk,
+        )
+        if estado_comercial == "aprobada":
+            suscripcion.estado = "activa"
+            suscripcion.save(update_fields=["estado"])
+            try:
+                AprovisionamientoService().enviar_solicitud(solicitud)
+            except AprovisionamientoError:
+                solicitud.estado = EstadoAprovisionamiento.FALLIDA
+                solicitud.save(update_fields=["estado", "updated_at"])
+                messages.error(
+                    request,
+                    "No se pudo enviar la solicitud de aprovisionamiento. "
+                    "Puedes reintentarlo desde el detalle de la instancia.",
+                )
+            else:
+                messages.success(
+                    request,
+                    "La solicitud fue aceptada y está pendiente de aprovisionamiento.",
+                )
+        elif estado_comercial == "pendiente":
+            messages.info(
+                request,
+                "Tu solicitud quedó pendiente. Se procesará cuando se confirme el pago.",
+            )
+        else:
+            messages.error(
+                request,
+                "No se pudo autorizar la solicitud. Revisa el estado de tu pago.",
+            )
         return redirect("instancias:lista")
 
     return render(
@@ -111,6 +155,89 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
         return context
 
 
+@login_required(login_url="/login/")
+@require_POST
+def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
+    instancia = get_object_or_404(InstanciaMoodle, pk=pk)
+    cliente = obtener_cliente_autorizado(request, instancia.cliente_id)
+
+    with transaction.atomic():
+        instancia = get_object_or_404(
+            InstanciaMoodle.objects.select_for_update(),
+            pk=pk,
+            cliente_id=cliente.pk,
+        )
+        solicitud = (
+            SolicitudAprovisionamiento.objects.select_for_update()
+            .filter(instancia=instancia)
+            .order_by("-created_at", "-pk")
+            .first()
+        )
+        if solicitud is None:
+            raise Http404
+        if solicitud.estado != EstadoAprovisionamiento.FALLIDA:
+            messages.error(
+                request,
+                "Solo se pueden reintentar solicitudes de aprovisionamiento fallidas.",
+            )
+            return redirect("instancias:detalle", pk=instancia.pk)
+        if (
+            SolicitudAprovisionamiento.objects.filter(
+                instancia=instancia,
+                estado__in=[
+                    EstadoAprovisionamiento.PENDIENTE,
+                    EstadoAprovisionamiento.EN_PROCESO,
+                ],
+            )
+            .exclude(pk=solicitud.pk)
+            .exists()
+        ):
+            messages.error(
+                request,
+                "Ya existe otra operación de aprovisionamiento en curso para esta instancia.",
+            )
+            return redirect("instancias:detalle", pk=instancia.pk)
+
+        suscripcion = (
+            Suscripcion.objects.filter(instancia=instancia, cliente_id=cliente.pk)
+            .order_by("-pk")
+            .first()
+        )
+        estado_comercial = estado_cliente_para_instancia(
+            cliente_id=cliente.pk,
+            suscripcion_id=suscripcion.pk if suscripcion is not None else None,
+            plan_id=suscripcion.plan_id if suscripcion is not None else None,
+        )
+        if estado_comercial != "aprobada":
+            messages.error(
+                request,
+                "No se puede reintentar hasta que el pago esté aprobado.",
+            )
+            return redirect("instancias:detalle", pk=instancia.pk)
+
+        solicitud.estado = EstadoAprovisionamiento.PENDIENTE
+        solicitud.operation_id = None
+        solicitud.idempotency_key = str(uuid4())
+        solicitud.save(update_fields=["estado", "operation_id", "idempotency_key", "updated_at"])
+
+    try:
+        AprovisionamientoService().enviar_solicitud(solicitud)
+    except AprovisionamientoError:
+        solicitud.estado = EstadoAprovisionamiento.FALLIDA
+        solicitud.save(update_fields=["estado", "updated_at"])
+        messages.error(
+            request,
+            "El reintento falló. Puedes volver a intentarlo más tarde.",
+        )
+    else:
+        messages.success(
+            request,
+            "El reintento fue aceptado y está pendiente de aprovisionamiento.",
+        )
+
+    return redirect("instancias:detalle", pk=instancia.pk)
+
+
 class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailView):
     model = InstanciaMoodle
     template_name = "instancias/detalle.html"
@@ -123,6 +250,9 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
         mediciones = instancia.medicionusomensual_set.order_by("-anio", "-mes")
         context["mediciones"] = mediciones
         context["ultima_medicion"] = mediciones.first()
+        context["solicitud_aprovisionamiento"] = instancia.solicitudes_aprovisionamiento.order_by(
+            "-created_at", "-pk"
+        ).first()
         return context
 
 
