@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 
+{% block migas %}
+<nav class="migas" aria-label="Ruta de navegación">
+    <ol>
+        <li><a href="{% url 'home' %}">Inicio</a></li>
+        <li aria-current="page">Suscripciones y Planes</li>
+    </ol>
+</nav>
+{% endblock migas %}
+
 {% block content %}
 <section class="subscriptions-page">
     <header class="instances-header">
@@ -23,6 +32,9 @@
                     {% if plan.limite_usuarios %}
                     <p class="subscriptions-plan-limit">Hasta {{ plan.limite_usuarios }} usuarios activos</p>
                     {% endif %}
+                    <p class="subscriptions-plan-rule">
+                        Los primeros 10 usuarios son gratuitos. A partir del usuario 11, se cobrará USD 1,50 por la totalidad de los usuarios activos.
+                    </p>
                 </article>
                 {% empty %}
                 <p class="subscriptions-empty">Por el momento no hay planes mensuales disponibles.</p>
@@ -50,11 +62,44 @@
 
     <section class="subscriptions-custom-plan" aria-labelledby="custom-plan-title">
         <h2 id="custom-plan-title">¿Necesitas un plan personalizado?</h2>
-        <p>
+        <p class="subscriptions-custom-plan-description">
             Si necesitas una alternativa distinta a los planes publicados, comunícate
             previamente con Edocere para conversar sobre tus requerimientos y las
             condiciones de un plan personalizado que se ajuste a tu medida.
         </p>
+        <div class="subscriptions-custom-plan-action">
+            <a class="btn-primary" href="{% url 'planes:contacto_plan_personalizado' %}">
+                Contactar para solicitarlo
+            </a>
+        </div>
+    </section>
+
+    <section class="subscriptions-plan-section" aria-labelledby="payment-history-title">
+        <h2 id="payment-history-title">Historial de pagos</h2>
+        {% if pagos %}
+        {% for pago in pagos %}
+        <article class="subscriptions-plan-card">
+            <p>
+                {{ pago.fecha_pago|date:"d/m/Y" }} ·
+                USD {{ pago.monto|stringformat:"s" }} más IVA ·
+                {{ pago.get_estado_display|default:pago.estado }}
+            </p>
+            <p>Suscripción: {{ pago.suscripcion.plan.nombre }} ·
+                Instancia:
+                {% if pago.suscripcion.instancia %}
+                {{ pago.suscripcion.instancia.nombre|default:pago.suscripcion.instancia.dominio }}
+                {% else %}
+                Sin instancia asociada
+                {% endif %}
+            </p>
+            {% if pago.estado == "aprobado" and pago.documentotributario %}
+            <p>Comprobante simulado - No válido como documento tributario (DTE), folio {{ pago.documentotributario.folio }}.</p>
+            {% endif %}
+        </article>
+        {% endfor %}
+        {% else %}
+        <p class="subscriptions-empty">Aún no hay pagos registrados.</p>
+        {% endif %}
     </section>
 </section>
 {% endblock content %}

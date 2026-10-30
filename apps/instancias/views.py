@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q, QuerySet
@@ -11,15 +12,17 @@ from django.utils import timezone
 from django.views.generic import DetailView, ListView, UpdateView
 
 from apps.clientes.mixins import AislamientoClienteMixin
-from apps.clientes.models import Cliente, UsuarioPortal
+from apps.clientes.models import UsuarioPortal
+from apps.clientes.permisos import obtener_cliente_autorizado
 from apps.planes.models import Plan, Suscripcion
 
 from .forms import CrearInstanciaForm, EditarInstanciaForm, FiltroInstanciasForm
 from .models import InstanciaMoodle
 
 
+@login_required(login_url="/login/")
 def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> HttpResponse:
-    cliente = get_object_or_404(Cliente, id=cliente_id)
+    cliente = obtener_cliente_autorizado(request, cliente_id)
     plan = get_object_or_404(
         Plan.objects.filter(Q(cliente__isnull=True) | Q(cliente=cliente)),
         id=plan_id,
@@ -27,20 +30,19 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
     form = CrearInstanciaForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
-        with transaction.atomic():
-            instancia = form.save(commit=False)
-            instancia.cliente = cliente
-            instancia.estado = "activa"
-            instancia.save()
-            Suscripcion.objects.create(
-                cliente=cliente,
-                instancia=instancia,
-                plan=plan,
-                estado="activa",
-                fecha_inicio=timezone.now(),
-            )
-
-        return redirect("instancias:lista")
+        suscripcion = Suscripcion.objects.create(
+            cliente=cliente,
+            plan=plan,
+            estado="pendiente",
+        )
+        request.session[f"checkout_instancia_{suscripcion.pk}"] = {
+            "nombre": form.cleaned_data["nombre"],
+            "tipo_dominio": form.cleaned_data["tipo_dominio"],
+            "subdominio": form.cleaned_data.get("subdominio", ""),
+            "dominio_propio": form.cleaned_data.get("dominio_propio", ""),
+            "logo_url": form.cleaned_data.get("logo_url", ""),
+        }
+        return redirect("pagos:checkout", suscripcion_id=suscripcion.pk)
 
     return render(
         request,

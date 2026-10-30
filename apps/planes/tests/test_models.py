@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
@@ -10,8 +12,8 @@ from ..models import Plan, Suscripcion
 
 class SuscripcionModelTests(TestCase):
     def setUp(self) -> None:
-        self.cliente = Cliente.objects.create(razon_social="Cliente Uno")
-        self.otro_cliente = Cliente.objects.create(razon_social="Cliente Dos")
+        self.cliente = Cliente.objects.create(rut="77121212-3", razon_social="Cliente Uno")
+        self.otro_cliente = Cliente.objects.create(rut="77131313-2", razon_social="Cliente Dos")
         self.instancia = InstanciaMoodle.objects.create(
             cliente=self.cliente,
             dominio="uno.example.com",
@@ -127,7 +129,10 @@ class PlanEtiquetaTests(TestCase):
             precio_por_usuario=1.5,
         )
 
-        self.assertEqual(plan.display_label(), "Plan Mensual · $1.50/usuario/mes")
+        self.assertEqual(
+            plan.display_label(),
+            "Plan Mensual · USD 1.50/usuario/mes, más IVA",
+        )
 
     def test_plan_anual_muestra_el_precio_total(self) -> None:
         plan = Plan.objects.create(
@@ -136,7 +141,7 @@ class PlanEtiquetaTests(TestCase):
             precio_base=1000000,
         )
 
-        self.assertEqual(plan.display_label(), "Plan Anual · $1,000,000/año")
+        self.assertEqual(plan.display_label(), "Plan Anual · USD 1,000,000.00/año, más IVA")
 
     def test_plan_personalizado_no_muestra_precio(self) -> None:
         """El personalizado se cotiza caso a caso, por eso no lleva cifra."""
@@ -148,7 +153,20 @@ class PlanEtiquetaTests(TestCase):
         """Un plan recién creado puede no tener precio todavía y la pantalla igual debe cargar."""
         plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="mensual")
 
-        self.assertEqual(plan.display_label(), "Plan Mensual · $0.00/usuario/mes")
+        self.assertEqual(
+            plan.display_label(),
+            "Plan Mensual · USD 0.00/usuario/mes, más IVA",
+        )
+
+    def test_plan_mensual_cobra_cero_hasta_diez_usuarios(self) -> None:
+        plan = Plan.objects.create(tipo_plan="mensual")
+
+        self.assertEqual(plan.calcular_cobro_mensual(10), Decimal("0.00"))
+
+    def test_plan_mensual_cobra_todos_los_usuarios_desde_once(self) -> None:
+        plan = Plan.objects.create(tipo_plan="mensual")
+
+        self.assertEqual(plan.calcular_cobro_mensual(11), Decimal("16.50"))
 
     def test_plan_sin_tipo_cae_en_el_nombre(self) -> None:
         plan = Plan.objects.create(nombre="Plan Suelto")

@@ -13,8 +13,8 @@ from ..models import InstanciaMoodle
 
 class ListaInstanciasViewTests(TestCase):
     def setUp(self) -> None:
-        self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
-        self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
+        self.cliente_a = Cliente.objects.create(rut="77060606-3", razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(rut="77070707-2", razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
         self.instancia_a = InstanciaMoodle.objects.create(
@@ -91,6 +91,7 @@ class ListaInstanciasViewTests(TestCase):
 
         assert self.plan_a.nombre is not None
         self.assertContains(respuesta, self.plan_a.nombre)
+        self.assertContains(respuesta, "Ingresar tarjeta")
 
     def test_suscripcion_historica_no_reemplaza_al_plan_activo(self) -> None:
         plan_historico = Plan.objects.create(nombre="Plan Histórico")
@@ -188,7 +189,10 @@ class ListaInstanciasViewTests(TestCase):
 
         respuesta = self.client.get(self.url)
 
-        self.assertContains(respuesta, reverse("seleccionar_plan", args=[self.cliente_a.pk]))
+        self.assertContains(
+            respuesta,
+            reverse("planes:seleccionar_plan", args=[self.cliente_a.pk]),
+        )
 
     def test_lista_vacia_tambien_muestra_el_boton(self) -> None:
         InstanciaMoodle.objects.filter(cliente=self.cliente_a).delete()
@@ -197,7 +201,10 @@ class ListaInstanciasViewTests(TestCase):
         respuesta = self.client.get(self.url)
 
         self.assertContains(respuesta, "Aún no tienes instancias Moodle asociadas.")
-        self.assertContains(respuesta, reverse("seleccionar_plan", args=[self.cliente_a.pk]))
+        self.assertContains(
+            respuesta,
+            reverse("planes:seleccionar_plan", args=[self.cliente_a.pk]),
+        )
 
     def test_usuario_sin_cliente_no_ve_el_boton(self) -> None:
         usuario = User.objects.create_user(username="sin-perfil", password="clave")
@@ -221,8 +228,8 @@ class ListaInstanciasViewTests(TestCase):
 
 class DetalleInstanciaViewTests(TestCase):
     def setUp(self) -> None:
-        self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
-        self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
+        self.cliente_a = Cliente.objects.create(rut="77080808-1", razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(rut="77090909-0", razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
         self.instancia_a = InstanciaMoodle.objects.create(
@@ -346,8 +353,8 @@ class DetalleInstanciaViewTests(TestCase):
 
 class FiltrosListaInstanciasTests(TestCase):
     def setUp(self) -> None:
-        self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
-        self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
+        self.cliente_a = Cliente.objects.create(rut="77101010-5", razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(rut="77111111-4", razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
 

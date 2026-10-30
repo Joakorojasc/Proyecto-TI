@@ -55,12 +55,12 @@
                 <button type="submit" class="btn-primary plan-submit">Asignar plan</button>
             </center>
             <div class="plan-section plan-section-personalizado">
-                        <div class="plan-section-header">
-                            <h3>Plan personalizado</h3>
-                            <p>Si los planes que ofrecemos no se ajustan a tus necesidades y te has comunicado con nosotros para acceder a un plan personalizado, presiona aquí:</p>
-                        </div>
-                        <button type="submit" class="btn-primary" name="personalized_plan" value="1">Tengo un plan personalizado</button>
-                    </div>
+                <div class="plan-section-header">
+                    <h3>¿Necesitas un plan personalizado?</h3>
+                    <p>Estos planes requieren revisión y negociación previa con un superadministrador.</p>
+                </div>
+                <a class="btn-primary" href="{% url 'planes:contacto_plan_personalizado' %}">Contactar para solicitarlo</a>
+            </div>
 
         </form>
     </div>

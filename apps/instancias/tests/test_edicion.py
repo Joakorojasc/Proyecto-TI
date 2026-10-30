@@ -12,8 +12,8 @@ from ..models import InstanciaMoodle
 class EditarInstanciaViewTests(TestCase):
     def setUp(self) -> None:
         self.contrasena = "Clave-prueba-2026"
-        self.cliente_a = Cliente.objects.create(razon_social="Cliente A")
-        self.cliente_b = Cliente.objects.create(razon_social="Cliente B")
+        self.cliente_a = Cliente.objects.create(rut="77040404-5", razon_social="Cliente A")
+        self.cliente_b = Cliente.objects.create(rut="77050505-4", razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
         self.usuario_a.set_password(self.contrasena)
         self.usuario_a.save(update_fields=["password"])
