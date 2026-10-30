@@ -103,6 +103,18 @@ def test_acceso_permitido_respeta_los_permisos_existentes(
 
     assert solicitud(client, operacion, metodo, cliente, plan) == (200 if metodo == "get" else 302)
     if operacion == "crear" and metodo == "post":
+        suscripcion_pendiente = Suscripcion.objects.get()
+        client.post(
+            reverse(
+                "pagos:checkout",
+                kwargs={"suscripcion_id": suscripcion_pendiente.pk},
+            ),
+            {
+                "ultimos_4_digitos": "4242",
+                "marca_tarjeta": "Visa",
+                "resultado": "aprobado",
+            },
+        )
         instancia = InstanciaMoodle.objects.get()
         suscripcion = Suscripcion.objects.get()
         assert instancia.cliente_id == cliente.pk

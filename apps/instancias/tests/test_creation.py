@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.http import HttpResponseBase
 from django.test import TestCase
 from django.urls import reverse
 
@@ -21,6 +22,19 @@ class CrearInstanciaViewTests(TestCase):
             kwargs={"cliente_id": self.cliente.id, "plan_id": self.plan.id},
         )
 
+    def crear_y_aprobar_instancia(self, datos: dict[str, str]) -> HttpResponseBase:
+        respuesta = self.client.post(self.url, datos)
+        self.assertEqual(respuesta.status_code, 302)
+        suscripcion = Suscripcion.objects.get()
+        return self.client.post(
+            reverse("pagos:checkout", kwargs={"suscripcion_id": suscripcion.id}),
+            {
+                "ultimos_4_digitos": "4242",
+                "marca_tarjeta": "Visa",
+                "resultado": "aprobado",
+            },
+        )
+
     def test_muestra_formulario_con_datos_del_cliente_y_plan(self) -> None:
         response = self.client.get(self.url)
 
@@ -35,15 +49,14 @@ class CrearInstanciaViewTests(TestCase):
         self.assertContains(response, self.plan.nombre)
 
     def test_crea_instancia_con_direccion_de_edocere(self) -> None:
-        response = self.client.post(
-            self.url,
+        response = self.crear_y_aprobar_instancia(
             {
                 "nombre": "Campus Duoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "dominio_propio": "",
                 "logo_url": "https://empresa.cl/logo.png",
-            },
+            }
         )
 
         self.assertEqual(response.status_code, 302)
@@ -61,15 +74,14 @@ class CrearInstanciaViewTests(TestCase):
         self.assertIsNotNone(suscripcion.fecha_inicio)
 
     def test_crea_instancia_con_dominio_propio(self) -> None:
-        response = self.client.post(
-            self.url,
+        response = self.crear_y_aprobar_instancia(
             {
                 "nombre": "Aula Duoc",
                 "tipo_dominio": "propio",
                 "subdominio": "",
                 "dominio_propio": "aula.duoc.cl",
                 "logo_url": "",
-            },
+            }
         )
 
         self.assertEqual(response.status_code, 302)
@@ -78,27 +90,25 @@ class CrearInstanciaViewTests(TestCase):
         self.assertEqual(instancia.dominio, "https://aula.duoc.cl")
 
     def test_dominio_propio_acepta_https_y_barra_final(self) -> None:
-        self.client.post(
-            self.url,
+        self.crear_y_aprobar_instancia(
             {
                 "nombre": "Aula Duoc",
                 "tipo_dominio": "propio",
                 "dominio_propio": "HTTPS://Aula.Duoc.cl/",
                 "logo_url": "",
-            },
+            }
         )
 
         self.assertEqual(InstanciaMoodle.objects.get().dominio, "https://aula.duoc.cl")
 
     def test_logo_es_opcional(self) -> None:
-        response = self.client.post(
-            self.url,
+        response = self.crear_y_aprobar_instancia(
             {
                 "nombre": "Campus Duoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "logo_url": "",
-            },
+            }
         )
 
         self.assertEqual(response.status_code, 302)
