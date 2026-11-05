@@ -1,0 +1,10 @@
+{# Lo dibuja el tag migas desde base.html. La tabla está en apps/core/migas.py. #}
+{% if ruta %}
+<nav class="migas" aria-label="Ruta de navegación">
+    <ol>
+        {% for paso in ruta %}
+        {% if paso.url %}<li><a href="{{ paso.url }}">{{ paso.titulo }}</a></li>{% else %}<li aria-current="page">{{ paso.titulo }}</li>{% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}
