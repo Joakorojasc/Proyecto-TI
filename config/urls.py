@@ -1,12 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.decorators import login_required
 from django.urls import include, path
-from django.views.generic import TemplateView
 
 from apps.clientes.forms import LoginForm
 from apps.clientes.views import perfil_institucion, registro_usuario
 from apps.core.views import health, home
+from apps.estadisticas.views import estadisticas
 from apps.pagos.views import facturacion
 from apps.planes.views import planes_disponibles
 
@@ -38,10 +37,7 @@ urlpatterns = [
     ),
     path(
         "estadisticas/",
-        login_required(
-            TemplateView.as_view(template_name="estadisticas.html"),
-            login_url="/login/",
-        ),
+        estadisticas,
         name="seccion_estadisticas",
     ),
     path(
