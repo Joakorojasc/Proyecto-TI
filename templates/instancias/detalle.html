@@ -1,5 +1,15 @@
 {% extends "base.html" %}
 
+{% block migas %}
+<nav class="migas" aria-label="Ruta de navegación">
+    <ol>
+        <li><a href="{% url 'home' %}">Inicio</a></li>
+        <li><a href="{% url 'instancias:lista' %}">Mis Instancias</a></li>
+        <li aria-current="page">{{ instancia.nombre|default:instancia.dominio_host|default:'Instancia' }}</li>
+    </ol>
+</nav>
+{% endblock migas %}
+
 {% block content %}
 <section class="instances-page">
     <header class="instances-header instance-header">

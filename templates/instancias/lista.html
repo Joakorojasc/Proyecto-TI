@@ -1,12 +1,21 @@
 {% extends "base.html" %}
 
+{% block migas %}
+<nav class="migas" aria-label="Ruta de navegación">
+    <ol>
+        <li><a href="{% url 'home' %}">Inicio</a></li>
+        <li aria-current="page">Mis Instancias</li>
+    </ol>
+</nav>
+{% endblock migas %}
+
 {% block content %}
 <section class="instances-page">
 
     <header class="instances-header">
         <h1>Mis Instancias</h1>
         {% if cliente_id %}
-        <a class="btn-crear-instancia" href="{% url 'seleccionar_plan' cliente_id %}">+ Crear instancia</a>
+        <a class="btn-crear-instancia" href="{% url 'planes:seleccionar_plan' cliente_id %}">+ Crear instancia</a>
         {% endif %}
     </header>
     
@@ -33,6 +42,7 @@
                     <th scope="col">Estado</th>
                     <th scope="col">Versión</th>
                     <th scope="col">Plan</th>
+                    <th scope="col">Pago</th>
                     <th scope="col">Creada</th>
                 </tr>
             </thead>
@@ -41,7 +51,7 @@
                 <tr>
                     <td>
                         <a href="{% url 'instancias:detalle' instancia.pk %}">
-                            {{ instancia.nombre|default:instancia.dominio_host|default:"Sin nombre" }}
+                            {{ instancia.nombre|default:"Sin nombre" }}
                         </a>
                     </td>
                     <td>
@@ -58,7 +68,7 @@
                         </span>
                     </td>
                     <td>{{ instancia.version|default:"Sin versión" }}</td>
-                    <td>
+                    <td class="celda-plan">
                         {% with suscripciones_activas=instancia.suscripciones_activas %}
                             {% if suscripciones_activas|length == 1 %}
                                 {{ suscripciones_activas.0.plan.nombre|default:"Sin plan activo" }}
@@ -66,6 +76,17 @@
                                 Múltiples planes activos
                             {% else %}
                                 Sin plan activo
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% with suscripciones_activas=instancia.suscripciones_activas %}
+                            {% if suscripciones_activas|length == 1 %}
+                            <a class="btn-crear-instancia" href="{% url 'pagos:checkout' suscripciones_activas.0.id %}">
+                                Ingresar tarjeta
+                            </a>
+                            {% else %}
+                            Sin suscripción activa
                             {% endif %}
                         {% endwith %}
                     </td>

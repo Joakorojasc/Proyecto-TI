@@ -32,7 +32,7 @@ def usuario_cliente(db: None) -> User:
     aislamiento entre clientes funciona: un cliente nunca ve datos de otro.
     """
     cliente = Cliente.objects.create(
-        rut="76.123.456-7",
+        rut="76.123.456-0",
         razon_social="Cliente Demo",
     )
     usuario = User.objects.create_user(

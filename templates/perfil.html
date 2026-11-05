@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 
+{% block migas %}
+<nav class="migas" aria-label="Ruta de navegación">
+    <ol>
+        <li><a href="{% url 'home' %}">Inicio</a></li>
+        <li aria-current="page">Perfil de Institución</li>
+    </ol>
+</nav>
+{% endblock migas %}
+
 {% block content %}
 <section class="profile-page">
     <header class="instances-header">
@@ -15,10 +24,12 @@
         Para proteger tu cuenta, te pediremos tu contraseña antes de guardar los cambios.
     </p>
 
+    <p><a href="{% url 'aceptar_terminos' %}">Consultar y aceptar términos y condiciones</a></p>
+
     <div class="auth-card profile-card">
         <h2>Información de la institución</h2>
         <p class="profile-readonly">
-            <strong>RUT de la Institución:</strong> {{ cliente.rut|default:"No informado" }}
+            <strong>RUT de la Institución:</strong> {{ cliente.rut_formateado|default:"No informado" }}
             <span>Este identificador no se puede modificar desde el portal.</span>
         </p>
 
@@ -36,11 +47,7 @@
             {% endfor %}
             {% for error in form.non_field_errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
 
-            <button type="submit" id="guardar-cambios-perfil">Guardar cambios</button>
-
-            <dialog id="confirmacion-contrasena" aria-labelledby="titulo-confirmacion-perfil">
-                <h3 id="titulo-confirmacion-perfil">Confirma los cambios</h3>
-                <p>Ingresa la contraseña de tu cuenta para guardar los datos de la institución.</p>
+            <div id="campos-confirmacion-perfil">
                 <p>
                     {{ form.confirmacion_contrasena.label_tag }}
                     {{ form.confirmacion_contrasena }}
@@ -48,6 +55,13 @@
                         <span class="errorlist">{{ error }}</span>
                     {% endfor %}
                 </p>
+            </div>
+
+            <button type="submit" id="guardar-cambios-perfil">Guardar cambios</button>
+
+            <dialog id="confirmacion-contrasena" aria-labelledby="titulo-confirmacion-perfil">
+                <h3 id="titulo-confirmacion-perfil">Confirma los cambios</h3>
+                <p>Ingresa la contraseña de tu cuenta para guardar los datos de la institución.</p>
                 <button type="button" id="cancelar-confirmacion-perfil">Cancelar</button>
                 <button type="button" id="confirmar-cambios-perfil">Confirmar y guardar</button>
             </dialog>
@@ -61,6 +75,11 @@
         const password = document.getElementById("id_confirmacion_contrasena");
         const confirmButton = document.getElementById("confirmar-cambios-perfil");
         const cancelButton = document.getElementById("cancelar-confirmacion-perfil");
+        // Sin soporte del diálogo o sin JavaScript, el campo queda visible en el formulario.
+        if (typeof dialog.showModal !== "function" || typeof form.requestSubmit !== "function") {
+            return;
+        }
+        dialog.insertBefore(document.getElementById("campos-confirmacion-perfil"), cancelButton);
         let confirmed = false;
 
         form.addEventListener("submit", (event) => {
@@ -91,7 +110,7 @@
                 password.value = "";
             }
         });
-        {% if form.errors %}
+        {% if form.confirmacion_contrasena.errors %}
             dialog.showModal();
             password.focus();
         {% endif %}

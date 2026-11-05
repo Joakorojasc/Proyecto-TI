@@ -7,6 +7,7 @@ from django.views.generic import TemplateView
 from apps.clientes.forms import LoginForm
 from apps.clientes.views import perfil_institucion, registro_usuario
 from apps.core.views import health, home
+from apps.pagos.views import facturacion
 from apps.planes.views import planes_disponibles
 
 urlpatterns = [
@@ -14,9 +15,9 @@ urlpatterns = [
     path("", home, name="home"),
     path("health/", health, name="health"),
     path("core/", include(("apps.core.urls", "core"), namespace="core")),
-    path("", include("apps.core.urls")),
     path("clientes/", include("apps.clientes.urls")),
     path("instancias/", include("apps.instancias.urls")),
+    path("pagos/", include("apps.pagos.urls")),
     path(
         "login/",
         auth_views.LoginView.as_view(template_name="login.html", authentication_form=LoginForm),
@@ -32,10 +33,7 @@ urlpatterns = [
     ),
     path(
         "facturacion/",
-        login_required(
-            TemplateView.as_view(template_name="facturacion.html"),
-            login_url="/login/",
-        ),
+        facturacion,
         name="seccion_facturacion",
     ),
     path(
@@ -48,7 +46,7 @@ urlpatterns = [
     ),
     path(
         "perfil/",
-        login_required(perfil_institucion, login_url="/login/"),
+        perfil_institucion,
         name="seccion_perfil",
     ),
 ]

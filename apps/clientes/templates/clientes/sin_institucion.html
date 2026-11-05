@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Cuenta sin institución{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+    <h1>Tu cuenta no tiene una institución asociada</h1>
+    <p role="alert">No podemos mostrar ni modificar datos institucionales con esta cuenta.
+        Contacta a Edocere para revisar su asociación.</p>
+    <p><a href="{% url 'home' %}">Volver al inicio</a></p>
+</section>
+{% endblock %}

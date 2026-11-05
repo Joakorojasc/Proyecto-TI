@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Términos y condiciones{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+    <header class="instances-header"><h1>Términos y condiciones</h1></header>
+    {% for message in messages %}
+    <p class="profile-success" role="status">{{ message }}</p>
+    {% endfor %}
+    <div class="auth-card profile-card">
+        <h2>{{ cliente.razon_social }}</h2>
+        <p><a href="{% url 'documento_terminos' version=version_terminos %}" target="_blank" rel="noopener">Leer el documento completo de términos y condiciones (PDF)</a></p>
+        {% if aceptacion %}
+            <p>Tu institución aceptó el documento vigente el {{ aceptacion.fecha_aceptacion|date:"d/m/Y H:i" }}.</p>
+        {% else %}
+            <p>Tu institución aún no tiene una aceptación registrada para el documento vigente.</p>
+        {% endif %}
+        {% if not aceptacion or form.errors %}
+        <form method="post">
+            {% csrf_token %}
+            {% include "clientes/formulario_con_terminos.html" with form=form only %}
+            <button type="submit">Aceptar términos y condiciones</button>
+        </form>
+        {% endif %}
+        <p><a href="{% url 'seccion_perfil' %}">Volver al perfil</a></p>
+    </div>
+</section>
+{% endblock %}

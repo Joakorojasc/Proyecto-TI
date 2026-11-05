@@ -1,7 +1,18 @@
 {% extends "base.html" %}
 
+{% block migas %}
+<nav class="migas" aria-label="Ruta de navegación">
+    <ol>
+        <li><a href="{% url 'home' %}">Inicio</a></li>
+        <li><a href="{% url 'instancias:lista' %}">Mis Instancias</a></li>
+        <li><a href="{% url 'instancias:detalle' instancia.pk %}">{{ instancia.nombre|default:instancia.dominio_host|default:'Instancia' }}</a></li>
+        <li aria-current="page">Editar</li>
+    </ol>
+</nav>
+{% endblock migas %}
+
 {% block content %}
-<section class="auth-panel">
+<section class="formulario-pagina">
     <div class="auth-card auth-card-wide">
         <h2>Editar instancia</h2>
 

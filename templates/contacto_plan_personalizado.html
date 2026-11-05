@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Contacto para plan personalizado{% endblock %}
+
+{% block content %}
+<section class="subscriptions-custom-plan">
+    <h1>Solicitar un plan personalizado</h1>
+    {% if enviado %}
+    <p>
+        Recibimos tu solicitud. Edocere se pondrá en contacto contigo para revisar
+        una alternativa para más de 3.000 usuarios.
+    </p>
+    <a class="btn-primary" href="{% url 'seccion_suscripciones' %}">
+        Volver a Suscripciones y Planes
+    </a>
+    {% else %}
+    <p>
+        Completa el formulario y cuéntanos qué necesita tu institución.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn-primary" type="submit">Enviar solicitud</button>
+    </form>
+    {% endif %}
+</section>
+{% endblock %}

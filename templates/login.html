@@ -1,9 +1,29 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Iniciar sesión{% endblock %}
 
 {% block content %}
 <div class="auth-panel">
+    <div class="auth-marca">
+        <div class="auth-marca-contenido">
+            <span class="brand"><img src="{% static 'img/edocere-logo.png' %}" alt="Edocere"></span>
+
+            <h2>Tus plataformas <span>Moodle</span>, en un solo lugar</h2>
+
+            <ul class="auth-marca-puntos">
+                <li>Crea y configura tus plataformas</li>
+                <li>Revisa el uso mes a mes</li>
+                <li>Consulta tus planes, pagos y facturas</li>
+            </ul>
+
+            <p class="auth-marca-lema">
+                Apoyamos la transformación digital de las organizaciones.
+                Apasionados por la tecnología y la formación desde 2011.
+            </p>
+        </div>
+    </div>
+    <div class="auth-formulario">
     <div class="auth-card">
         <h2>Iniciar Sesión en Edocere</h2>
         <form method="post" novalidate>
@@ -16,6 +36,7 @@
             <p>¿Tu institución aún no tiene cuenta?</p>
             <a href="{% url 'registro' %}">Registrar Empresa</a>
         </div>
+    </div>
     </div>
 </div>
 {% endblock %}
