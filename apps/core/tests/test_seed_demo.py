@@ -39,6 +39,20 @@ class SeedDemoTests(TestCase):
             assert cliente.rut is not None
             self.assertEqual(cliente.rut, normalizar_rut(cliente.rut))
 
+    def test_seed_llena_las_metricas_con_numeros_coherentes(self) -> None:
+        call_command("seed_demo", verbosity=0)
+
+        mediciones = MedicionUsoMensual.objects.all()
+        self.assertTrue(mediciones.exists())
+        for medicion in mediciones:
+            with self.subTest(medicion=medicion.pk):
+                assert medicion.usuarios_inscritos is not None
+                assert medicion.usuarios_activos is not None
+                assert medicion.total_matriculas is not None
+                # Nadie puede estar activo sin estar inscrito.
+                self.assertGreaterEqual(medicion.usuarios_inscritos, medicion.usuarios_activos)
+                self.assertGreater(medicion.total_matriculas, 0)
+
     def test_seed_actualiza_rut_historico_sin_recrear_clientes_o_relaciones(self) -> None:
         call_command("seed_demo", verbosity=0)
         cliente = Cliente.objects.get(rut="76543210-3")

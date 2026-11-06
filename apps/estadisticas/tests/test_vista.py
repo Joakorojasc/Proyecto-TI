@@ -45,6 +45,8 @@ def medir(
     usuarios: int | None = 120,
     cursos: int | None = 15,
     categorias: int | None = 4,
+    inscritos: int | None = 150,
+    matriculas: int | None = 300,
 ) -> MedicionUsoMensual:
     return MedicionUsoMensual.objects.create(
         instancia=instancia,
@@ -53,6 +55,8 @@ def medir(
         usuarios_activos=usuarios,
         cantidad_cursos=cursos,
         cantidad_categorias=categorias,
+        usuarios_inscritos=inscritos,
+        total_matriculas=matriculas,
     )
 
 
@@ -75,7 +79,14 @@ class AislamientoTests(TestCase):
 
         _, self.ajeno = crear_usuario_con_cliente("Ajeno", "76055555-K")
         self.instancia_ajena = crear_instancia(self.ajeno, "Campus Ajeno")
-        medir(self.instancia_ajena, usuarios=9999, cursos=777, categorias=555)
+        medir(
+            self.instancia_ajena,
+            usuarios=9999,
+            cursos=777,
+            categorias=555,
+            inscritos=3333,
+            matriculas=2222,
+        )
         # Un período más nuevo no debe mover el período informado del otro cliente.
         medir(self.instancia_ajena, anio=2030, mes=11, usuarios=8888, cursos=666, categorias=444)
 
@@ -83,7 +94,19 @@ class AislamientoTests(TestCase):
         respuesta = self.client.get(url)
 
         self.assertEqual(respuesta.status_code, 200)
-        for dato in ("Campus Ajeno", "Colegio Ajeno", "9999", "8888", "777", "666", "555", "444"):
+        datos_ajenos = (
+            "Campus Ajeno",
+            "Colegio Ajeno",
+            "9999",
+            "8888",
+            "777",
+            "666",
+            "555",
+            "444",
+            "3333",
+            "2222",
+        )
+        for dato in datos_ajenos:
             with self.subTest(dato=dato):
                 self.assertNotContains(respuesta, dato)
         self.assertNotContains(respuesta, "2030")
@@ -139,8 +162,8 @@ class EstadosDeLaPantallaTests(TestCase):
 
         self.assertContains(respuesta, "Campus Uno")
         self.assertContains(respuesta, "Campus Dos")
-        # Tres métricas por cada una de las dos instancias.
-        self.assertContains(respuesta, "Sin datos", count=6)
+        # Cinco métricas por cada una de las dos instancias.
+        self.assertContains(respuesta, "Sin datos", count=10)
         self.assertContains(respuesta, "Todavía no hay mediciones")
         self.assertNotIn("resumen", respuesta.context)
         self.assertNotContains(respuesta, "Historial")
@@ -153,8 +176,10 @@ class EstadosDeLaPantallaTests(TestCase):
         self.assertContains(respuesta, "Marzo 2026")
         self.assertContains(respuesta, "Historial")
         self.assertNotContains(respuesta, "Sin datos")
+        self.assertEqual(respuesta.context["resumen"].usuarios_inscritos, 150)
         self.assertEqual(respuesta.context["resumen"].usuarios_activos, 120)
         self.assertEqual(respuesta.context["resumen"].cantidad_cursos, 15)
+        self.assertEqual(respuesta.context["resumen"].matriculados_por_curso, 20.0)
         self.assertEqual(respuesta.context["resumen"].cantidad_categorias, 4)
         self.assertEqual(respuesta.context["con_datos"], 1)
         self.assertEqual(respuesta.context["sin_datos"], 0)
@@ -247,11 +272,12 @@ class DatosIncompletosTests(TestCase):
         self.assertEqual(respuesta.context["resumen"].usuarios_activos, 20)
 
     def test_un_cero_se_muestra_como_cero(self) -> None:
-        medir(self.uno, usuarios=0, cursos=0, categorias=0)
+        medir(self.uno, usuarios=0, cursos=5, categorias=0, inscritos=0, matriculas=0)
 
         respuesta = self.client.get(URL)
 
         self.assertEqual(respuesta.context["resumen"].usuarios_activos, 0)
+        self.assertEqual(respuesta.context["resumen"].matriculados_por_curso, 0.0)
         self.assertNotContains(respuesta, "Sin datos")
 
     def test_una_medicion_sin_periodo_no_se_informa(self) -> None:
@@ -273,3 +299,75 @@ class DatosIncompletosTests(TestCase):
     def test_el_nombre_de_un_periodo_incompleto_no_falla(self) -> None:
         self.assertEqual(_nombre_periodo(2026, None), "Sin período")
         self.assertEqual(_nombre_periodo(None, 3), "Sin período")
+
+
+class MatriculadosPorCursoTests(TestCase):
+    """El promedio sale de las matrículas y nunca de los usuarios activos."""
+
+    def setUp(self) -> None:
+        self.usuario, self.cliente = crear_usuario_con_cliente("Uno", "76543210-3")
+        self.client.force_login(self.usuario)
+        self.uno = crear_instancia(self.cliente, "Campus Uno")
+        self.dos = crear_instancia(self.cliente, "Campus Dos")
+
+    def test_se_calcula_con_las_matriculas_y_no_con_los_activos(self) -> None:
+        medir(self.uno, usuarios=999, cursos=10, matriculas=250)
+
+        respuesta = self.client.get(URL)
+
+        self.assertEqual(respuesta.context["resumen"].matriculados_por_curso, 25.0)
+        self.assertContains(respuesta, "25,0")
+
+    def test_se_redondea_a_un_decimal(self) -> None:
+        medir(self.uno, cursos=3, matriculas=10)
+
+        respuesta = self.client.get(URL)
+
+        self.assertEqual(respuesta.context["resumen"].matriculados_por_curso, 3.3)
+
+    def test_sin_cursos_no_divide_por_cero(self) -> None:
+        medir(self.uno, cursos=0, matriculas=50)
+
+        respuesta = self.client.get(URL)
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIsNone(respuesta.context["resumen"].matriculados_por_curso)
+        self.assertContains(respuesta, "Sin datos")
+
+    def test_una_medicion_antigua_sin_las_metricas_nuevas_dice_sin_datos(self) -> None:
+        medir(self.uno, inscritos=None, matriculas=None)
+
+        respuesta = self.client.get(URL)
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIsNone(respuesta.context["resumen"].usuarios_inscritos)
+        self.assertIsNone(respuesta.context["resumen"].matriculados_por_curso)
+        self.assertEqual(respuesta.context["resumen"].cantidad_cursos, 15)
+
+    def test_el_resumen_no_es_un_promedio_de_promedios(self) -> None:
+        medir(self.uno, cursos=10, matriculas=100)
+        medir(self.dos, cursos=2, matriculas=300)
+
+        resumen = self.client.get(URL).context["resumen"]
+
+        # 400 matrículas en 12 cursos. Promediar 10 y 150 daría 80.
+        self.assertEqual(resumen.matriculados_por_curso, 33.3)
+        self.assertEqual(resumen.total_matriculas, 400)
+
+    def test_una_instancia_sin_matriculas_no_baja_el_promedio(self) -> None:
+        medir(self.uno, cursos=10, matriculas=100)
+        medir(self.dos, cursos=90, matriculas=None)
+
+        resumen = self.client.get(URL).context["resumen"]
+
+        self.assertEqual(resumen.matriculados_por_curso, 10.0)
+        self.assertEqual(resumen.cantidad_cursos, 100)
+
+    def test_el_historial_trae_el_promedio_de_cada_mes(self) -> None:
+        medir(self.uno, mes=2, cursos=10, matriculas=100)
+        medir(self.uno, mes=3, cursos=10, matriculas=200)
+
+        respuesta = self.client.get(URL)
+        fila = next(f for f in respuesta.context["filas"] if f.instancia == self.uno)
+
+        self.assertEqual([paso.matriculados_por_curso for paso in fila.historial], [20.0, 10.0])

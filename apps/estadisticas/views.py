@@ -21,8 +21,11 @@ class Metricas:
     """Los números de un período. None significa que no hay dato."""
 
     periodo: str = ""
+    usuarios_inscritos: int | None = None
     usuarios_activos: int | None = None
     cantidad_cursos: int | None = None
+    total_matriculas: int | None = None
+    matriculados_por_curso: float | None = None
     cantidad_categorias: int | None = None
 
 
@@ -46,11 +49,23 @@ def _nombre_periodo(anio: int | None, mes: int | None) -> str:
         return f"{mes}/{anio}"
 
 
+def _matriculados_por_curso(matriculas: int | None, cursos: int | None) -> float | None:
+    """Promedio con un decimal. Sin matrículas o sin cursos no hay nada que promediar."""
+    if matriculas is None or not cursos:
+        return None
+    return round(matriculas / cursos, 1)
+
+
 def _metricas(medicion: MedicionUsoMensual) -> Metricas:
     return Metricas(
         periodo=_nombre_periodo(medicion.anio, medicion.mes),
+        usuarios_inscritos=medicion.usuarios_inscritos,
         usuarios_activos=medicion.usuarios_activos,
         cantidad_cursos=medicion.cantidad_cursos,
+        total_matriculas=medicion.total_matriculas,
+        matriculados_por_curso=_matriculados_por_curso(
+            medicion.total_matriculas, medicion.cantidad_cursos
+        ),
         cantidad_categorias=medicion.cantidad_categorias,
     )
 
@@ -59,6 +74,23 @@ def _suma(valores: Iterable[int | None]) -> int | None:
     """Suma lo que haya. Si no hay ningún dato devuelve None, para no informar un cero falso."""
     presentes = [valor for valor in valores if valor is not None]
     return sum(presentes) if presentes else None
+
+
+def _matriculados_por_curso_total(medidas: list[Metricas]) -> float | None:
+    """Matrículas totales sobre cursos totales, para que una instancia chica no pese como una grande.
+
+    Solo cuentan las instancias con ambos datos. Si entraran los cursos de una
+    instancia sin matrículas, el promedio bajaría sin motivo.
+    """
+    completas = [
+        medida
+        for medida in medidas
+        if medida.total_matriculas is not None and medida.cantidad_cursos is not None
+    ]
+    return _matriculados_por_curso(
+        _suma(medida.total_matriculas for medida in completas),
+        _suma(medida.cantidad_cursos for medida in completas),
+    )
 
 
 @login_required(login_url="/login/")
@@ -105,8 +137,13 @@ def estadisticas(request: HttpRequest) -> HttpResponse:
     if ultimo is not None:
         contexto["resumen"] = Metricas(
             periodo=_nombre_periodo(*ultimo),
+            usuarios_inscritos=_suma(fila.del_periodo.usuarios_inscritos for fila in filas),
             usuarios_activos=_suma(fila.del_periodo.usuarios_activos for fila in filas),
             cantidad_cursos=_suma(fila.del_periodo.cantidad_cursos for fila in filas),
+            total_matriculas=_suma(fila.del_periodo.total_matriculas for fila in filas),
+            matriculados_por_curso=_matriculados_por_curso_total(
+                [fila.del_periodo for fila in filas]
+            ),
             cantidad_categorias=_suma(fila.del_periodo.cantidad_categorias for fila in filas),
         )
         contexto["con_datos"] = sum(fila.con_datos for fila in filas)
