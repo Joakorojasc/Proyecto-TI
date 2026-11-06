@@ -202,15 +202,26 @@ class Command(BaseCommand):
 
     @staticmethod
     def crear_mediciones(instancias: dict[str, InstanciaMoodle]) -> None:
+        # Por mes: activos, cursos, categorías, inscritos y matrículas.
         mediciones = {
-            "PEQUENA": [(6, 8, 3), (8, 9, 3), (12, 10, 4)],
-            "MEDIANA": [(42, 18, 5), (50, 20, 6), (54, 22, 6)],
-            "ANUAL_PRINCIPAL": [(1450, 75, 12), (1500, 80, 13), (1550, 86, 14)],
-            "ANUAL_SECUNDARIA": [(420, 28, 7), (450, 31, 8), (400, 34, 8)],
+            "PEQUENA": [(6, 8, 3, 9, 40), (8, 9, 3, 11, 48), (12, 10, 4, 14, 60)],
+            "MEDIANA": [(42, 18, 5, 60, 252), (50, 20, 6, 68, 300), (54, 22, 6, 72, 352)],
+            "ANUAL_PRINCIPAL": [
+                (1450, 75, 12, 1800, 5250),
+                (1500, 80, 13, 1850, 5760),
+                (1550, 86, 14, 1900, 6364),
+            ],
+            "ANUAL_SECUNDARIA": [
+                (420, 28, 7, 520, 1120),
+                (450, 31, 8, 540, 1302),
+                (400, 34, 8, 560, 1496),
+            ],
         }
         for clave, valores_mensuales in mediciones.items():
             for month, valores in enumerate(valores_mensuales, start=1):
-                usuarios_activos, cantidad_cursos, cantidad_categorias = valores
+                usuarios_activos, cantidad_cursos, cantidad_categorias, inscritos, matriculas = (
+                    valores
+                )
                 MedicionUsoMensual.objects.update_or_create(
                     instancia=instancias[clave],
                     mes=month,
@@ -219,5 +230,7 @@ class Command(BaseCommand):
                         "usuarios_activos": usuarios_activos,
                         "cantidad_cursos": cantidad_cursos,
                         "cantidad_categorias": cantidad_categorias,
+                        "usuarios_inscritos": inscritos,
+                        "total_matriculas": matriculas,
                     },
                 )
