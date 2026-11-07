@@ -79,7 +79,7 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
                     UsuarioPortal.objects.create(
                         usuario=auth_user,
                         cliente=nuevo_cliente,
-                        # No pedimos nombre personal: no usar el correo como nombre.
+                        nombre=f"{auth_user.first_name} {auth_user.last_name}".strip(),
                         email=auth_user.email,
                         rol="Admin",
                     )

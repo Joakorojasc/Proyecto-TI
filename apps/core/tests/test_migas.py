@@ -49,7 +49,7 @@ class MigasTests(TestCase):
             cliente=self.cliente,
             nombre="Campus Uno",
             dominio="https://uno.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
         self.client.force_login(self.usuario)
 
@@ -109,7 +109,7 @@ class MigasTests(TestCase):
         sin_nombre = InstanciaMoodle.objects.create(
             cliente=self.cliente,
             dominio="https://dos.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
 
         respuesta = self.client.get(reverse("instancias:detalle", args=[sin_nombre.pk]))

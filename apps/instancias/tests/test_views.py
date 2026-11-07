@@ -243,7 +243,7 @@ class DetalleInstanciaViewTests(TestCase):
             cliente=self.cliente_a,
             dominio="a.example.com",
             version="5.2",
-            estado="activa",
+            estado=EstadoInstancia.ACTIVE,
         )
         self.instancia_b = InstanciaMoodle.objects.create(
             cliente=self.cliente_b,
@@ -381,6 +381,11 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         self.usuario_a = User.objects.create_user(username="usuario-a", password="Password123!")
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="mensual")
+        self.usuario_a.email = "usuario-a@cliente-a.test"
+        self.usuario_a.first_name = "Usuario"
+        self.usuario_a.last_name = "A"
+        self.usuario_a.save(update_fields=["email", "first_name", "last_name"])
+        UsuarioPortal.objects.filter(usuario=self.usuario_a).update(email=self.usuario_a.email)
         self.client.force_login(self.usuario_a)
         self.data_creacion = {
             "nombre": "Campus Cliente A",
@@ -410,7 +415,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         instancia = InstanciaMoodle.objects.get(cliente=self.cliente_a)
         solicitud = SolicitudAprovisionamiento.objects.get(instancia=instancia)
         suscripcion = Suscripcion.objects.get(instancia=instancia)
-        self.assertEqual(instancia.estado, EstadoInstancia.PENDIENTE)
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDING)
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
         self.assertIsNone(solicitud.operation_id)
         self.assertEqual(suscripcion.estado, "pendiente")
@@ -454,7 +459,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         enviar.assert_not_called()
         instancia = InstanciaMoodle.objects.get(cliente=self.cliente_a)
         solicitud = SolicitudAprovisionamiento.objects.get(instancia=instancia)
-        self.assertEqual(instancia.estado, EstadoInstancia.PENDIENTE)
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDING)
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
         self.assertIsNone(solicitud.operation_id)
 
@@ -537,6 +542,8 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         solicitud.refresh_from_db()
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.FALLIDA)
         self.assertIsNone(solicitud.operation_id)
+        instancia.refresh_from_db()
+        self.assertEqual(instancia.estado, EstadoInstancia.FAILED)
 
     def test_no_reintenta_si_ya_no_esta_fallida(self) -> None:
         instancia = InstanciaMoodle.objects.create(
@@ -652,14 +659,14 @@ class FiltrosListaInstanciasTests(TestCase):
         self.usuario_a = User.objects.create_user(username="usuario-a", password="clave")
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
 
-        self.beta = self.crear("Beta", "beta.example.com", "activa", mes=1)
-        self.alfa = self.crear("Alfa", "buscame.example.com", "archivada", mes=2)
-        self.gamma = self.crear("Gamma", "gamma.example.com", "activa", mes=3)
+        self.beta = self.crear("Beta", "beta.example.com", EstadoInstancia.ACTIVE, mes=1)
+        self.alfa = self.crear("Alfa", "buscame.example.com", EstadoInstancia.DEPROVISIONED, mes=2)
+        self.gamma = self.crear("Gamma", "gamma.example.com", EstadoInstancia.ACTIVE, mes=3)
         InstanciaMoodle.objects.create(
             cliente=self.cliente_b,
             nombre="Beta Ajena",
             dominio="ajena.example.com",
-            estado="activa",
+            estado=EstadoInstancia.ACTIVE,
         )
         self.url = reverse("instancias:lista")
         self.client.force_login(self.usuario_a)
@@ -695,18 +702,21 @@ class FiltrosListaInstanciasTests(TestCase):
     def test_busqueda_nunca_muestra_instancias_de_otro_cliente(self) -> None:
         self.assertNotIn("Beta Ajena", self.nombres(q="beta"))
 
-    def test_filtro_por_estado_archivada(self) -> None:
-        self.assertEqual(self.nombres(estado="archivada"), ["Alfa"])
+    def test_filtro_por_estado_desaprovisionada(self) -> None:
+        self.assertEqual(self.nombres(estado=EstadoInstancia.DEPROVISIONED), ["Alfa"])
 
     def test_filtro_por_estado_activa(self) -> None:
-        self.assertEqual(self.nombres(estado="activa"), ["Beta", "Gamma"])
+        self.assertEqual(self.nombres(estado=EstadoInstancia.ACTIVE), ["Beta", "Gamma"])
 
     def test_estado_invalido_se_ignora(self) -> None:
         self.assertEqual(self.nombres(estado="cualquiera"), ["Beta", "Alfa", "Gamma"])
 
     def test_filtros_combinados(self) -> None:
-        self.assertEqual(self.nombres(q="gam", estado="activa"), ["Gamma"])
-        self.assertEqual(self.nombres(q="gam", estado="archivada"), [])
+        self.assertEqual(self.nombres(q="gam", estado=EstadoInstancia.ACTIVE), ["Gamma"])
+        self.assertEqual(
+            self.nombres(q="gam", estado=EstadoInstancia.DEPROVISIONED),
+            [],
+        )
 
     def test_orden_por_nombre_ascendente(self) -> None:
         self.assertEqual(self.nombres(orden="nombre_asc"), ["Alfa", "Beta", "Gamma"])

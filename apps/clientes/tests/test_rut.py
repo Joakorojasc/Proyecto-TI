@@ -111,6 +111,8 @@ def test_registro_invalido_muestra_error_y_no_crea_cuentas(
         reverse("registro"),
         data={
             "username": "admin@demo.cl",
+            "first_name": "Ana",
+            "last_name": "Prueba",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Institución de prueba",
@@ -216,6 +218,8 @@ def test_registro_duplicado_muestra_error_sin_crear_usuario(
             reverse("registro"),
             data={
                 "username": "admin@otra.cl",
+                "first_name": "Otra",
+                "last_name": "Institución",
                 "password1": "ClaveSegura123!",
                 "password2": "ClaveSegura123!",
                 "rut": "76.123.456-0",

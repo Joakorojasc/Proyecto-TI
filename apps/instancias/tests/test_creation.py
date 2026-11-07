@@ -12,8 +12,12 @@ from ..models import (
     EstadoInstancia,
     InstanciaMoodle,
     SolicitudAprovisionamiento,
+    TipoOperacion,
 )
 from ..services import (
+    ACTOR_ASSERTION_HEADER,
+    OPERATIONS_URL,
+    SIMULATED_ACTOR_ASSERTION,
     AprovisionamientoError,
     AprovisionamientoService,
     RespuestaAprovisionamiento,
@@ -25,14 +29,57 @@ class CrearInstanciaViewTests(TestCase):
     def setUp(self) -> None:
         self.cliente = Cliente.objects.create(rut="77020202-7", razon_social="Empresa Demo")
         self.otro_cliente = Cliente.objects.create(rut="77030303-6", razon_social="Otra Empresa")
-        usuario = User.objects.create_user(username="propietario")
-        UsuarioPortal.objects.create(usuario=usuario, cliente=self.cliente)
+        usuario = User.objects.create_user(
+            username="propietario",
+            email="propietario@demo.cl",
+            first_name="Persona",
+            last_name="Propietaria",
+        )
+        UsuarioPortal.objects.create(
+            usuario=usuario,
+            cliente=self.cliente,
+            email="propietario@demo.cl",
+        )
         self.client.force_login(usuario)
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="Mensual")
         self.url = reverse(
             "instancias:crear",
             kwargs={"cliente_id": self.cliente.id, "plan_id": self.plan.id},
         )
+
+    def test_choices_incluyen_el_vocabulario_de_estado_y_operacion_rc3(self) -> None:
+        estados_rc3 = {
+            "PENDING",
+            "ACTIVE",
+            "FAILED",
+            "DEPROVISIONED",
+            "SUSPENDED",
+            "RECOVERING",
+            "RECOVERY_FAILED",
+            "RESTORING",
+            "RESTORE_FAILED",
+            "PURGING",
+            "PURGE_FAILED",
+            "PURGED",
+        }
+        operaciones_rc3 = {
+            "PROVISION",
+            "DEPROVISION",
+            "BACKUP",
+            "RESTORE",
+            "CLONE",
+            "SUSPEND",
+            "REACTIVATE",
+            "RECOVER",
+            "UPDATE_BRANDING",
+        }
+
+        self.assertTrue(estados_rc3.issubset({value for value, _ in EstadoInstancia.choices}))
+        self.assertEqual(
+            {value for value, _ in EstadoInstancia.choices},
+            estados_rc3,
+        )
+        self.assertTrue(operaciones_rc3.issubset({value for value, _ in TipoOperacion.choices}))
 
     def test_muestra_formulario_con_datos_del_cliente_y_plan(self) -> None:
         response = self.client.get(self.url)
@@ -66,7 +113,7 @@ class CrearInstanciaViewTests(TestCase):
         self.assertEqual(instancia.nombre, "Campus Duoc")
         self.assertEqual(instancia.dominio, "https://duoc.edocere.com")
         self.assertEqual(instancia.logo_url, "https://empresa.cl/logo.png")
-        self.assertEqual(instancia.estado, EstadoInstancia.PENDIENTE)
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDING)
         solicitud = SolicitudAprovisionamiento.objects.get(instancia=instancia)
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
         self.assertIsNone(solicitud.operation_id)
@@ -89,24 +136,49 @@ class CrearInstanciaViewTests(TestCase):
             body={"operation_id": "SIM-42", "status": "PENDING"},
         )
         servicio = AprovisionamientoService(proveedor)
+        password_hash = User.objects.get(username="propietario").password
 
-        payload = servicio.construir_payload(solicitud)
         respuesta = servicio.enviar_solicitud(solicitud)
+        llamada = proveedor.enviar_solicitud.call_args
+        assert llamada is not None
+        payload = llamada.args[0]
 
         self.assertEqual(
-            payload,
+            {key: value for key, value in payload.items() if key != "manager"},
             {
                 "operation_type": "PROVISION",
                 "tenant_slug": f"tenant-{instancia.pk}",
                 "hostname": "campus.edocere.com",
                 "owner_ref": str(self.cliente.pk),
+                "language": "es",
             },
         )
-        self.assertLessEqual(len(payload["tenant_slug"]), 63)
-        self.assertRegex(payload["tenant_slug"], r"^[a-z0-9]+(-[a-z0-9]+)*$")
+        manager = payload["manager"]
+        self.assertIsInstance(manager, dict)
+        assert isinstance(manager, dict)
+        password = manager["password"]
+        self.assertEqual(
+            {key: value for key, value in manager.items() if key != "password"},
+            {
+                "username": "propietario",
+                "firstname": "Persona",
+                "lastname": "Propietaria",
+                "email": "propietario@demo.cl",
+            },
+        )
+        self.assertIsInstance(password, str)
+        self.assertTrue(password)
+        self.assertEqual(User.objects.get(username="propietario").password, password_hash)
+        tenant_slug = payload["tenant_slug"]
+        self.assertIsInstance(tenant_slug, str)
+        assert isinstance(tenant_slug, str)
+        self.assertLessEqual(len(tenant_slug), 63)
+        self.assertRegex(tenant_slug, r"^[a-z0-9]+(-[a-z0-9]+)*$")
         proveedor.enviar_solicitud.assert_called_once_with(
             payload,
             idempotency_key=str(solicitud.idempotency_key),
+            url=OPERATIONS_URL,
+            headers={ACTOR_ASSERTION_HEADER: SIMULATED_ACTOR_ASSERTION},
         )
         self.assertEqual(respuesta.status_code, 202)
         self.assertEqual(respuesta.body["status"], "PENDING")
@@ -114,7 +186,7 @@ class CrearInstanciaViewTests(TestCase):
         instancia.refresh_from_db()
         self.assertEqual(solicitud.operation_id, "SIM-42")
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
-        self.assertEqual(instancia.estado, EstadoInstancia.PENDIENTE)
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDING)
 
     def test_rechaza_tenant_slug_mayor_a_63_caracteres(self) -> None:
         with self.assertRaises(AprovisionamientoError):
@@ -159,7 +231,8 @@ class CrearInstanciaViewTests(TestCase):
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
 
     def test_simulador_responde_con_aceptacion_asincrona(self) -> None:
-        respuesta = SimuladorAprovisionamientoAPI().enviar_solicitud(
+        simulador = SimuladorAprovisionamientoAPI()
+        respuesta = simulador.enviar_solicitud(
             {
                 "operation_type": "PROVISION",
                 "tenant_slug": "tenant-42",
@@ -167,6 +240,19 @@ class CrearInstanciaViewTests(TestCase):
                 "owner_ref": str(self.cliente.pk),
             },
             idempotency_key="test-key",
+            url=OPERATIONS_URL,
+            headers={ACTOR_ASSERTION_HEADER: SIMULATED_ACTOR_ASSERTION},
+        )
+        repeticion = simulador.enviar_solicitud(
+            {
+                "operation_type": "PROVISION",
+                "tenant_slug": "tenant-99",
+                "hostname": "otro.edocere.com",
+                "owner_ref": str(self.cliente.pk),
+            },
+            idempotency_key="test-key",
+            url=OPERATIONS_URL,
+            headers={ACTOR_ASSERTION_HEADER: SIMULATED_ACTOR_ASSERTION},
         )
 
         self.assertEqual(respuesta.status_code, 202)
@@ -174,6 +260,7 @@ class CrearInstanciaViewTests(TestCase):
             respuesta.body,
             {"operation_id": "SIM-42", "status": "PENDING"},
         )
+        self.assertIs(repeticion, respuesta)
 
     def test_crea_instancia_con_dominio_propio(self) -> None:
         response = self.client.post(

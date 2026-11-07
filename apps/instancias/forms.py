@@ -115,6 +115,12 @@ class CrearInstanciaForm(forms.ModelForm):
 
 
 class EditarInstanciaForm(forms.ModelForm):
+    ESTADOS_EDITABLES = (
+        (EstadoInstancia.ACTIVE, EstadoInstancia.ACTIVE.label),
+        (EstadoInstancia.SUSPENDED, EstadoInstancia.SUSPENDED.label),
+        (EstadoInstancia.DEPROVISIONED, EstadoInstancia.DEPROVISIONED.label),
+    )
+
     PLAN_BLOCKS = {
         "mensual": {
             "key": "Mensual",
@@ -161,6 +167,12 @@ class EditarInstanciaForm(forms.ModelForm):
         required=False,
         assume_scheme="https",
         widget=forms.URLInput(attrs={"placeholder": "https://empresa.cl/logo.png"}),
+    )
+    estado = forms.ChoiceField(
+        label="Estado",
+        choices=(("", "Mantener estado actual"), *ESTADOS_EDITABLES),
+        required=False,
+        help_text=("El aprovisionamiento determina cuándo una instancia pendiente pasa a activa."),
     )
 
     class Meta:
@@ -219,7 +231,9 @@ class EditarInstanciaForm(forms.ModelForm):
 
     def clean_estado(self) -> str:
         estado = self.cleaned_data["estado"]
-        if estado == EstadoInstancia.ACTIVA and self.instance.estado != EstadoInstancia.ACTIVA:
+        if not estado:
+            return self.instance.estado
+        if estado == EstadoInstancia.ACTIVE and self.instance.estado != EstadoInstancia.ACTIVE:
             solicitud = self.instance.solicitudes_aprovisionamiento.order_by(
                 "-created_at",
                 "-pk",

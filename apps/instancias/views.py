@@ -43,7 +43,7 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
         with transaction.atomic():
             instancia = form.save(commit=False)
             instancia.cliente = cliente
-            instancia.estado = EstadoInstancia.PENDIENTE
+            instancia.estado = EstadoInstancia.PENDING
             instancia.save()
             solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
             suscripcion = Suscripcion.objects.create(
@@ -67,6 +67,8 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
             except AprovisionamientoError:
                 solicitud.estado = EstadoAprovisionamiento.FALLIDA
                 solicitud.save(update_fields=["estado", "updated_at"])
+                instancia.estado = EstadoInstancia.FAILED
+                instancia.save(update_fields=["estado"])
                 messages.error(
                     request,
                     "No se pudo enviar la solicitud de aprovisionamiento. "
@@ -225,6 +227,8 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
     except AprovisionamientoError:
         solicitud.estado = EstadoAprovisionamiento.FALLIDA
         solicitud.save(update_fields=["estado", "updated_at"])
+        instancia.estado = EstadoInstancia.FAILED
+        instancia.save(update_fields=["estado"])
         messages.error(
             request,
             "El reintento falló. Puedes volver a intentarlo más tarde.",

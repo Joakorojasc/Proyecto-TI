@@ -13,6 +13,8 @@ from apps.planes.models import Plan, Suscripcion
 def test_registro_redirige_a_mis_instancias(client: Client) -> None:
     data = {
         "username": "admin@demo.cl",
+        "first_name": "Ana",
+        "last_name": "Demo",
         "password1": "Password123!",
         "password2": "Password123!",
         "razon_social": "Empresa Demo",

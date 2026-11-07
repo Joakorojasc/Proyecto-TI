@@ -33,7 +33,7 @@
     {% if solicitud_aprovisionamiento.estado == "fallida" %}
     <form method="post" action="{% url 'instancias:reintentar' instancia.pk %}">
         {% csrf_token %}
-        <button type="submit">Reintentar aprovisionamiento</button>
+        <button type="submit" class="btn-primary">Reintentar aprovisionamiento</button>
     </form>
     {% endif %}
     {% endif %}

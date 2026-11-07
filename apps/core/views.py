@@ -39,13 +39,13 @@ def home(request: HttpRequest) -> HttpResponse:
         return render(request, "inicio.html", {"cliente": None})
 
     instancias = InstanciaMoodle.objects.filter(cliente=cliente)
-    activas = instancias.filter(estado=EstadoInstancia.ACTIVA)
+    activas = instancias.filter(estado=EstadoInstancia.ACTIVE)
 
     contexto: dict[str, Any] = {
         "cliente": cliente,
         "instancias": activas.order_by("nombre", "dominio"),
         "total_activas": activas.count(),
-        "total_archivadas": instancias.filter(estado=EstadoInstancia.ARCHIVADA).count(),
+        "total_desaprovisionadas": instancias.filter(estado=EstadoInstancia.DEPROVISIONED).count(),
         "planes": [
             suscripcion.plan
             for suscripcion in Suscripcion.objects.filter(cliente=cliente).select_related("plan")

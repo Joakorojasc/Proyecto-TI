@@ -5,9 +5,30 @@ from django.db import models
 
 
 class EstadoInstancia(models.TextChoices):
-    PENDIENTE = "pendiente", "Pendiente de aprovisionamiento"
-    ACTIVA = "activa", "Activa"
-    ARCHIVADA = "archivada", "Archivada"
+    PENDING = "PENDING", "Pendiente"
+    ACTIVE = "ACTIVE", "Activa"
+    FAILED = "FAILED", "Fallida"
+    DEPROVISIONED = "DEPROVISIONED", "Desaprovisionada"
+    SUSPENDED = "SUSPENDED", "Suspendida"
+    RECOVERING = "RECOVERING", "En recuperación"
+    RECOVERY_FAILED = "RECOVERY_FAILED", "Recuperación fallida"
+    RESTORING = "RESTORING", "Restaurando"
+    RESTORE_FAILED = "RESTORE_FAILED", "Restauración fallida"
+    PURGING = "PURGING", "Eliminando"
+    PURGE_FAILED = "PURGE_FAILED", "Eliminación fallida"
+    PURGED = "PURGED", "Eliminada permanentemente"
+
+
+class TipoOperacion(models.TextChoices):
+    PROVISION = "PROVISION", "Provision"
+    DEPROVISION = "DEPROVISION", "Deprovision"
+    BACKUP = "BACKUP", "Backup"
+    RESTORE = "RESTORE", "Restore"
+    CLONE = "CLONE", "Clone"
+    SUSPEND = "SUSPEND", "Suspend"
+    REACTIVATE = "REACTIVATE", "Reactivate"
+    RECOVER = "RECOVER", "Recover"
+    UPDATE_BRANDING = "UPDATE_BRANDING", "Update branding"
 
 
 class EstadoAprovisionamiento(models.TextChoices):
@@ -30,7 +51,7 @@ class InstanciaMoodle(models.Model):
     estado = models.CharField(
         max_length=20,
         choices=EstadoInstancia.choices,
-        default=EstadoInstancia.PENDIENTE,
+        default=EstadoInstancia.PENDING,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

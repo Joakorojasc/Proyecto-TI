@@ -48,6 +48,8 @@ class RegistroClienteTests(TestCase):
         url = reverse("registro")
         datos = {
             "username": "admin@prueba.cl",
+            "first_name": "Ana",
+            "last_name": "Prueba",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "rut": "76.123.456-0",
@@ -73,6 +75,8 @@ class RegistroUsuarioTests(TestCase):
         self.url = reverse("registro")
         self.datos = {
             "username": "admin@demo.cl",
+            "first_name": "Ana",
+            "last_name": "Demo",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Empresa Demo",
@@ -105,6 +109,9 @@ class RegistroUsuarioTests(TestCase):
         self.assertEqual(usuario_portal.usuario, auth_user)
         self.assertEqual(auth_user.usuarioportal, usuario_portal)
         self.assertEqual(usuario_portal.cliente, cliente)
+        self.assertEqual(auth_user.first_name, "Ana")
+        self.assertEqual(auth_user.last_name, "Demo")
+        self.assertEqual(usuario_portal.nombre, "Ana Demo")
 
     def test_correo_se_guarda_como_usuario_y_como_contacto(self) -> None:
         self.client.post(self.url, data=self.datos)
@@ -134,12 +141,11 @@ class RegistroUsuarioTests(TestCase):
 
         self.assertEqual(User.objects.get().username, "admin@demo.cl")
 
-    def test_registro_no_inventa_nombre_personal_ni_acepta_atributos_administrativos(self) -> None:
+    def test_registro_guarda_nombre_y_rechaza_atributos_administrativos(self) -> None:
         self.client.post(
             self.url,
             {
                 **self.datos,
-                "nombre": "No solicitado",
                 "rol": "Superadmin",
                 "is_staff": "1",
                 "is_superuser": "1",
@@ -147,10 +153,27 @@ class RegistroUsuarioTests(TestCase):
         )
         usuario = User.objects.get()
         perfil = UsuarioPortal.objects.get()
-        self.assertIsNone(perfil.nombre)
+        self.assertEqual(usuario.first_name, "Ana")
+        self.assertEqual(usuario.last_name, "Demo")
+        self.assertEqual(perfil.nombre, "Ana Demo")
         self.assertEqual(perfil.rol, "Admin")
         self.assertFalse(usuario.is_staff)
         self.assertFalse(usuario.is_superuser)
+
+    def test_registro_exige_nombre_y_apellido(self) -> None:
+        respuesta = self.client.post(
+            self.url,
+            {
+                **self.datos,
+                "first_name": "",
+                "last_name": "",
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["user_form"].errors["first_name"])
+        self.assertTrue(respuesta.context["user_form"].errors["last_name"])
+        self.assertFalse(User.objects.exists())
 
     def test_rechaza_correo_invalido(self) -> None:
         respuesta = self.client.post(self.url, data={**self.datos, "username": "no-es-un-correo"})

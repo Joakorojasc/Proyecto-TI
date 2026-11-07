@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.clientes.models import Cliente
 from apps.clientes.validators import normalizar_rut
 from apps.estadisticas.models import MedicionUsoMensual
-from apps.instancias.models import InstanciaMoodle
+from apps.instancias.models import EstadoInstancia, InstanciaMoodle
 from apps.planes.models import Plan, Suscripcion
 
 
@@ -178,7 +178,7 @@ class Command(BaseCommand):
                     "cliente": clientes[cliente_clave],
                     "nombre": nombre,
                     "version": "5.2-demo",
-                    "estado": "activa",
+                    "estado": EstadoInstancia.ACTIVE,
                 },
             )
             instancias[clave] = instancia
