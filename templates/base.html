@@ -1,4 +1,4 @@
-{% load static %}
+{% load static navegacion %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -46,8 +46,8 @@
                 <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
                 <div id="global-loader">Cargando...</div>
 
-                {# Cada pantalla declara su ruta; la última entrada va sin enlace. #}
-                {% block migas %}{% endblock migas %}
+                {# La ruta sale de la URL. La tabla está en apps/core/migas.py. #}
+                {% migas %}
 
                 {% if messages %}
                 <div class="mensajes" role="status" aria-live="polite">

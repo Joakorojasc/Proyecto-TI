@@ -1711,3 +1711,14 @@ body {
     text-transform: uppercase;
     white-space: nowrap;
 }
+
+/* Separa el resumen, la tabla y el historial de la pantalla de estadisticas. */
+.estadisticas-bloque {
+    margin-top: var(--espacio-lg);
+}
+
+.estadisticas-bloque h2 {
+    margin: 0 0 var(--espacio-md);
+    color: var(--edocere-blue);
+    font-size: 1.3rem;
+}
