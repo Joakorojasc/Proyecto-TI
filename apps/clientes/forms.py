@@ -105,6 +105,12 @@ class UsuarioRegistroForm(UserCreationForm):
         max_length=150,
         widget=forms.EmailInput(attrs={"placeholder": "nombre@empresa.cl"}),
     )
+    first_name = forms.CharField(label="Nombre", max_length=150)
+    last_name = forms.CharField(label="Apellido", max_length=150)
+
+    class Meta:
+        model = User
+        fields = ("username", "first_name", "last_name")
 
     def clean_username(self) -> str:
         correo: str = self.cleaned_data["username"].strip().lower()

@@ -20,11 +20,11 @@
                 <p class="metrica-etiqueta">
                     {% if total_activas == 1 %}Instancia activa{% else %}Instancias activas{% endif %}
                 </p>
-                {% if total_archivadas %}
-                    <p class="metrica-nota">{{ total_archivadas }} archivada{{ total_archivadas|pluralize }}</p>
+                {% if total_desaprovisionadas %}
+                    <p class="metrica-nota">{{ total_desaprovisionadas }} desaprovisionada{{ total_desaprovisionadas|pluralize }}</p>
                 {% endif %}
                 <p class="metrica-detalle">
-                    Plataformas Moodle en funcionamiento. Las archivadas no se cuentan
+                    Plataformas Moodle en funcionamiento. Las desaprovisionadas no se cuentan
                     aquí ni se facturan.
                 </p>
             </article>
