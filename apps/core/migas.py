@@ -84,6 +84,7 @@ SIN_MIGAS = frozenset(
         "health",
         "core:home",
         "core:health",
+        "instancias:reintentar",
     }
 )
 

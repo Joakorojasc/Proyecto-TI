@@ -104,6 +104,15 @@ class EditarInstanciaViewTests(TestCase):
             respuesta.context["form"]["plan"].value(),
             self.plan_actual.pk,
         )
+        self.assertEqual(
+            list(respuesta.context["form"].fields["estado"].choices),
+            [
+                ("", "Mantener estado actual"),
+                (EstadoInstancia.ACTIVE, "Activa"),
+                (EstadoInstancia.SUSPENDED, "Suspendida"),
+                (EstadoInstancia.DEPROVISIONED, "Desaprovisionada"),
+            ],
+        )
 
     def test_guarda_nombre_y_logo_y_vuelve_al_detalle(self) -> None:
         self.client.force_login(self.usuario_a)
@@ -178,7 +187,7 @@ class EditarInstanciaViewTests(TestCase):
         self.instancia_a.refresh_from_db()
         self.assertEqual(self.instancia_a.estado, EstadoInstancia.ACTIVE)
 
-    def test_no_puede_activar_instancia_sin_aprovisionamiento_confirmado(self) -> None:
+    def test_pendiente_muestra_estado_bloqueado_y_no_acepta_cambios_de_estado(self) -> None:
         instancia_pendiente = InstanciaMoodle.objects.create(
             cliente=self.cliente_a,
             nombre="Campus pendiente",
@@ -192,6 +201,17 @@ class EditarInstanciaViewTests(TestCase):
         url = reverse("instancias:editar", args=[instancia_pendiente.pk])
         self.client.force_login(self.usuario_a)
 
+        respuesta_get = self.client.get(url)
+
+        self.assertEqual(respuesta_get.status_code, 200)
+        self.assertNotIn("estado", respuesta_get.context["form"].fields)
+        self.assertContains(respuesta_get, 'id="estado-pendiente"')
+        self.assertContains(
+            respuesta_get,
+            "El estado no se puede modificar mientras el aprovisionamiento está pendiente.",
+        )
+        self.assertNotContains(respuesta_get, 'name="estado"')
+
         respuesta = self.client.post(
             url,
             {
@@ -202,8 +222,9 @@ class EditarInstanciaViewTests(TestCase):
             },
         )
 
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertTrue(respuesta.context["form"].errors["estado"])
+        self.assertRedirects(
+            respuesta, reverse("instancias:detalle", args=[instancia_pendiente.pk])
+        )
         instancia_pendiente.refresh_from_db()
         self.assertEqual(instancia_pendiente.estado, EstadoInstancia.PENDING)
 

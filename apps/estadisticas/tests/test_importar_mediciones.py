@@ -90,7 +90,7 @@ class CargaTests(ImportarMedicionesCase):
 
     def test_una_instancia_archivada_tambien_recibe_mediciones(self) -> None:
         InstanciaMoodle.objects.filter(pk=self.instancia.pk).update(
-            estado=EstadoInstancia.ARCHIVADA
+            estado=EstadoInstancia.DEPROVISIONED
         )
 
         self.importar(FILA)

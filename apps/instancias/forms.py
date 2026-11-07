@@ -184,6 +184,8 @@ class EditarInstanciaForm(forms.ModelForm):
         instancia = self.instance
         planes = Plan.objects.none()
         if instancia.pk:
+            if instancia.estado == EstadoInstancia.PENDING:
+                self.fields.pop("estado")
             planes = Plan.objects.filter(
                 Q(tipo_plan__iexact="mensual")
                 | Q(tipo_plan__iexact="anual")
