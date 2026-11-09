@@ -4,12 +4,6 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
-def marcar_activas_como_pendientes(apps, schema_editor):
-    instancia = apps.get_model("instancias", "InstanciaMoodle")
-    instancia.objects.exclude(estado="archivada").update(estado="pendiente")
-    instancia.objects.filter(estado__isnull=True).update(estado="pendiente")
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -17,10 +11,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(
-            marcar_activas_como_pendientes,
-            reverse_code=migrations.RunPython.noop,
-        ),
         migrations.AlterField(
             model_name="instanciamoodle",
             name="estado",

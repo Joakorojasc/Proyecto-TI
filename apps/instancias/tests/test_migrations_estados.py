@@ -10,11 +10,10 @@ class MigracionEstadoInstanciaTests(TransactionTestCase):
         super().setUp()
         executor = MigrationExecutor(connection)
         self.destinos = executor.loader.graph.leaf_nodes()
-        executor.migrate([("instancias", "0006_alter_instanciamoodle_estado")])
+        self.migracion_inicial = ("instancias", "0004_instanciamoodle_created_at")
+        executor.migrate([self.migracion_inicial])
         executor = MigrationExecutor(connection)
-        apps_anteriores = executor.loader.project_state(
-            list(executor.loader.applied_migrations)
-        ).apps
+        apps_anteriores = executor.loader.project_state([self.migracion_inicial]).apps
         self.cliente_model: Any = apps_anteriores.get_model("clientes", "Cliente")
         self.instancia_model: Any = apps_anteriores.get_model("instancias", "InstanciaMoodle")
 
@@ -28,12 +27,31 @@ class MigracionEstadoInstanciaTests(TransactionTestCase):
             ("pendiente.example.com", "pendiente"),
             ("activa.example.com", "activa"),
             ("archivada.example.com", "archivada"),
+            ("sin-estado.example.com", None),
         ):
             self.instancia_model.objects.create(
                 cliente=cliente,
                 dominio=dominio,
                 estado=estado,
             )
+
+        MigrationExecutor(connection).migrate([("instancias", "0005_aprovisionamiento")])
+        apps_intermedias = (
+            MigrationExecutor(connection)
+            .loader.project_state([("instancias", "0005_aprovisionamiento")])
+            .apps
+        )
+        instancia_intermedia: Any = apps_intermedias.get_model("instancias", "InstanciaMoodle")
+        estados_intermedios = dict(instancia_intermedia.objects.values_list("dominio", "estado"))
+        self.assertEqual(
+            estados_intermedios,
+            {
+                "pendiente.example.com": "pendiente",
+                "activa.example.com": "activa",
+                "archivada.example.com": "archivada",
+                "sin-estado.example.com": "pendiente",
+            },
+        )
 
         MigrationExecutor(connection).migrate([("instancias", "0007_alter_instanciamoodle_estado")])
         apps_actuales = MigrationExecutor(connection).loader.project_state(self.destinos).apps
@@ -46,5 +64,6 @@ class MigracionEstadoInstanciaTests(TransactionTestCase):
                 "pendiente.example.com": "PENDING",
                 "activa.example.com": "ACTIVE",
                 "archivada.example.com": "DEPROVISIONED",
+                "sin-estado.example.com": "PENDING",
             },
         )
