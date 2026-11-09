@@ -40,13 +40,13 @@ class PortadaConClienteTests(TestCase):
             cliente=self.cliente,
             nombre="Campus Principal",
             dominio="https://principal.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
         InstanciaMoodle.objects.create(
             cliente=self.cliente,
             nombre="Campus Viejo",
             dominio="https://viejo.demo.invalid",
-            estado=EstadoInstancia.ARCHIVADA,
+            estado=EstadoInstancia.DEPROVISIONED,
         )
         MedicionUsoMensual.objects.create(
             instancia=self.activa,
@@ -76,7 +76,7 @@ class PortadaConClienteTests(TestCase):
         respuesta = self.client.get(reverse("home"))
 
         self.assertEqual(respuesta.context["total_activas"], 1)
-        self.assertEqual(respuesta.context["total_archivadas"], 1)
+        self.assertEqual(respuesta.context["total_desaprovisionadas"], 1)
 
     def test_informa_el_uso_del_ultimo_periodo_medido(self) -> None:
         respuesta = self.client.get(reverse("home"))
@@ -116,13 +116,13 @@ class PortadaAislamientoTests(TestCase):
             cliente=self.cliente_uno,
             nombre="Campus Propio",
             dominio="https://propio.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
         self.ajena = InstanciaMoodle.objects.create(
             cliente=self.cliente_dos,
             nombre="Campus Ajeno",
             dominio="https://ajeno.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
         MedicionUsoMensual.objects.create(
             instancia=self.ajena,

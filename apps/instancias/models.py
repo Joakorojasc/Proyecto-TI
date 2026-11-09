@@ -1,11 +1,41 @@
 from urllib.parse import urlparse
+from uuid import uuid4
 
 from django.db import models
 
 
 class EstadoInstancia(models.TextChoices):
+    PENDING = "PENDING", "Pendiente"
+    ACTIVE = "ACTIVE", "Activa"
+    FAILED = "FAILED", "Fallida"
+    DEPROVISIONED = "DEPROVISIONED", "Desaprovisionada"
+    SUSPENDED = "SUSPENDED", "Suspendida"
+    RECOVERING = "RECOVERING", "En recuperación"
+    RECOVERY_FAILED = "RECOVERY_FAILED", "Recuperación fallida"
+    RESTORING = "RESTORING", "Restaurando"
+    RESTORE_FAILED = "RESTORE_FAILED", "Restauración fallida"
+    PURGING = "PURGING", "Eliminando"
+    PURGE_FAILED = "PURGE_FAILED", "Eliminación fallida"
+    PURGED = "PURGED", "Eliminada permanentemente"
+
+
+class TipoOperacion(models.TextChoices):
+    PROVISION = "PROVISION", "Provision"
+    DEPROVISION = "DEPROVISION", "Deprovision"
+    BACKUP = "BACKUP", "Backup"
+    RESTORE = "RESTORE", "Restore"
+    CLONE = "CLONE", "Clone"
+    SUSPEND = "SUSPEND", "Suspend"
+    REACTIVATE = "REACTIVATE", "Reactivate"
+    RECOVER = "RECOVER", "Recover"
+    UPDATE_BRANDING = "UPDATE_BRANDING", "Update branding"
+
+
+class EstadoAprovisionamiento(models.TextChoices):
+    PENDIENTE = "pendiente", "Pendiente"
+    EN_PROCESO = "en_proceso", "En proceso"
     ACTIVA = "activa", "Activa"
-    ARCHIVADA = "archivada", "Archivada"
+    FALLIDA = "fallida", "Fallida"
 
 
 class InstanciaMoodle(models.Model):
@@ -19,9 +49,9 @@ class InstanciaMoodle(models.Model):
     logo_url = models.URLField(max_length=2048, blank=True, null=True)
     version = models.CharField(max_length=255, null=True)
     estado = models.CharField(
-        max_length=255,
-        null=True,
+        max_length=20,
         choices=EstadoInstancia.choices,
+        default=EstadoInstancia.PENDING,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -39,3 +69,31 @@ class InstanciaMoodle(models.Model):
     @property
     def es_subdominio_edocere(self) -> bool:
         return self.dominio_host.endswith(".edocere.com")
+
+
+class SolicitudAprovisionamiento(models.Model):
+    instancia = models.ForeignKey(
+        InstanciaMoodle,
+        on_delete=models.PROTECT,
+        related_name="solicitudes_aprovisionamiento",
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=EstadoAprovisionamiento.choices,
+        default=EstadoAprovisionamiento.PENDIENTE,
+    )
+    operation_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    idempotency_key = models.CharField(
+        max_length=255,
+        unique=True,
+        default=uuid4,
+        editable=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self) -> str:
+        return f"Aprovisionamiento de instancia {self.instancia_id} ({self.estado})"

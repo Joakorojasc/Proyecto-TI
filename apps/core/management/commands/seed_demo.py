@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.clientes.models import Cliente
 from apps.clientes.validators import normalizar_rut
 from apps.estadisticas.models import MedicionUsoMensual
-from apps.instancias.models import InstanciaMoodle
+from apps.instancias.models import EstadoInstancia, InstanciaMoodle
 from apps.planes.models import Plan, Suscripcion
 
 
@@ -55,22 +55,6 @@ class Command(BaseCommand):
                 "precio_base": Decimal("1000.00"),
                 "precio_por_usuario": None,
                 "limite_usuarios": 1000,
-            },
-            {
-                "clave": "PLAN-DEMO-ANUAL-2000",
-                "nombre": "Plan anual demo hasta 2000 usuarios",
-                "tipo_plan": "anual",
-                "precio_base": Decimal("1800.00"),
-                "precio_por_usuario": None,
-                "limite_usuarios": 2000,
-            },
-            {
-                "clave": "PLAN-DEMO-ANUAL-3000",
-                "nombre": "Plan anual demo hasta 3000 usuarios",
-                "tipo_plan": "anual",
-                "precio_base": Decimal("2500.00"),
-                "precio_por_usuario": None,
-                "limite_usuarios": 3000,
             },
         ]
         planes: dict[str, Plan] = {}
@@ -149,8 +133,8 @@ class Command(BaseCommand):
         definiciones = [
             ("PEQUENA", "PLAN-DEMO-MENSUAL"),
             ("MEDIANA", "PLAN-DEMO-MENSUAL"),
-            ("ANUAL_PRINCIPAL", "PLAN-DEMO-ANUAL-2000"),
-            ("ANUAL_SECUNDARIA", "PLAN-DEMO-ANUAL-2000"),
+            ("ANUAL_PRINCIPAL", "PLAN-DEMO-ANUAL-1000"),
+            ("ANUAL_SECUNDARIA", "PLAN-DEMO-ANUAL-1000"),
         ]
         suscripciones: dict[str, Suscripcion] = {}
         for instancia_clave, plan_clave in definiciones:
@@ -194,7 +178,7 @@ class Command(BaseCommand):
                     "cliente": clientes[cliente_clave],
                     "nombre": nombre,
                     "version": "5.2-demo",
-                    "estado": "activa",
+                    "estado": EstadoInstancia.ACTIVE,
                 },
             )
             instancias[clave] = instancia
