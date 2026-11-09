@@ -23,11 +23,27 @@ CLAVE = "ClaveSegura123!"
 RAZON_SOCIAL = "Institución Recorrido SpA"
 RUT = "76.123.456-0"
 
-# Por instancia: nombre, dominio y las mediciones de enero y febrero de 2026.
-# Cada medición es activos, cursos, categorías, inscritos y matrículas.
-INSTANCIAS: tuple[tuple[str, str, tuple[tuple[int, int, int, int, int], ...]], ...] = (
+# Una medición es activos, cursos, categorías, inscritos y matrículas.
+Medicion = tuple[int, int, int, int, int]
+# Por instancia: nombre, dominio y las mediciones desde enero de 2026, mes a mes.
+Instancias = tuple[tuple[str, str, tuple[Medicion, ...]], ...]
+
+INSTANCIAS: Instancias = (
     ("Campus Uno", "campus-uno.demo.invalid", ((40, 10, 3, 55, 120), (44, 12, 4, 60, 156))),
     ("Campus Dos", "campus-dos.demo.invalid", ((18, 5, 2, 25, 40), (20, 6, 2, 28, 54))),
+)
+
+# El otro cliente. Nombres y números que no se confunden con los de la cuenta,
+# para que comprobar que no aparecen sea concluyente.
+CORREO_AJENO = "ajeno@recorrido.invalid"
+RAZON_SOCIAL_AJENA = "Corporación Ajena Ltda"
+RUT_AJENO = "77.654.321-7"
+INSTANCIAS_AJENAS: Instancias = (
+    (
+        "Campus Ajeno",
+        "campus-ajeno.demo.invalid",
+        ((700, 30, 9, 9000, 900), (777, 31, 9, 9999, 999)),
+    ),
 )
 
 
@@ -76,35 +92,22 @@ class CuentaDemo:
     nombres: tuple[str, ...]
 
 
-@pytest.fixture
-def cuenta(orm_con_playwright: None, transactional_db: None) -> CuentaDemo:
-    """Un cliente con dos instancias y dos períodos medidos, siempre con los mismos valores.
-
-    Pide transactional_db porque el servidor de prueba corre en otro hilo y no
-    ve lo que todavía esté dentro de una transacción sin confirmar.
-
-    El orden de los dos primeros argumentos importa: el permiso del ORM tiene
-    que quedar puesto antes de que se arme la base.
-
-    No usa seed_demo a propósito: ese comando es del Bloque 1 y si le cambian
-    los datos estos recorridos se caerían sin que nadie los haya tocado.
-    """
-    cliente = Cliente.objects.create(
-        rut=RUT,
-        razon_social=RAZON_SOCIAL,
-        email_contacto=CORREO,
-    )
-    usuario = User.objects.create_user(username=CORREO, email=CORREO, password=CLAVE)
+def crear_cuenta(
+    correo: str, razon_social: str, rut: str, instancias_datos: Instancias
+) -> CuentaDemo:
+    """Arma un cliente con su usuario, sus instancias y sus mediciones."""
+    cliente = Cliente.objects.create(rut=rut, razon_social=razon_social, email_contacto=correo)
+    usuario = User.objects.create_user(username=correo, email=correo, password=CLAVE)
     UsuarioPortal.objects.create(
         usuario=usuario,
         cliente=cliente,
         nombre="Demo Recorrido",
-        email=CORREO,
+        email=correo,
         rol="Admin",
     )
 
     instancias: list[InstanciaMoodle] = []
-    for nombre, dominio, mediciones in INSTANCIAS:
+    for nombre, dominio, mediciones in instancias_datos:
         instancia = InstanciaMoodle.objects.create(
             cliente=cliente,
             nombre=nombre,
@@ -128,10 +131,32 @@ def cuenta(orm_con_playwright: None, transactional_db: None) -> CuentaDemo:
 
     return CuentaDemo(
         usuario=usuario,
-        correo=CORREO,
+        correo=correo,
         clave=CLAVE,
         cliente=cliente,
-        razon_social=RAZON_SOCIAL,
+        razon_social=razon_social,
         instancias=instancias,
-        nombres=tuple(nombre for nombre, _, _ in INSTANCIAS),
+        nombres=tuple(nombre for nombre, _, _ in instancias_datos),
     )
+
+
+@pytest.fixture
+def cuenta(orm_con_playwright: None, transactional_db: None) -> CuentaDemo:
+    """Un cliente con dos instancias y dos períodos medidos, siempre con los mismos valores.
+
+    Pide transactional_db porque el servidor de prueba corre en otro hilo y no
+    ve lo que todavía esté dentro de una transacción sin confirmar.
+
+    El orden de los dos primeros argumentos importa: el permiso del ORM tiene
+    que quedar puesto antes de que se arme la base.
+
+    No usa seed_demo a propósito: ese comando es del Bloque 1 y si le cambian
+    los datos estos recorridos se caerían sin que nadie los haya tocado.
+    """
+    return crear_cuenta(CORREO, RAZON_SOCIAL, RUT, INSTANCIAS)
+
+
+@pytest.fixture
+def cuenta_ajena(orm_con_playwright: None, transactional_db: None) -> CuentaDemo:
+    """Otro cliente en la misma base, para probar que sus datos no se cruzan."""
+    return crear_cuenta(CORREO_AJENO, RAZON_SOCIAL_AJENA, RUT_AJENO, INSTANCIAS_AJENAS)
