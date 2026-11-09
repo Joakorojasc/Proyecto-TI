@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from playwright.sync_api import Page, expect
 from pytest_django.live_server_helper import LiveServer
 
-from apps.clientes.models import Cliente
+from apps.clientes.models import Cliente, UsuarioPortal
 from tests.e2e.conftest import CLAVE
 from tests.e2e.paginas import RUTA_INSTANCIAS, ir_a, menu
 
@@ -18,6 +18,8 @@ RUTA_REGISTRO = "/registro/"
 CORREO_NUEVO = "nueva@recorrido.invalid"
 RUT_NUEVO = "78.111.222-4"
 RAZON_SOCIAL_NUEVA = "Fundación Registro Nuevo"
+NOMBRE_NUEVO = "Camila"
+APELLIDO_NUEVO = "Soto"
 
 
 def llenar_registro(page: Page, base: str) -> None:
@@ -26,6 +28,8 @@ def llenar_registro(page: Page, base: str) -> None:
     page.locator("input[name='username']").fill(CORREO_NUEVO)
     page.locator("input[name='password1']").fill(CLAVE)
     page.locator("input[name='password2']").fill(CLAVE)
+    page.locator("input[name='first_name']").fill(NOMBRE_NUEVO)
+    page.locator("input[name='last_name']").fill(APELLIDO_NUEVO)
     page.locator("input[name='razon_social']").fill(RAZON_SOCIAL_NUEVA)
     page.locator("input[name='rut']").fill(RUT_NUEVO)
 
@@ -45,6 +49,8 @@ def test_registra_una_institucion_y_queda_con_sesion_en_el_listado(
     expect(page.get_by_text("Aún no tienes instancias Moodle asociadas.")).to_be_visible()
     assert User.objects.filter(username=CORREO_NUEVO).exists()
     assert Cliente.objects.filter(razon_social=RAZON_SOCIAL_NUEVA).exists()
+    portal = UsuarioPortal.objects.get(email=CORREO_NUEVO)
+    assert portal.nombre == f"{NOMBRE_NUEVO} {APELLIDO_NUEVO}"
 
 
 def test_sin_aceptar_los_terminos_no_crea_la_cuenta(

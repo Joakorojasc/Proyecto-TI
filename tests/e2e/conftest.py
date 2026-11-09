@@ -14,7 +14,7 @@ from django.contrib.auth.models import User
 
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.estadisticas.models import MedicionUsoMensual
-from apps.instancias.models import InstanciaMoodle
+from apps.instancias.models import EstadoInstancia, InstanciaMoodle
 
 CARPETA = Path(__file__).parent
 
@@ -113,7 +113,7 @@ def crear_cuenta(
             nombre=nombre,
             dominio=dominio,
             version="5.2-demo",
-            estado="activa",
+            estado=EstadoInstancia.ACTIVE,
         )
         for mes, valores in enumerate(mediciones, start=1):
             activos, cursos, categorias, inscritos, matriculas = valores

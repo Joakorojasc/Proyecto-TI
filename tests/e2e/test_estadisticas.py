@@ -8,7 +8,7 @@ from playwright.sync_api import Page, expect
 from pytest_django.live_server_helper import LiveServer
 
 from apps.estadisticas.models import MedicionUsoMensual
-from apps.instancias.models import InstanciaMoodle
+from apps.instancias.models import EstadoInstancia, InstanciaMoodle
 from tests.e2e.conftest import CuentaDemo
 from tests.e2e.paginas import RUTA_ESTADISTICAS, iniciar_sesion, ir_por_menu, migas
 
@@ -68,7 +68,7 @@ def test_una_instancia_sin_medicion_en_el_ultimo_periodo_aparece_sin_datos(
         nombre="Campus Tres",
         dominio="campus-tres.demo.invalid",
         version="5.2-demo",
-        estado="activa",
+        estado=EstadoInstancia.ACTIVE,
     )
     MedicionUsoMensual.objects.create(
         instancia=rezagada,
