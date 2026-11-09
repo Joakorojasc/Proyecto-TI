@@ -8,6 +8,9 @@ staticfiles/
 media/
 htmlcov/
 .coverage
+
+# Trazas y capturas que deja Playwright cuando falla un recorrido.
+test-results/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
