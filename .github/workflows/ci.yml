@@ -81,3 +81,68 @@ jobs:
           name: reporte-cobertura
           path: htmlcov/
           if-no-files-found: ignore
+
+  e2e:
+    # Job aparte para que Chromium no retrase el linter ni los tests: corre en
+    # paralelo con calidad, contra la misma base.
+    name: Recorridos E2E en navegador
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mirror.gcr.io/library/mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: portal_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: portal_test
+      DB_USER: root
+      DB_PASSWORD: root
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Dependencias del sistema para el driver de MariaDB
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-libmysqlclient-dev build-essential pkg-config
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Instalar Chromium para Playwright
+        run: playwright install chromium --with-deps
+
+      # Sin --cov: el umbral de cobertura lo cuida calidad. Las banderas de
+      # Playwright solo guardan evidencia cuando un recorrido falla.
+      - name: Recorridos E2E
+        run: pytest -m e2e --tracing=retain-on-failure --screenshot=only-on-failure
+
+      # always() para que la evidencia se suba justo cuando falla.
+      - name: Guardar evidencia de los recorridos
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: evidencia-e2e
+          path: test-results/
+          if-no-files-found: ignore
