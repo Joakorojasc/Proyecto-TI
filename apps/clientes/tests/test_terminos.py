@@ -20,6 +20,8 @@ class TerminosTests(TestCase):
     def setUp(self) -> None:
         self.datos = {
             "username": "admin@institucion.cl",
+            "first_name": "Ana",
+            "last_name": "Institución",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Institución de prueba",

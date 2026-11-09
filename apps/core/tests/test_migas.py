@@ -132,7 +132,7 @@ class ClienteConSesionTestCase(TestCase):
             cliente=self.cliente,
             nombre="Campus Uno",
             dominio="https://uno.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="mensual")
         self.suscripcion = Suscripcion.objects.create(
@@ -198,7 +198,7 @@ class MigasTests(ClienteConSesionTestCase):
         sin_nombre = InstanciaMoodle.objects.create(
             cliente=self.cliente,
             dominio="https://dos.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
 
         respuesta = self.client.get(reverse("instancias:detalle", args=[sin_nombre.pk]))

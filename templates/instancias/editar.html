@@ -7,6 +7,13 @@
 
         <form method="post">
             {% csrf_token %}
+            {% if instancia.estado == "PENDING" %}
+            <p>
+                <label for="estado-pendiente">Estado</label>
+                <input id="estado-pendiente" type="text" value="{{ instancia.get_estado_display }}" disabled>
+                <span class="helptext">El estado no se puede modificar mientras el aprovisionamiento está pendiente.</span>
+            </p>
+            {% endif %}
             {% for field in form %}
                 {% if field.name != "confirmacion_contrasena" %}
                     {% if field.name == "plan" %}

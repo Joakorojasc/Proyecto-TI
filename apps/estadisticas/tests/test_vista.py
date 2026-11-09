@@ -34,7 +34,7 @@ def crear_instancia(cliente: Cliente, nombre: str) -> InstanciaMoodle:
         cliente=cliente,
         nombre=nombre,
         dominio=f"https://{nombre.lower().replace(' ', '-')}.demo.invalid",
-        estado=EstadoInstancia.ACTIVA,
+        estado=EstadoInstancia.ACTIVE,
     )
 
 

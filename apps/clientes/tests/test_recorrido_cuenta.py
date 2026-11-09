@@ -24,6 +24,8 @@ def datos_registro(
 ) -> dict[str, str]:
     return {
         "username": correo,
+        "first_name": "Persona",
+        "last_name": "Recorrido",
         "password1": CLAVE,
         "password2": CLAVE,
         "razon_social": nombre,

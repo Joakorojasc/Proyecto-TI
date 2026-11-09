@@ -7,7 +7,7 @@ from apps.clientes.models import Cliente, UsuarioPortal
 from apps.clientes.validators import normalizar_rut
 from apps.estadisticas.models import MedicionUsoMensual
 from apps.instancias.models import InstanciaMoodle
-from apps.planes.models import Suscripcion
+from apps.planes.models import Plan, Suscripcion
 
 
 class SeedDemoTests(TestCase):
@@ -18,6 +18,14 @@ class SeedDemoTests(TestCase):
         self.assertEqual(Cliente.objects.count(), 3)
         self.assertEqual(InstanciaMoodle.objects.count(), 4)
         self.assertEqual(Suscripcion.objects.count(), 4)
+        self.assertEqual(
+            list(
+                Plan.objects.filter(tipo_plan__iexact="anual").values_list(
+                    "limite_usuarios", flat=True
+                )
+            ),
+            [1000],
+        )
 
         dominios = {
             "pequena.demo.invalid",
