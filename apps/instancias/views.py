@@ -25,9 +25,7 @@ from .models import InstanciaMoodle
 @login_required(login_url="/login/")
 def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> HttpResponse:
     cliente = obtener_cliente_autorizado(request, cliente_id)
-    if not es_superadministrador(request.user) and not terminos.tiene_aceptacion_vigente(
-        cliente
-        ):
+    if not es_superadministrador(request.user) and not terminos.tiene_aceptacion_vigente(cliente):
         messages.info(
             request,
             "Antes de crear una instancia debes aceptar los términos y condiciones.",

@@ -16,6 +16,7 @@ from .models import InstanciaMoodle
 InstanciaMoodle._meta.verbose_name = "instancia de Moodle"
 InstanciaMoodle._meta.verbose_name_plural = "instancias de Moodle"
 
+
 class SuscripcionInline(admin.TabularInline):
     model = Suscripcion
     extra = 0
@@ -33,9 +34,7 @@ class TipoDominioFilter(admin.SimpleListFilter):
     title = "tipo de dominio"
     parameter_name = "tipo_dominio"
 
-    def lookups(
-        self, request: HttpRequest, model_admin: Any
-    ) -> list[tuple[str, str]]:
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
         return [("edocere", "Dominio de Edocere"), ("propio", "Dominio propio")]
 
     def queryset(

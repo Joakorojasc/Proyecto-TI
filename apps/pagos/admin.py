@@ -14,6 +14,7 @@ from .models import DocumentoTributario, Pago
 DocumentoTributario._meta.verbose_name = "documento tributario"
 DocumentoTributario._meta.verbose_name_plural = "documentos tributarios"
 
+
 class SuscripcionChoiceField(forms.ModelChoiceField):
     """Muestra cada suscripción como «Cliente · Instancia · Plan» en el desplegable."""
 
@@ -55,14 +56,10 @@ class PagoAdmin(admin.ModelAdmin):
     )
     ordering = ("-fecha_pago",)
 
-    def formfield_for_foreignkey(
-        self, db_field: Any, request: HttpRequest, **kwargs: Any
-    ) -> Any:
+    def formfield_for_foreignkey(self, db_field: Any, request: HttpRequest, **kwargs: Any) -> Any:
         if db_field.name == "suscripcion":
             kwargs["form_class"] = SuscripcionChoiceField
-            kwargs["queryset"] = Suscripcion.objects.select_related(
-                "cliente", "instancia", "plan"
-            )
+            kwargs["queryset"] = Suscripcion.objects.select_related("cliente", "instancia", "plan")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     @admin.display(description="Cliente", ordering="suscripcion__cliente__razon_social")
@@ -103,17 +100,13 @@ class DocumentoTributarioAdmin(admin.ModelAdmin):
     )
     ordering = ("-folio",)
 
-    def formfield_for_foreignkey(
-        self, db_field: Any, request: HttpRequest, **kwargs: Any
-    ) -> Any:
+    def formfield_for_foreignkey(self, db_field: Any, request: HttpRequest, **kwargs: Any) -> Any:
         if db_field.name == "pago":
             kwargs["form_class"] = PagoChoiceField
             kwargs["queryset"] = Pago.objects.select_related("suscripcion__cliente")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-    @admin.display(
-        description="Cliente", ordering="pago__suscripcion__cliente__razon_social"
-    )
+    @admin.display(description="Cliente", ordering="pago__suscripcion__cliente__razon_social")
     def enlace_cliente(self, obj: DocumentoTributario) -> SafeString:
         cliente = obj.pago.suscripcion.cliente
         url = reverse("admin:clientes_cliente_change", args=[cliente.pk])

@@ -34,12 +34,8 @@ class ClienteAltaForm(forms.ModelForm):
         help_text="Con este correo iniciará sesión en el portal.",
         max_length=150,
     )
-    password1 = forms.CharField(
-        label="Contraseña inicial", strip=False, widget=forms.PasswordInput
-    )
-    password2 = forms.CharField(
-        label="Repetir contraseña", strip=False, widget=forms.PasswordInput
-    )
+    password1 = forms.CharField(label="Contraseña inicial", strip=False, widget=forms.PasswordInput)
+    password2 = forms.CharField(label="Repetir contraseña", strip=False, widget=forms.PasswordInput)
 
     class Meta:
         model = Cliente
@@ -162,9 +158,7 @@ class NuevaSuscripcionInline(admin.TabularInline):
     def get_queryset(self, request: HttpRequest) -> QuerySet[Suscripcion]:
         return super().get_queryset(request).none()
 
-    def formfield_for_foreignkey(
-        self, db_field: Any, request: HttpRequest, **kwargs: Any
-    ) -> Any:
+    def formfield_for_foreignkey(self, db_field: Any, request: HttpRequest, **kwargs: Any) -> Any:
         cliente_id = _cliente_de_la_ruta(request) or 0
         if db_field.name == "instancia":
             kwargs["queryset"] = InstanciaMoodle.objects.filter(cliente_id=cliente_id)
@@ -186,14 +180,10 @@ class InstanciasFilter(admin.SimpleListFilter):
     title = "instancias"
     parameter_name = "instancias"
 
-    def lookups(
-        self, request: HttpRequest, model_admin: Any
-    ) -> list[tuple[str, str]]:
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
         return [("si", "Con instancias"), ("no", "Sin instancias")]
 
-    def queryset(
-        self, request: HttpRequest, queryset: QuerySet[Cliente]
-    ) -> QuerySet[Cliente]:
+    def queryset(self, request: HttpRequest, queryset: QuerySet[Cliente]) -> QuerySet[Cliente]:
         if self.value() == "si":
             return queryset.filter(instanciamoodle__isnull=False).distinct()
         if self.value() == "no":
@@ -205,14 +195,10 @@ class UsuariosPortalFilter(admin.SimpleListFilter):
     title = "usuarios del portal"
     parameter_name = "usuarios_portal"
 
-    def lookups(
-        self, request: HttpRequest, model_admin: Any
-    ) -> list[tuple[str, str]]:
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
         return [("si", "Con usuarios"), ("no", "Sin usuarios")]
 
-    def queryset(
-        self, request: HttpRequest, queryset: QuerySet[Cliente]
-    ) -> QuerySet[Cliente]:
+    def queryset(self, request: HttpRequest, queryset: QuerySet[Cliente]) -> QuerySet[Cliente]:
         if self.value() == "si":
             return queryset.filter(usuarioportal__isnull=False).distinct()
         if self.value() == "no":
@@ -224,18 +210,14 @@ class TipoPlanFilter(admin.SimpleListFilter):
     title = "tipo de plan"
     parameter_name = "tipo_plan"
 
-    def lookups(
-        self, request: HttpRequest, model_admin: Any
-    ) -> list[tuple[str, str]]:
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
         return [
             ("mensual", "Mensual"),
             ("anual", "Anual"),
             ("personalizado", "Personalizado (negociado)"),
         ]
 
-    def queryset(
-        self, request: HttpRequest, queryset: QuerySet[Cliente]
-    ) -> QuerySet[Cliente]:
+    def queryset(self, request: HttpRequest, queryset: QuerySet[Cliente]) -> QuerySet[Cliente]:
         if self.value():
             return queryset.filter(suscripcion__plan__tipo_plan__iexact=self.value()).distinct()
         return queryset
@@ -245,9 +227,7 @@ class EstadoSuscripcionFilter(admin.SimpleListFilter):
     title = "estado de la suscripción"
     parameter_name = "estado_suscripcion"
 
-    def lookups(
-        self, request: HttpRequest, model_admin: Any
-    ) -> list[tuple[str, str]]:
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
         estados = (
             Suscripcion.objects.exclude(estado__isnull=True)
             .order_by("estado")
@@ -256,9 +236,7 @@ class EstadoSuscripcionFilter(admin.SimpleListFilter):
         )
         return [(estado, estado.capitalize()) for estado in estados if estado]
 
-    def queryset(
-        self, request: HttpRequest, queryset: QuerySet[Cliente]
-    ) -> QuerySet[Cliente]:
+    def queryset(self, request: HttpRequest, queryset: QuerySet[Cliente]) -> QuerySet[Cliente]:
         if self.value():
             return queryset.filter(suscripcion__estado=self.value()).distinct()
         return queryset
@@ -268,18 +246,14 @@ class EstadoAccesoFilter(admin.SimpleListFilter):
     title = "estado de acceso"
     parameter_name = "estado_acceso"
 
-    def lookups(
-        self, request: HttpRequest, model_admin: Any
-    ) -> list[tuple[str, str]]:
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
         return [
             ("activo", "Activo"),
             ("suspendido", "Suspendido"),
             ("sin_usuarios", "Sin usuarios"),
         ]
 
-    def queryset(
-        self, request: HttpRequest, queryset: QuerySet[Cliente]
-    ) -> QuerySet[Cliente]:
+    def queryset(self, request: HttpRequest, queryset: QuerySet[Cliente]) -> QuerySet[Cliente]:
         if self.value() == "activo":
             return queryset.filter(usuarioportal__usuario__is_active=True).distinct()
         if self.value() == "suspendido":
@@ -297,17 +271,13 @@ class TerminosFilter(admin.SimpleListFilter):
     title = "términos y condiciones"
     parameter_name = "terminos"
 
-    def lookups(
-        self, request: HttpRequest, model_admin: Any
-    ) -> list[tuple[str, str]]:
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
         return [
             ("si", "Aceptó la versión vigente"),
             ("no", "No ha aceptado la versión vigente"),
         ]
 
-    def queryset(
-        self, request: HttpRequest, queryset: QuerySet[Cliente]
-    ) -> QuerySet[Cliente]:
+    def queryset(self, request: HttpRequest, queryset: QuerySet[Cliente]) -> QuerySet[Cliente]:
         aceptados = AceptacionTerminos.objects.filter(
             version_documento=terminos.VERSION_TERMINOS
         ).values("cliente_id")
@@ -414,18 +384,22 @@ class ClienteAdmin(admin.ModelAdmin):
         UsuarioPortal.objects.create(usuario=usuario, cliente=obj, email=correo, rol="Admin")
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[Cliente]:
-        return super().get_queryset(request).annotate(
-            _usuarios=Count("usuarioportal", distinct=True),
-            _usuarios_activos=Count(
-                "usuarioportal",
-                filter=Q(usuarioportal__usuario__is_active=True),
-                distinct=True,
-            ),
-            _acepto_terminos=Exists(
-                AceptacionTerminos.objects.filter(
-                    cliente=OuterRef("pk"), version_documento=terminos.VERSION_TERMINOS
-                )
-            ),
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _usuarios=Count("usuarioportal", distinct=True),
+                _usuarios_activos=Count(
+                    "usuarioportal",
+                    filter=Q(usuarioportal__usuario__is_active=True),
+                    distinct=True,
+                ),
+                _acepto_terminos=Exists(
+                    AceptacionTerminos.objects.filter(
+                        cliente=OuterRef("pk"), version_documento=terminos.VERSION_TERMINOS
+                    )
+                ),
+            )
         )
 
     @admin.display(description="RUT", ordering="rut")
@@ -517,6 +491,7 @@ class UsuarioPortalAdmin(admin.ModelAdmin):
     @admin.display(description="Nombre", ordering="nombre")
     def nombre_visible(self, obj: UsuarioPortal) -> str:
         return obj.nombre or (obj.usuario.username if obj.usuario else "—")
+
 
 admin.site.unregister(User)
 

@@ -33,9 +33,7 @@ class MesFilter(admin.SimpleListFilter):
     title = "mes"
     parameter_name = "mes"
 
-    def lookups(
-        self, request: HttpRequest, model_admin: Any
-    ) -> list[tuple[str, str]]:
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
         return [(str(numero), nombre) for numero, nombre in MESES]
 
     def queryset(

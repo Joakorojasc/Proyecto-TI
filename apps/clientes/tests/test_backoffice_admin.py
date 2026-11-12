@@ -316,7 +316,6 @@ def test_plan_personalizado_completo_se_guarda(
     assert plan.cliente_id == datos_comerciales.pk
     assert plan.limite_usuarios == 4000
 
-    
 
 # --- Alta manual de instancias (4.3) ---------------------------------------
 
@@ -396,9 +395,7 @@ def test_alta_de_instancia_acepta_el_plan_negociado_del_mismo_cliente(
     )
 
     assert respuesta.status_code == 302
-    assert Suscripcion.objects.filter(
-        instancia__nombre="nueva-propia", plan=plan_propio
-    ).exists()
+    assert Suscripcion.objects.filter(instancia__nombre="nueva-propia", plan=plan_propio).exists()
 
 
 # --- Suscripciones (4.3) ---------------------------------------------------
@@ -406,7 +403,7 @@ def test_alta_de_instancia_acepta_el_plan_negociado_del_mismo_cliente(
 
 def test_suscripcion_rechaza_plan_negociado_de_otro_cliente(
     client: Client, superadmin: User, datos_comerciales: Cliente
-    ) -> None:
+) -> None:
     otro = Cliente.objects.create(rut="77777777-7", razon_social="Otro Cliente")
     plan_ajeno = Plan.objects.create(
         nombre="Negociado ajeno",
@@ -434,6 +431,7 @@ def test_suscripcion_rechaza_plan_negociado_de_otro_cliente(
     assert "plan" in respuesta.context["adminform"].form.errors
     suscripcion.refresh_from_db()
     assert suscripcion.plan_id != plan_ajeno.pk
+
 
 # --- Alta de suscripciones desde la ficha del cliente ----------------------
 
@@ -469,9 +467,7 @@ def test_ficha_del_cliente_solo_ofrece_instancias_y_planes_que_le_corresponden(
     )
     client.force_login(superadmin)
 
-    respuesta = client.get(
-        reverse("admin:clientes_cliente_change", args=[datos_comerciales.pk])
-    )
+    respuesta = client.get(reverse("admin:clientes_cliente_change", args=[datos_comerciales.pk]))
 
     campos = _formset_de_nuevas_suscripciones(respuesta).empty_form.fields
     instancias = set(campos["instancia"].queryset.values_list("nombre", flat=True))
@@ -520,11 +516,11 @@ def test_ficha_del_cliente_rechaza_plan_negociado_de_otro_cliente(
     assert "plan" in _formset_de_nuevas_suscripciones(respuesta).errors[0]
     assert Suscripcion.objects.count() == antes
 
-def test_no_se_crean_usuarios_sueltos_desde_el_admin(
-    client: Client, superadmin: User
-) -> None:
+
+def test_no_se_crean_usuarios_sueltos_desde_el_admin(client: Client, superadmin: User) -> None:
     client.force_login(superadmin)
     assert client.get(reverse("admin:auth_user_add")).status_code == 403
+
 
 def test_listado_de_usuarios_del_portal(
     client: Client, superadmin: User, usuario_cliente: User
@@ -536,6 +532,7 @@ def test_listado_de_usuarios_del_portal(
 
     assert respuesta.status_code == 200
     assert respuesta.context["cl"].result_count == 1
+
 
 # --- Usuarios del portal ---------------------------------------------------
 
@@ -570,9 +567,7 @@ def test_ficha_del_usuario_del_portal_tiene_un_titulo_legible(
     perfil = usuario_cliente.usuarioportal
     client.force_login(superadmin)
 
-    respuesta = client.get(
-        reverse("admin:clientes_usuarioportal_change", args=[perfil.pk])
-    )
+    respuesta = client.get(reverse("admin:clientes_usuarioportal_change", args=[perfil.pk]))
 
     assert respuesta.status_code == 200
     assert "UsuarioPortal object" not in respuesta.content.decode()

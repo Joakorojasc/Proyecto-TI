@@ -64,9 +64,7 @@ class PlanAdmin(admin.ModelAdmin):
     list_filter = ("tipo_plan",)
     search_fields = ("nombre", "cliente__razon_social", "cliente__rut")
 
-    def formfield_for_dbfield(
-        self, db_field: Any, request: HttpRequest, **kwargs: Any
-    ) -> Any:
+    def formfield_for_dbfield(self, db_field: Any, request: HttpRequest, **kwargs: Any) -> Any:
         if db_field.name == "tipo_plan":
             return forms.ChoiceField(choices=TIPOS_PLAN, label="Tipo de plan")
         return super().formfield_for_dbfield(db_field, request, **kwargs)
