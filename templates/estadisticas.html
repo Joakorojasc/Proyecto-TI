@@ -47,7 +47,7 @@
     <p class="instances-empty">Todavía no hay mediciones de uso. Aparecerán aquí cuando se consolide el primer período.</p>
     {% endif %}
 
-    <section class="estadisticas-bloque">
+    <section class="estadisticas-bloque" aria-label="Por instancia">
         <h2>Por instancia</h2>
         <div class="instances-table-wrapper">
             <table class="instances-table">
@@ -84,7 +84,7 @@
     </section>
 
     {% if resumen %}
-    <section class="estadisticas-bloque">
+    <section class="estadisticas-bloque" aria-label="Historial">
         <h2>Historial</h2>
         <div class="funcionalidad-lista">
             {% for fila in filas %}
