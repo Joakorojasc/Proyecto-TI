@@ -67,7 +67,7 @@
                     <tr>
                         <td><a href="{% url 'instancias:detalle' fila.instancia.pk %}">{{ fila.instancia }}</a></td>
                         <td>
-                            <span class="instances-status instances-status--{{ fila.instancia.estado|default:'sin-estado' }}">
+                            <span class="instances-status instances-status--{{ fila.instancia.clase_estado }}">
                                 {{ fila.instancia.get_estado_display|default:"Sin estado" }}
                             </span>
                         </td>

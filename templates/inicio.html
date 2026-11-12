@@ -61,14 +61,18 @@
         </section>
 
         <section class="home-bloque">
-            <h2>Tu plan</h2>
-            {% if planes %}
+            <h2>{% if suscripciones|length > 1 %}Tus planes{% else %}Tu plan{% endif %}</h2>
+            {% if suscripciones %}
                 <div class="plan-lista">
-                    {% for plan in planes %}
+                    {% for suscripcion in suscripciones %}
+                        {% with plan=suscripcion.plan %}
                         <article class="plan-tarjeta">
-                            {% if plan.tipo_plan %}
-                                <p class="plan-tipo">{{ plan.tipo_plan }}</p>
-                            {% endif %}
+                            <p class="plan-alcance">
+                                <span class="plan-alcance-nombre">
+                                    {% if suscripcion.instancia %}{{ suscripcion.instancia }}{% else %}Suscripción {{ forloop.counter }}{% endif %}
+                                </span>
+                                {% if plan.tipo_plan %}<span class="plan-tipo">{{ plan.tipo_plan }}</span>{% endif %}
+                            </p>
                             <p class="plan-nombre">{{ plan.nombre|default:"Plan sin nombre" }}</p>
                             {% if plan.precio_por_usuario is not None %}
                                 <p class="plan-precio">
@@ -85,6 +89,7 @@
                                 <p class="plan-limite">Hasta {{ plan.limite_usuarios }} usuarios activos</p>
                             {% endif %}
                         </article>
+                        {% endwith %}
                     {% endfor %}
                 </div>
             {% else %}
@@ -109,7 +114,7 @@
                         <a href="{% url 'instancias:detalle' instancia.pk %}">
                             <span class="instancia-lista-titulo">
                                 <span class="instancia-lista-nombre">{{ instancia.nombre|default:"Sin nombre" }}</span>
-                                <span class="instances-status instances-status--{{ instancia.estado|default:'sin-estado' }}">
+                                <span class="instances-status instances-status--{{ instancia.clase_estado }}">
                                     {{ instancia.get_estado_display|default:"Sin estado" }}
                                 </span>
                             </span>

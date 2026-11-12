@@ -72,6 +72,9 @@ class AceptacionTerminos(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     version_documento = models.CharField(max_length=80)
     fecha_aceptacion = models.DateTimeField(auto_now_add=True)
+    # Cuándo se abrió el PDF en la sesión que aceptó. Queda nulo en las
+    # aceptaciones anteriores a este control.
+    fecha_documento_abierto = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [

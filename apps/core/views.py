@@ -46,10 +46,14 @@ def home(request: HttpRequest) -> HttpResponse:
         "instancias": activas.order_by("nombre", "dominio"),
         "total_activas": activas.count(),
         "total_desaprovisionadas": instancias.filter(estado=EstadoInstancia.DEPROVISIONED).count(),
-        "planes": [
-            suscripcion.plan
-            for suscripcion in Suscripcion.objects.filter(cliente=cliente).select_related("plan")
-        ],
+        # Van las suscripciones, no los planes sueltos: un cliente puede tener el
+        # mismo plan dos veces y en la portada hay que poder distinguirlas por la
+        # instancia que cubre cada una.
+        "suscripciones": list(
+            Suscripcion.objects.filter(cliente=cliente)
+            .select_related("plan", "instancia")
+            .order_by("instancia__nombre", "pk")
+        ),
     }
 
     # El uso se informa del último período medido, no del mes actual, porque el

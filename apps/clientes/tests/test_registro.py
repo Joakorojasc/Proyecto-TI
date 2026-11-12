@@ -5,6 +5,7 @@ from django.urls import reverse
 from apps.clientes.forms import RegistroClienteForm
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.clientes.terminos import VERSION_TERMINOS
+from apps.clientes.tests.apoyo import abrir_documento_terminos
 
 
 class RegistroClienteTests(TestCase):
@@ -41,6 +42,7 @@ class RegistroClienteTests(TestCase):
             "email_contacto": "contacto@prueba.com",
         }
         form = RegistroClienteForm(data=datos)
+        form.documento_abierto = True
         self.assertTrue(form.is_valid())
 
     def test_registro_guarda_en_base_de_datos(self) -> None:
@@ -60,6 +62,7 @@ class RegistroClienteTests(TestCase):
             "direccion_facturacion": "Avenida Siempre Viva 123",
             "email_contacto": "contacto@prueba.com",
         }
+        abrir_documento_terminos(self.client)
         response = self.client.post(url, data=datos)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Cliente.objects.count(), 1)
@@ -84,6 +87,7 @@ class RegistroUsuarioTests(TestCase):
             "acepta_terminos": "on",
             "version_terminos": VERSION_TERMINOS,
         }
+        abrir_documento_terminos(self.client)
 
     def test_pagina_registro_pide_correo(self) -> None:
         respuesta = self.client.get(self.url)
