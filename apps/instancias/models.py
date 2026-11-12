@@ -1,6 +1,13 @@
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.db import models
+
+from .consumo import ConsumoUsuarios, calcular_consumo
+
+if TYPE_CHECKING:
+    from apps.estadisticas.models import MedicionUsoMensual
+    from apps.planes.models import Suscripcion
 
 
 class EstadoInstancia(models.TextChoices):
@@ -39,3 +46,10 @@ class InstanciaMoodle(models.Model):
     @property
     def es_subdominio_edocere(self) -> bool:
         return self.dominio_host.endswith(".edocere.com")
+
+    @property
+    def consumo_usuarios(self) -> ConsumoUsuarios:
+        """Usa los datos precargados por con_datos_consumo."""
+        mediciones: list[MedicionUsoMensual] = self.__dict__["mediciones_consumo"]
+        suscripciones: list[Suscripcion] = self.__dict__["suscripciones_activas"]
+        return calcular_consumo(mediciones[0] if mediciones else None, suscripciones)

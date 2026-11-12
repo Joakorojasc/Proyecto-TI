@@ -1,0 +1,17 @@
+{% load l10n %}
+<div class="consumo-instancia">
+    {% if consumo.activos is None %}
+        <div>Sin medición de usuarios activos</div>
+        {% if consumo.limite %}<div>Límite del plan: {{ consumo.limite }} usuarios</div>{% endif %}
+    {% elif consumo.porcentaje is not None %}
+        <div>{{ consumo.activos }} de {{ consumo.limite }} usuarios activos ({{ consumo.porcentaje|floatformat:"-1" }} %)</div>
+        <progress class="consumo-instancia__barra consumo-instancia__barra--{{ consumo.estado }}"
+                  max="{{ consumo.limite|unlocalize }}" value="{{ consumo.valor_barra|unlocalize }}"
+                  aria-label="Consumo de usuarios activos"></progress>
+        <div>{{ consumo.etiqueta }} · {{ consumo.disponibles }} disponibles</div>
+    {% else %}
+        <div>{{ consumo.activos }} usuarios activos</div>
+    {% endif %}
+    {% if consumo.mensaje_plan %}<div>{{ consumo.mensaje_plan }}</div>{% endif %}
+    {% if consumo.periodo %}<small>{{ consumo.periodo }}</small>{% endif %}
+</div>

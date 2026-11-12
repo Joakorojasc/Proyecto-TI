@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/consumo_instancia.css' %}">
+{% endblock %}
 
 {% block migas %}
 <nav class="migas" aria-label="Ruta de navegación">
@@ -42,6 +47,7 @@
                     <th scope="col">Estado</th>
                     <th scope="col">Versión</th>
                     <th scope="col">Plan</th>
+                    <th scope="col">Consumo de usuarios</th>
                     <th scope="col">Creada</th>
                 </tr>
             </thead>
@@ -78,6 +84,7 @@
                             {% endif %}
                         {% endwith %}
                     </td>
+                    <td>{% include "instancias/consumo.html" with consumo=instancia.consumo_usuarios only %}</td>
                     <td>{{ instancia.created_at|date:"d/m/Y" }}</td>
                 </tr>
                 {% endfor %}

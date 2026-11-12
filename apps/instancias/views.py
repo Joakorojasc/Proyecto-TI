@@ -3,7 +3,7 @@ from typing import Any
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import Prefetch, Q, QuerySet
+from django.db.models import Q, QuerySet
 from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,6 +16,7 @@ from apps.clientes.models import UsuarioPortal
 from apps.clientes.permisos import obtener_cliente_autorizado
 from apps.planes.models import Plan, Suscripcion
 
+from .consumo import con_datos_consumo
 from .forms import CrearInstanciaForm, EditarInstanciaForm, FiltroInstanciasForm
 from .models import InstanciaMoodle
 
@@ -93,14 +94,7 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
             queryset = queryset.filter(estado=filtros["estado"])
         queryset = queryset.order_by(*ORDENES[filtros.get("orden") or ""])
 
-        suscripciones_activas = Suscripcion.objects.filter(estado="activa").select_related("plan")
-        return queryset.prefetch_related(
-            Prefetch(
-                "suscripciones",
-                queryset=suscripciones_activas,
-                to_attr="suscripciones_activas",
-            )
-        )
+        return con_datos_consumo(queryset)
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
