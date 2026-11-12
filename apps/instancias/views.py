@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
@@ -11,9 +12,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import DetailView, ListView, UpdateView
 
+from apps.clientes import terminos
 from apps.clientes.mixins import AislamientoClienteMixin
 from apps.clientes.models import UsuarioPortal
-from apps.clientes.permisos import obtener_cliente_autorizado
+from apps.clientes.permisos import es_superadministrador, obtener_cliente_autorizado
 from apps.planes.models import Plan, Suscripcion
 
 from .forms import CrearInstanciaForm, EditarInstanciaForm, FiltroInstanciasForm
@@ -23,6 +25,14 @@ from .models import InstanciaMoodle
 @login_required(login_url="/login/")
 def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> HttpResponse:
     cliente = obtener_cliente_autorizado(request, cliente_id)
+    if not es_superadministrador(request.user) and not terminos.tiene_aceptacion_vigente(
+        cliente
+        ):
+        messages.info(
+            request,
+            "Antes de crear una instancia debes aceptar los términos y condiciones.",
+        )
+        return redirect("aceptar_terminos")
     plan = get_object_or_404(
         Plan.objects.filter(Q(cliente__isnull=True) | Q(cliente=cliente)),
         id=plan_id,

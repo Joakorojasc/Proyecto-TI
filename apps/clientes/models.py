@@ -30,6 +30,9 @@ class Cliente(models.Model):
 
     objects = ClienteManager()
 
+    def __str__(self) -> str:
+            return self.razon_social or self.rut or f"Cliente {self.pk}"
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.clean()
         super().save(*args, **kwargs)
@@ -64,6 +67,8 @@ class UsuarioPortal(models.Model):
     email = models.CharField(max_length=255, null=True)
     rol = models.CharField(max_length=255, null=True)
 
+    def __str__(self) -> str:
+        return self.nombre or self.email or f"Usuario del portal {self.pk}"
 
 class AceptacionTerminos(models.Model):
     cliente = models.ForeignKey(

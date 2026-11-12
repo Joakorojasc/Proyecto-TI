@@ -53,6 +53,9 @@ class Suscripcion(models.Model):
     estado = models.CharField(max_length=255, null=True)
     fecha_inicio = models.DateTimeField(null=True)
 
+    def __str__(self) -> str:
+        return f"{self.cliente} · {self.instancia} · {self.plan}"
+
     def clean(self) -> None:
         super().clean()
         if self.instancia is not None and self.cliente_id != self.instancia.cliente_id:

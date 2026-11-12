@@ -1,5 +1,5 @@
-from django.contrib import admin
+"""Admin de la app core.
 
-from .models import Bitacora
-
-admin.site.register(Bitacora)
+La bitácora no se expone en el admin por ahora: ningún flujo registra acciones
+todavía. Se publicará cuando exista el registro de acciones.
+"""

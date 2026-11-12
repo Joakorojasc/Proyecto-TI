@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.clientes import terminos
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
@@ -14,6 +15,7 @@ class CrearInstanciaViewTests(TestCase):
         self.otro_cliente = Cliente.objects.create(rut="77030303-6", razon_social="Otra Empresa")
         usuario = User.objects.create_user(username="propietario")
         UsuarioPortal.objects.create(usuario=usuario, cliente=self.cliente)
+        terminos.registrar_aceptacion(self.cliente, usuario, terminos.VERSION_TERMINOS)
         self.client.force_login(usuario)
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="Mensual")
         self.url = reverse(
