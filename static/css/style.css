@@ -1805,6 +1805,37 @@ p.errorlist {
     white-space: nowrap;
 }
 
+/* Casilla de aceptación (términos): casilla y texto en una fila, y el enlace
+   del documento debajo, con el estilo del portal. */
+.auth-card form p:has(input[type="checkbox"]) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-sm);
+}
+
+.auth-card form p:has(input[type="checkbox"]) input[type="checkbox"] {
+    order: -1;
+    width: auto;
+    margin: 0;
+    accent-color: var(--edocere-orange);
+}
+
+.auth-card form p:has(input[type="checkbox"]) .helptext {
+    flex-basis: 100%;
+}
+
+.auth-card form p:has(input[type="checkbox"]) a {
+    color: var(--edocere-blue-soft);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-card form p:has(input[type="checkbox"]) a:hover {
+    color: var(--edocere-orange);
+    text-decoration: underline;
+}
+
 /* Separa el resumen, la tabla y el historial de la pantalla de estadisticas. */
 .estadisticas-bloque {
     margin-top: var(--espacio-lg);

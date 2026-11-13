@@ -13,6 +13,7 @@ from django.test import TestCase
 from django.urls import get_resolver, reverse
 from django.urls.resolvers import URLResolver
 
+from apps.clientes import terminos
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.core.migas import RUTAS, SIN_MIGAS
 from apps.instancias.models import EstadoInstancia, InstanciaMoodle
@@ -139,6 +140,7 @@ class ClienteConSesionTestCase(TestCase):
             cliente=self.cliente, plan=self.plan, estado="pendiente"
         )
         self.client.force_login(self.usuario)
+        terminos.registrar_aceptacion(self.cliente, self.usuario, terminos.VERSION_TERMINOS)
 
 
 class MigasTests(ClienteConSesionTestCase):

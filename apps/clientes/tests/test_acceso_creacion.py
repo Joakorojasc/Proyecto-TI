@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group, Permission, User
 from django.test import Client
 from django.urls import reverse
 
+from apps.clientes import terminos
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.instancias.models import InstanciaMoodle
 from apps.planes.models import Plan, Suscripcion
@@ -84,6 +85,7 @@ def test_acceso_permitido_respeta_los_permisos_existentes(
 ) -> None:
     cliente = usuario_cliente.usuarioportal.cliente
     assert cliente is not None
+    terminos.registrar_aceptacion(cliente, usuario_cliente, terminos.VERSION_TERMINOS)
     if actor.startswith("superusuario"):
         usuario = User.objects.create_user(
             username="administrador",

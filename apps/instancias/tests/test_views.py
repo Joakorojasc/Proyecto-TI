@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.clientes import terminos
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.estadisticas.models import MedicionUsoMensual
 from apps.planes.models import Plan, Suscripcion
@@ -386,6 +387,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         self.usuario_a.last_name = "A"
         self.usuario_a.save(update_fields=["email", "first_name", "last_name"])
         UsuarioPortal.objects.filter(usuario=self.usuario_a).update(email=self.usuario_a.email)
+        terminos.registrar_aceptacion(self.cliente_a, self.usuario_a, terminos.VERSION_TERMINOS)
         self.client.force_login(self.usuario_a)
         self.data_creacion = {
             "nombre": "Campus Cliente A",
