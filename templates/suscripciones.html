@@ -19,7 +19,10 @@
             <div class="subscriptions-plan-list">
                 {% for plan in planes_mensuales %}
                 <article class="subscriptions-plan-card">
-                    <h3>{{ plan.display_label }}</h3>
+                    <h3>{{ plan.nombre|default:"Plan" }}</h3>
+                    {% if plan.precio_label %}
+                    <p class="subscriptions-plan-precio">{{ plan.precio_label }}</p>
+                    {% endif %}
                     {% if plan.limite_usuarios %}
                     <p class="subscriptions-plan-limit">Hasta {{ plan.limite_usuarios }} usuarios activos</p>
                     {% endif %}
@@ -39,7 +42,10 @@
             <div class="subscriptions-plan-list">
                 {% for plan in planes_anuales %}
                 <article class="subscriptions-plan-card">
-                    <h3>{{ plan.display_label }}</h3>
+                    <h3>{{ plan.nombre|default:"Plan" }}</h3>
+                    {% if plan.precio_label %}
+                    <p class="subscriptions-plan-precio">{{ plan.precio_label }}</p>
+                    {% endif %}
                     {% if plan.limite_usuarios %}
                     <p class="subscriptions-plan-limit">Hasta {{ plan.limite_usuarios }} usuarios activos</p>
                     {% endif %}
@@ -68,26 +74,30 @@
     <section class="subscriptions-plan-section" aria-labelledby="payment-history-title">
         <h2 id="payment-history-title">Historial de pagos</h2>
         {% if pagos %}
-        {% for pago in pagos %}
-        <article class="subscriptions-plan-card">
-            <p>
-                {{ pago.fecha_pago|date:"d/m/Y" }} ·
-                USD {{ pago.monto|stringformat:"s" }} más IVA ·
-                {{ pago.get_estado_display|default:pago.estado }}
-            </p>
-            <p>Suscripción: {{ pago.suscripcion.plan.nombre }} ·
-                Instancia:
-                {% if pago.suscripcion.instancia %}
-                {{ pago.suscripcion.instancia.nombre|default:pago.suscripcion.instancia.dominio }}
-                {% else %}
-                Sin instancia asociada
+        <div class="subscriptions-plan-list">
+            {% for pago in pagos %}
+            <article class="subscriptions-plan-card">
+                <p class="subscriptions-pago-linea">
+                    {{ pago.fecha_pago|date:"d/m/Y" }} ·
+                    USD {{ pago.monto|stringformat:"s" }} más IVA ·
+                    {{ pago.get_estado_display|default:pago.estado }}
+                </p>
+                <p>
+                    Suscripción: {{ pago.suscripcion.plan.nombre }}
+                    ·
+                    Instancia:
+                    {% if pago.suscripcion.instancia %}
+                    {{ pago.suscripcion.instancia.nombre|default:pago.suscripcion.instancia.dominio }}
+                    {% else %}
+                    sin instancia asociada
+                    {% endif %}
+                </p>
+                {% if pago.estado == "aprobado" and pago.documentotributario %}
+                <p>Comprobante simulado, no válido como documento tributario (DTE). Folio {{ pago.documentotributario.folio }}.</p>
                 {% endif %}
-            </p>
-            {% if pago.estado == "aprobado" and pago.documentotributario %}
-            <p>Comprobante simulado - No válido como documento tributario (DTE), folio {{ pago.documentotributario.folio }}.</p>
-            {% endif %}
-        </article>
-        {% endfor %}
+            </article>
+            {% endfor %}
+        </div>
         {% else %}
         <p class="subscriptions-empty">Aún no hay pagos registrados.</p>
         {% endif %}

@@ -9,6 +9,7 @@ from apps.clientes.forms import UsuarioRegistroForm
 from apps.clientes.models import AceptacionTerminos, Cliente, UsuarioPortal
 from apps.clientes.password_validators import MoodlePasswordValidator
 from apps.clientes.terminos import VERSION_TERMINOS
+from apps.clientes.tests.apoyo import abrir_documento_terminos
 
 
 @pytest.mark.parametrize(
@@ -111,6 +112,7 @@ def datos_registro(clave: str) -> dict[str, str]:
 def test_registro_rechazado_no_crea_datos_parciales(
     client: Client, clave: str, codigo: str
 ) -> None:
+    abrir_documento_terminos(client)
     respuesta = client.post(reverse("registro"), datos_registro(clave))
     assert respuesta.status_code == 200
     errores = respuesta.context["user_form"].errors.as_data()["password2"]
@@ -126,6 +128,7 @@ def test_registro_rechazado_no_crea_datos_parciales(
 @pytest.mark.django_db
 @pytest.mark.parametrize("clave", ["Segura1.", "Segura1!", "Segura1@"])
 def test_registro_guarda_hash_relaciones_y_permite_login(client: Client, clave: str) -> None:
+    abrir_documento_terminos(client)
     respuesta = client.post(reverse("registro"), datos_registro(clave))
     assert respuesta.status_code == 302
     assert respuesta["Location"] == reverse("instancias:lista")

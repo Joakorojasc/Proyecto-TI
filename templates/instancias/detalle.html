@@ -5,7 +5,7 @@
     <header class="instances-header instance-header">
         <div class="instance-title">
             <h1>{{ instancia.nombre|default:instancia.dominio_host|default:"Sin nombre" }}</h1>
-            <span class="instances-status instances-status--{{ instancia.estado|default:'sin-estado' }}">
+            <span class="instances-status instances-status--{{ instancia.clase_estado }}">
                 {{ instancia.get_estado_display|default:"Sin estado" }}
             </span>
         </div>

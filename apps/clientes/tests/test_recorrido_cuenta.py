@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from apps.clientes.models import AceptacionTerminos, Cliente, UsuarioPortal
 from apps.clientes.terminos import VERSION_TERMINOS
+from apps.clientes.tests.apoyo import abrir_documento_terminos
 
 pytestmark = pytest.mark.django_db
 
@@ -36,6 +37,7 @@ def datos_registro(
 
 
 def registrar(navegador: Client, datos: dict[str, str]) -> tuple[User, Cliente]:
+    abrir_documento_terminos(navegador)
     respuesta = navegador.post(reverse("registro"), datos)
     assert respuesta.status_code == 302
     assert respuesta["Location"] == reverse("instancias:lista")

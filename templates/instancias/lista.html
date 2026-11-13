@@ -54,7 +54,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        <span class="instances-status instances-status--{{ instancia.estado|default:'sin-estado' }}">
+                        <span class="instances-status instances-status--{{ instancia.clase_estado }}">
                             {{ instancia.get_estado_display|default:"Sin estado" }}
                         </span>
                     </td>

@@ -67,6 +67,16 @@ class InstanciaMoodle(models.Model):
         return urlparse(url).hostname or ""
 
     @property
+    def clase_estado(self) -> str:
+        """Sufijo CSS de la píldora de estado, en minúsculas y con guiones.
+
+        El estado se guarda como RECOVERY_FAILED y el CSS se escribe
+        recovery-failed. Pasa por acá para que un estado nuevo no quede sin
+        color por una diferencia de formato.
+        """
+        return (self.estado or "sin-estado").lower().replace("_", "-")
+
+    @property
     def es_subdominio_edocere(self) -> bool:
         return self.dominio_host.endswith(".edocere.com")
 
