@@ -6,6 +6,7 @@ from django.db import models
 class EstadoInstancia(models.TextChoices):
     ACTIVA = "activa", "Activa"
     ARCHIVADA = "archivada", "Archivada"
+    FALLIDA = "fallida", "Fallida"
 
 
 class InstanciaMoodle(models.Model):

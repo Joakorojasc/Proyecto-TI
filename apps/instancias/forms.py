@@ -20,9 +20,9 @@ class CrearInstanciaForm(forms.ModelForm):
 
     nombre = forms.CharField(
         label="Nombre de la instancia",
-        help_text="Cómo quieres identificar esta instancia, por ejemplo: Campus Corporativo.",
+        help_text="Cómo quieres identificar esta instancia, por ejemplo: CampusCorporativo.",
         max_length=255,
-        widget=forms.TextInput(attrs={"placeholder": "Campus Corporativo"}),
+        widget=forms.TextInput(attrs={"placeholder": "CampusCorporativo"}),
     )
     tipo_dominio = forms.ChoiceField(
         label="Dirección web de la instancia",
@@ -67,6 +67,14 @@ class CrearInstanciaForm(forms.ModelForm):
 
     def clean(self) -> dict[str, Any]:
         cleaned = super().clean() or {}
+        nombre = cleaned.get("nombre") or ""
+        if not nombre.isalnum():
+            self.add_error(
+                "nombre",
+                "El nombre solo puede contener letras y números, sin espacios.",
+            )
+            return cleaned
+
         tipo = cleaned.get("tipo_dominio")
 
         if tipo == self.TIPO_EDOCERE:
