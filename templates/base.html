@@ -1,14 +1,14 @@
-{% load static %}
+{% load static navegacion %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Portal Edocere{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     {% if user.is_authenticated %}
@@ -51,12 +51,22 @@
                 <div id="global-error">Ocurrió un error al procesar la solicitud.</div>
                 <div id="global-loader">Cargando...</div>
 
-                {# Cada pantalla declara su ruta; la última entrada va sin enlace. #}
-                {% block migas %}{% endblock migas %}
+                {# La ruta sale de la URL. La tabla está en apps/core/migas.py. #}
+                {% migas %}
+
+                {% if messages %}
+                <div class="mensajes" role="status" aria-live="polite">
+                    {% for message in messages %}
+                    <p class="mensaje mensaje--{{ message.tags }}">{{ message }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
 
                 {% block content %}{% endblock content %}
             </div>
         </main>
     </div>
+
+    {% block scripts %}{% endblock scripts %}
 </body>
 </html>

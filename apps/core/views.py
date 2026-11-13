@@ -39,17 +39,21 @@ def home(request: HttpRequest) -> HttpResponse:
         return render(request, "inicio.html", {"cliente": None})
 
     instancias = InstanciaMoodle.objects.filter(cliente=cliente)
-    activas = instancias.filter(estado=EstadoInstancia.ACTIVA)
+    activas = instancias.filter(estado=EstadoInstancia.ACTIVE)
 
     contexto: dict[str, Any] = {
         "cliente": cliente,
         "instancias": activas.order_by("nombre", "dominio"),
         "total_activas": activas.count(),
-        "total_archivadas": instancias.filter(estado=EstadoInstancia.ARCHIVADA).count(),
-        "planes": [
-            suscripcion.plan
-            for suscripcion in Suscripcion.objects.filter(cliente=cliente).select_related("plan")
-        ],
+        "total_desaprovisionadas": instancias.filter(estado=EstadoInstancia.DEPROVISIONED).count(),
+        # Van las suscripciones, no los planes sueltos: un cliente puede tener el
+        # mismo plan dos veces y en la portada hay que poder distinguirlas por la
+        # instancia que cubre cada una.
+        "suscripciones": list(
+            Suscripcion.objects.filter(cliente=cliente)
+            .select_related("plan", "instancia")
+            .order_by("instancia__nombre", "pk")
+        ),
     }
 
     # El uso se informa del último período medido, no del mes actual, porque el

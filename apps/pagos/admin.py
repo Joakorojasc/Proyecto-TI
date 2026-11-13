@@ -9,7 +9,7 @@ from django.utils.safestring import SafeString
 
 from apps.planes.models import Suscripcion
 
-from .models import DocumentoTributario, Pago
+from .models import DocumentoTributario, MedioPago, Pago
 
 DocumentoTributario._meta.verbose_name = "documento tributario"
 DocumentoTributario._meta.verbose_name_plural = "documentos tributarios"
@@ -123,3 +123,6 @@ class DocumentoTributarioAdmin(admin.ModelAdmin):
                 '<a href="{}" target="_blank" rel="noopener">Ver PDF</a>', obj.url_pdf
             )
         return "—"
+
+
+admin.site.register(MedioPago)

@@ -1,8 +1,12 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
 
 class Plan(models.Model):
+    PRECIO_MENSUAL_POR_USUARIO = Decimal("1.50")
+
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=255, null=True)
     tipo_plan = models.CharField(max_length=255, null=True)
@@ -20,17 +24,33 @@ class Plan(models.Model):
     def __str__(self) -> str:
         return self.display_label()
 
-    def display_label(self) -> str:
+    def precio_label(self) -> str:
+        """Solo el precio, para las pantallas que muestran el nombre aparte."""
         precio = self.precio_base if self.precio_base is not None else 0
         precio_unitario = self.precio_por_usuario if self.precio_por_usuario is not None else 0
         tipo = (self.tipo_plan or "").lower()
         if tipo == "mensual":
-            return f"{self.nombre} · ${precio_unitario:,.2f}/usuario/mes"
+            return f"USD {precio_unitario:,.2f}/usuario/mes, más IVA"
         if tipo == "anual":
-            return f"{self.nombre} · ${precio:,.0f}/año"
+            return f"USD {precio:,.2f}/año, más IVA"
         if tipo == "personalizado":
-            return f"{self.nombre} · Valores a convenir"
+            return "Valores a convenir"
+        return ""
+
+    def display_label(self) -> str:
+        """Nombre y precio en una línea, para los selectores de una sola fila."""
+        etiqueta = self.precio_label()
+        if etiqueta:
+            return f"{self.nombre} · {etiqueta}"
         return self.nombre or self.tipo_plan or "Plan"
+
+    def calcular_cobro_mensual(self, usuarios_activos: int) -> Decimal:
+        """Calcula el cobro mensual aplicando la tarifa a todos los usuarios."""
+        if usuarios_activos <= 10:
+            return Decimal("0.00")
+        return (Decimal(usuarios_activos) * self.PRECIO_MENSUAL_POR_USUARIO).quantize(
+            Decimal("0.01")
+        )
 
 
 class Suscripcion(models.Model):

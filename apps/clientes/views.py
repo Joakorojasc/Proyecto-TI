@@ -61,9 +61,13 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
     user_form: UsuarioRegistroForm
     empresa_form: EmpresaRegistroForm
 
+    terminos.asegurar_sesion(request)
+    fecha_apertura = terminos.fecha_documento_abierto(request)
+
     if request.method == "POST":
         user_form = UsuarioRegistroForm(request.POST)
         empresa_form = EmpresaRegistroForm(request.POST)
+        empresa_form.documento_abierto = fecha_apertura is not None
 
         if user_form.is_valid() and empresa_form.is_valid():
             try:
@@ -79,12 +83,15 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
                     UsuarioPortal.objects.create(
                         usuario=auth_user,
                         cliente=nuevo_cliente,
-                        # No pedimos nombre personal: no usar el correo como nombre.
+                        nombre=f"{auth_user.first_name} {auth_user.last_name}".strip(),
                         email=auth_user.email,
                         rol="Admin",
                     )
                     terminos.registrar_aceptacion(
-                        nuevo_cliente, auth_user, empresa_form.cleaned_data["version_terminos"]
+                        nuevo_cliente,
+                        auth_user,
+                        empresa_form.cleaned_data["version_terminos"],
+                        fecha_apertura,
                     )
 
             except ValidationError as error:
@@ -106,6 +113,7 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
         {
             "user_form": user_form,
             "empresa_form": empresa_form,
+            "documento_abierto": fecha_apertura is not None,
         },
     )
 
@@ -115,10 +123,14 @@ def documento_terminos(request: HttpRequest, version: str) -> FileResponse:
     documento = terminos.DOCUMENTOS_TERMINOS.get(version)
     if documento is None:
         raise Http404("El documento solicitado no está disponible.")
+    terminos.marcar_documento_abierto(request, version)
     respuesta = FileResponse(
         documento.open("rb"), content_type="application/pdf", filename="T&C Moodle.pdf"
     )
-    respuesta["Cache-Control"] = "public, max-age=31536000, immutable"
+    # Sin caché: cada apertura tiene que llegar al servidor para que quede la
+    # marca en la sesión. Si el navegador lo sirviera de su caché, la persona
+    # vería el PDF y el portal no se enteraría.
+    respuesta["Cache-Control"] = "no-store, max-age=0"
     return respuesta
 
 
@@ -128,12 +140,15 @@ def aceptar_terminos(request: HttpRequest) -> HttpResponse:
     cliente = obtener_cliente_propio(request)
     if cliente is None:
         return render(request, "clientes/sin_institucion.html", status=404)
+    terminos.asegurar_sesion(request)
+    fecha_apertura = terminos.fecha_documento_abierto(request)
     form = AceptacionTerminosForm(request.POST if request.method == "POST" else None)
+    form.documento_abierto = fecha_apertura is not None
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():
                 terminos.registrar_aceptacion(
-                    cliente, request.user, form.cleaned_data["version_terminos"]
+                    cliente, request.user, form.cleaned_data["version_terminos"], fecha_apertura
                 )
         except ValidationError as error:
             form.add_error("version_terminos", error)
@@ -146,6 +161,7 @@ def aceptar_terminos(request: HttpRequest) -> HttpResponse:
         {
             "cliente": cliente,
             "form": form,
+            "documento_abierto": fecha_apertura is not None,
             "aceptacion": cliente.aceptaciones_terminos.filter(
                 version_documento=terminos.VERSION_TERMINOS
             ).first(),

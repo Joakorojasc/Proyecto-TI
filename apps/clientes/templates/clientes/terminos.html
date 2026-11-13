@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Términos y condiciones{% endblock %}
 
@@ -12,6 +13,9 @@
         <h2>{{ cliente.razon_social }}</h2>
         {% if aceptacion %}
             <p>Tu institución aceptó el documento vigente el {{ aceptacion.fecha_aceptacion|date:"d/m/Y H:i" }}.</p>
+            {% if aceptacion.fecha_documento_abierto %}
+                <p class="terminos-evidencia">El documento se abrió el {{ aceptacion.fecha_documento_abierto|date:"d/m/Y H:i" }}, antes de aceptar.</p>
+            {% endif %}
         {% else %}
             <p>Tu institución aún no tiene una aceptación registrada para el documento vigente.</p>
         {% endif %}
@@ -19,13 +23,17 @@
         <p><a class="btn-primary" href="{% url 'documento_terminos' version=version_terminos %}" target="_blank" rel="noopener">Leer documento completo (PDF)</a></p>
         {% endif %}
         {% if not aceptacion or form.errors %}
-        <form method="post">
+        <form method="post" data-exige-terminos{% if documento_abierto %} data-terminos-abiertos{% endif %}>
             {% csrf_token %}
-            {% include "clientes/formulario_con_terminos.html" with form=form only %}
+            {% include "clientes/campos_formulario.html" with form=form only %}
             <button type="submit">Aceptar términos y condiciones</button>
         </form>
         {% endif %}
         <p><a class="btn-limpiar" href="{% url 'seccion_perfil' %}">Volver al perfil</a></p>
     </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/terminos.js' %}?v=2" defer></script>
 {% endblock %}

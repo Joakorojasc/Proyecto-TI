@@ -1,20 +1,129 @@
 {% extends "base.html" %}
 
-{% block migas %}
-<nav class="migas" aria-label="Ruta de navegación">
-    <ol>
-        <li><a href="{% url 'home' %}">Inicio</a></li>
-        <li aria-current="page">Estadísticas</li>
-    </ol>
-</nav>
-{% endblock migas %}
-
 {% block content %}
 <section class="instances-page">
     <header class="instances-header">
         <h1>Estadísticas</h1>
     </header>
 
-    <p class="instances-empty">Esta sección estará disponible próximamente.</p>
+    {% if not cliente %}
+    <p class="instances-empty">Tu cuenta todavía no está asociada a una institución. Escríbenos para que la vinculemos.</p>
+    {% elif not filas %}
+    <p class="instances-empty">Aquí verás el uso de tus instancias, pero todavía no tienes instancias creadas.</p>
+    {% else %}
+
+    {% if resumen %}
+    <section class="estadisticas-bloque" aria-label="Resumen del período">
+        <p>Último período medido: <strong>{{ resumen.periodo }}</strong></p>
+        <div class="home-metricas">
+            <article class="metrica">
+                <p class="metrica-valor">{{ resumen.usuarios_inscritos|default_if_none:"Sin datos" }}</p>
+                <p class="metrica-etiqueta">Usuarios inscritos</p>
+            </article>
+            <article class="metrica">
+                <p class="metrica-valor">{{ resumen.usuarios_activos|default_if_none:"Sin datos" }}</p>
+                <p class="metrica-etiqueta">Usuarios activos</p>
+            </article>
+            <article class="metrica">
+                <p class="metrica-valor">{{ resumen.cantidad_cursos|default_if_none:"Sin datos" }}</p>
+                <p class="metrica-etiqueta">Cursos</p>
+            </article>
+            <article class="metrica">
+                <p class="metrica-valor">{{ resumen.matriculados_por_curso|default_if_none:"Sin datos" }}</p>
+                <p class="metrica-etiqueta">Matriculados por curso</p>
+            </article>
+            <article class="metrica">
+                <p class="metrica-valor">{{ resumen.cantidad_categorias|default_if_none:"Sin datos" }}</p>
+                <p class="metrica-etiqueta">Categorías</p>
+            </article>
+            <article class="metrica">
+                <p class="metrica-valor">{{ con_datos }} de {{ filas|length }}</p>
+                <p class="metrica-etiqueta">Instancias con datos</p>
+                {% if sin_datos %}<p class="metrica-nota">{{ sin_datos }} sin medición en este período</p>{% endif %}
+            </article>
+        </div>
+    </section>
+    {% else %}
+    <p class="instances-empty">Todavía no hay mediciones de uso. Aparecerán aquí cuando se consolide el primer período.</p>
+    {% endif %}
+
+    <section class="estadisticas-bloque" aria-label="Por instancia">
+        <h2>Por instancia</h2>
+        <div class="instances-table-wrapper">
+            <table class="instances-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Instancia</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Inscritos</th>
+                        <th scope="col">Activos</th>
+                        <th scope="col">Cursos</th>
+                        <th scope="col">Matriculados por curso</th>
+                        <th scope="col">Categorías</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in filas %}
+                    <tr>
+                        <td><a href="{% url 'instancias:detalle' fila.instancia.pk %}">{{ fila.instancia }}</a></td>
+                        <td>
+                            <span class="instances-status instances-status--{{ fila.instancia.clase_estado }}">
+                                {{ fila.instancia.get_estado_display|default:"Sin estado" }}
+                            </span>
+                        </td>
+                        <td>{{ fila.del_periodo.usuarios_inscritos|default_if_none:"Sin datos" }}</td>
+                        <td>{{ fila.del_periodo.usuarios_activos|default_if_none:"Sin datos" }}</td>
+                        <td>{{ fila.del_periodo.cantidad_cursos|default_if_none:"Sin datos" }}</td>
+                        <td>{{ fila.del_periodo.matriculados_por_curso|default_if_none:"Sin datos" }}</td>
+                        <td>{{ fila.del_periodo.cantidad_categorias|default_if_none:"Sin datos" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if resumen %}
+    <section class="estadisticas-bloque" aria-label="Historial">
+        <h2>Historial</h2>
+        <div class="funcionalidad-lista">
+            {% for fila in filas %}
+            {% if fila.historial %}
+            <details class="funcionalidad">
+                <summary>{{ fila.instancia }}</summary>
+                <div class="instances-table-wrapper">
+                    <table class="instances-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Período</th>
+                                <th scope="col">Inscritos</th>
+                                <th scope="col">Activos</th>
+                                <th scope="col">Cursos</th>
+                                <th scope="col">Matriculados por curso</th>
+                                <th scope="col">Categorías</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for medicion in fila.historial %}
+                            <tr>
+                                <td>{{ medicion.periodo }}</td>
+                                <td>{{ medicion.usuarios_inscritos|default_if_none:"Sin datos" }}</td>
+                                <td>{{ medicion.usuarios_activos|default_if_none:"Sin datos" }}</td>
+                                <td>{{ medicion.cantidad_cursos|default_if_none:"Sin datos" }}</td>
+                                <td>{{ medicion.matriculados_por_curso|default_if_none:"Sin datos" }}</td>
+                                <td>{{ medicion.cantidad_categorias|default_if_none:"Sin datos" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% endif %}
 </section>
 {% endblock content %}

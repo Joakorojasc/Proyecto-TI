@@ -14,12 +14,15 @@ from django.utils import timezone
 from apps.clientes import terminos
 from apps.clientes.forms import AceptacionTerminosForm
 from apps.clientes.models import AceptacionTerminos, Cliente, UsuarioPortal
+from apps.clientes.tests.apoyo import abrir_documento_terminos
 
 
 class TerminosTests(TestCase):
     def setUp(self) -> None:
         self.datos = {
             "username": "admin@institucion.cl",
+            "first_name": "Ana",
+            "last_name": "Institución",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Institución de prueba",
@@ -27,6 +30,7 @@ class TerminosTests(TestCase):
             "acepta_terminos": "on",
             "version_terminos": terminos.VERSION_TERMINOS,
         }
+        abrir_documento_terminos(self.client)
 
     def preparar_cliente(self) -> tuple[User, Cliente]:
         usuario = User.objects.create_user(
@@ -170,6 +174,7 @@ class TerminosTests(TestCase):
     def test_cliente_existente_puede_aceptar_y_repetir_sin_reemplazar_evidencia(self) -> None:
         usuario, cliente = self.preparar_cliente()
         self.client.force_login(usuario)
+        abrir_documento_terminos(self.client)
         datos = {"acepta_terminos": "on", "version_terminos": terminos.VERSION_TERMINOS}
         respuesta = self.client.post(reverse("aceptar_terminos"), datos)
         self.assertRedirects(respuesta, reverse("aceptar_terminos"))
@@ -184,6 +189,7 @@ class TerminosTests(TestCase):
     def test_aceptacion_existente_requiere_casilla_y_version_vigente(self) -> None:
         usuario, cliente = self.preparar_cliente()
         self.client.force_login(usuario)
+        abrir_documento_terminos(self.client)
         respuesta = self.client.post(reverse("aceptar_terminos"), {})
         self.assertContains(respuesta, "Debes aceptar los términos y condiciones")
         respuesta = self.client.post(
@@ -201,6 +207,7 @@ class TerminosTests(TestCase):
             form = AceptacionTerminosForm(
                 data={"acepta_terminos": "on", "version_terminos": self.datos["version_terminos"]}
             )
+            form.documento_abierto = True
             self.assertFalse(form.is_valid())
             self.assertIn("version_terminos", form.errors)
         self.assertEqual(AceptacionTerminos.objects.count(), 1)
@@ -221,6 +228,7 @@ class TerminosTests(TestCase):
         with self.assertRaises(PermissionDenied):
             terminos.registrar_aceptacion(ajeno, usuario, terminos.VERSION_TERMINOS)
         self.client.force_login(usuario)
+        abrir_documento_terminos(self.client)
         self.client.post(
             reverse("aceptar_terminos"),
             {
@@ -274,6 +282,91 @@ class TerminosTests(TestCase):
         self.assertEqual(Cliente.objects.count(), 1)
         self.assertFalse(User.objects.exists())
         self.assertFalse(AceptacionTerminos.objects.exists())
+
+
+class LecturaDocumentoTests(TestCase):
+    """La casilla sola no basta: el PDF tiene que haberse pedido al servidor."""
+
+    def setUp(self) -> None:
+        self.datos = {
+            "username": "admin@institucion.cl",
+            "first_name": "Ana",
+            "last_name": "Institución",
+            "password1": "ClaveSegura123!",
+            "password2": "ClaveSegura123!",
+            "razon_social": "Institución de prueba",
+            "rut": "76.123.456-0",
+            "acepta_terminos": "on",
+            "version_terminos": terminos.VERSION_TERMINOS,
+        }
+
+    def test_registro_sin_abrir_el_documento_no_crea_nada(self) -> None:
+        respuesta = self.client.post(reverse("registro"), self.datos)
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Abre primero el documento")
+        self.assertIn("acepta_terminos", respuesta.context["empresa_form"].errors)
+        self.assertFalse(User.objects.exists())
+        self.assertFalse(Cliente.objects.exists())
+        self.assertFalse(AceptacionTerminos.objects.exists())
+
+    def test_abrir_el_documento_habilita_el_registro_y_queda_la_fecha(self) -> None:
+        antes = timezone.now()
+        abrir_documento_terminos(self.client)
+        respuesta = self.client.post(reverse("registro"), self.datos)
+
+        self.assertRedirects(respuesta, reverse("instancias:lista"))
+        aceptacion = AceptacionTerminos.objects.get()
+        assert aceptacion.fecha_documento_abierto is not None
+        self.assertGreaterEqual(aceptacion.fecha_documento_abierto, antes)
+        self.assertLessEqual(aceptacion.fecha_documento_abierto, aceptacion.fecha_aceptacion)
+
+    def test_marca_de_otra_version_no_sirve(self) -> None:
+        sesion = self.client.session
+        sesion[terminos.CLAVE_SESION_DOCUMENTO] = {
+            "version": "sha256-anterior",
+            "fecha": timezone.now().isoformat(),
+        }
+        sesion.save()
+
+        respuesta = self.client.post(reverse("registro"), self.datos)
+
+        self.assertContains(respuesta, "Abre primero el documento")
+        self.assertFalse(AceptacionTerminos.objects.exists())
+
+    def test_documento_no_se_guarda_en_la_cache_del_navegador(self) -> None:
+        """Si el navegador lo sirviera de su caché, el portal no se enteraría."""
+        respuesta = self.client.get(
+            reverse("documento_terminos", kwargs={"version": terminos.VERSION_TERMINOS})
+        )
+
+        self.assertIn("no-store", respuesta["Cache-Control"])
+        self.assertIsNotNone(self.client.session.get(terminos.CLAVE_SESION_DOCUMENTO))
+
+    def test_documento_desconocido_no_deja_marca(self) -> None:
+        self.client.get(reverse("documento_terminos", kwargs={"version": "inexistente"}))
+
+        self.assertIsNone(self.client.session.get(terminos.CLAVE_SESION_DOCUMENTO))
+
+    def test_la_sesion_existe_antes_de_pedir_el_documento(self) -> None:
+        """Si naciera al pedir el PDF, un navegador estricto podría no guardarla."""
+        self.client.get(reverse("registro"))
+
+        self.assertIsNotNone(self.client.session.session_key)
+
+    def test_el_registro_fallido_avisa_arriba_del_formulario(self) -> None:
+        respuesta = self.client.post(reverse("registro"), {**self.datos, "rut": "76.123.456-7"})
+
+        self.assertContains(respuesta, "Hay uno o más errores en el registro")
+
+    def test_pantalla_de_registro_avisa_que_hay_que_abrirlo(self) -> None:
+        respuesta = self.client.get(reverse("registro"))
+
+        self.assertContains(respuesta, "data-exige-terminos")
+        self.assertNotContains(respuesta, "data-terminos-abiertos")
+
+        abrir_documento_terminos(self.client)
+        self.assertContains(self.client.get(reverse("registro")), "data-terminos-abiertos")
 
 
 class MigracionTerminosTests(TransactionTestCase):

@@ -6,7 +6,12 @@ from django.utils import timezone
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
-from ..models import InstanciaMoodle
+from ..models import (
+    EstadoAprovisionamiento,
+    EstadoInstancia,
+    InstanciaMoodle,
+    SolicitudAprovisionamiento,
+)
 
 
 class EditarInstanciaViewTests(TestCase):
@@ -24,7 +29,7 @@ class EditarInstanciaViewTests(TestCase):
             dominio="https://a.edocere.com",
             logo_url="https://a.cl/logo.png",
             version="5.2",
-            estado="activa",
+            estado=EstadoInstancia.ACTIVE,
         )
         self.instancia_b = InstanciaMoodle.objects.create(
             cliente=self.cliente_b,
@@ -79,7 +84,10 @@ class EditarInstanciaViewTests(TestCase):
         self.assertContains(respuesta, "a.edocere.com")
         self.assertContains(respuesta, "El dominio no se puede modificar por ahora.")
         self.assertContains(respuesta, "Activa")
-        self.assertContains(respuesta, "Archivada")
+        self.assertContains(respuesta, "Suspendida")
+        self.assertContains(respuesta, "Desaprovisionada")
+        self.assertNotContains(respuesta, "Pendiente</option>")
+        self.assertNotContains(respuesta, "Fallida</option>")
         self.assertContains(respuesta, "Confirma los cambios")
         assert self.plan_actual.nombre is not None
         self.assertContains(respuesta, self.plan_actual.nombre)
@@ -96,6 +104,15 @@ class EditarInstanciaViewTests(TestCase):
             respuesta.context["form"]["plan"].value(),
             self.plan_actual.pk,
         )
+        self.assertEqual(
+            list(respuesta.context["form"].fields["estado"].choices),
+            [
+                ("", "Mantener estado actual"),
+                (EstadoInstancia.ACTIVE, "Activa"),
+                (EstadoInstancia.SUSPENDED, "Suspendida"),
+                (EstadoInstancia.DEPROVISIONED, "Desaprovisionada"),
+            ],
+        )
 
     def test_guarda_nombre_y_logo_y_vuelve_al_detalle(self) -> None:
         self.client.force_login(self.usuario_a)
@@ -105,7 +122,7 @@ class EditarInstanciaViewTests(TestCase):
             {
                 "nombre": "Campus Nuevo",
                 "logo_url": "https://a.cl/nuevo.png",
-                "estado": "activa",
+                "estado": EstadoInstancia.ACTIVE,
                 "confirmacion_contrasena": self.contrasena,
             },
         )
@@ -123,7 +140,7 @@ class EditarInstanciaViewTests(TestCase):
             {
                 "nombre": "Campus A",
                 "logo_url": "",
-                "estado": "activa",
+                "estado": EstadoInstancia.ACTIVE,
                 "confirmacion_contrasena": self.contrasena,
             },
         )
@@ -142,7 +159,7 @@ class EditarInstanciaViewTests(TestCase):
                 "logo_url": "",
                 "dominio": "https://otro.com",
                 "version": "9.9",
-                "estado": "archivada",
+                "estado": EstadoInstancia.DEPROVISIONED,
                 "confirmacion_contrasena": self.contrasena,
             },
         )
@@ -150,7 +167,66 @@ class EditarInstanciaViewTests(TestCase):
         self.instancia_a.refresh_from_db()
         self.assertEqual(self.instancia_a.dominio, "https://a.edocere.com")
         self.assertEqual(self.instancia_a.version, "5.2")
-        self.assertEqual(self.instancia_a.estado, "archivada")
+        self.assertEqual(self.instancia_a.estado, EstadoInstancia.DEPROVISIONED)
+
+    def test_rechaza_estados_internos_no_editables_por_el_cliente(self) -> None:
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.post(
+            self.url,
+            {
+                "nombre": "Campus A",
+                "logo_url": "",
+                "estado": EstadoInstancia.FAILED,
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["form"].errors["estado"])
+        self.instancia_a.refresh_from_db()
+        self.assertEqual(self.instancia_a.estado, EstadoInstancia.ACTIVE)
+
+    def test_pendiente_muestra_estado_bloqueado_y_no_acepta_cambios_de_estado(self) -> None:
+        instancia_pendiente = InstanciaMoodle.objects.create(
+            cliente=self.cliente_a,
+            nombre="Campus pendiente",
+            dominio="https://pendiente.edocere.com",
+            estado=EstadoInstancia.PENDING,
+        )
+        SolicitudAprovisionamiento.objects.create(
+            instancia=instancia_pendiente,
+            estado=EstadoAprovisionamiento.PENDIENTE,
+        )
+        url = reverse("instancias:editar", args=[instancia_pendiente.pk])
+        self.client.force_login(self.usuario_a)
+
+        respuesta_get = self.client.get(url)
+
+        self.assertEqual(respuesta_get.status_code, 200)
+        self.assertNotIn("estado", respuesta_get.context["form"].fields)
+        self.assertContains(respuesta_get, 'id="estado-pendiente"')
+        self.assertContains(
+            respuesta_get,
+            "El estado no se puede modificar mientras el aprovisionamiento está pendiente.",
+        )
+        self.assertNotContains(respuesta_get, 'name="estado"')
+
+        respuesta = self.client.post(
+            url,
+            {
+                "nombre": instancia_pendiente.nombre,
+                "logo_url": "",
+                "estado": EstadoInstancia.ACTIVE,
+                "confirmacion_contrasena": self.contrasena,
+            },
+        )
+
+        self.assertRedirects(
+            respuesta, reverse("instancias:detalle", args=[instancia_pendiente.pk])
+        )
+        instancia_pendiente.refresh_from_db()
+        self.assertEqual(instancia_pendiente.estado, EstadoInstancia.PENDING)
 
     def test_cambia_plan_cerrando_suscripcion_anterior_y_creando_una_nueva(self) -> None:
         self.client.force_login(self.usuario_a)
@@ -160,7 +236,7 @@ class EditarInstanciaViewTests(TestCase):
             {
                 "nombre": "Campus A",
                 "logo_url": "https://a.cl/logo.png",
-                "estado": "activa",
+                "estado": EstadoInstancia.ACTIVE,
                 "plan": str(self.plan_nuevo.pk),
                 "confirmacion_contrasena": self.contrasena,
             },
@@ -228,7 +304,7 @@ class EditarInstanciaViewTests(TestCase):
             {
                 "nombre": "Campus Modificado",
                 "logo_url": "",
-                "estado": "archivada",
+                "estado": EstadoInstancia.DEPROVISIONED,
                 "plan": str(self.plan_nuevo.pk),
                 "confirmacion_contrasena": "incorrecta",
             },
@@ -238,7 +314,7 @@ class EditarInstanciaViewTests(TestCase):
         self.assertTrue(respuesta.context["form"].errors["confirmacion_contrasena"])
         self.instancia_a.refresh_from_db()
         self.assertEqual(self.instancia_a.nombre, "Campus A")
-        self.assertEqual(self.instancia_a.estado, "activa")
+        self.assertEqual(self.instancia_a.estado, EstadoInstancia.ACTIVE)
         self.suscripcion_actual.refresh_from_db()
         self.assertEqual(self.suscripcion_actual.estado, "activa")
         self.assertEqual(self.suscripcion_actual.plan, self.plan_actual)
@@ -255,7 +331,7 @@ class EditarInstanciaViewTests(TestCase):
             {
                 "nombre": "Campus Modificado",
                 "logo_url": "",
-                "estado": "archivada",
+                "estado": EstadoInstancia.DEPROVISIONED,
                 "plan": str(self.plan_nuevo.pk),
             },
         )
@@ -264,7 +340,7 @@ class EditarInstanciaViewTests(TestCase):
         self.assertTrue(respuesta.context["form"].errors["confirmacion_contrasena"])
         self.instancia_a.refresh_from_db()
         self.assertEqual(self.instancia_a.nombre, "Campus A")
-        self.assertEqual(self.instancia_a.estado, "activa")
+        self.assertEqual(self.instancia_a.estado, EstadoInstancia.ACTIVE)
         self.suscripcion_actual.refresh_from_db()
         self.assertEqual(self.suscripcion_actual.estado, "activa")
         self.assertEqual(self.suscripcion_actual.plan, self.plan_actual)
@@ -281,7 +357,7 @@ class EditarInstanciaViewTests(TestCase):
             {
                 "nombre": "",
                 "logo_url": "",
-                "estado": "activa",
+                "estado": EstadoInstancia.ACTIVE,
                 "confirmacion_contrasena": self.contrasena,
             },
         )
@@ -299,7 +375,7 @@ class EditarInstanciaViewTests(TestCase):
             {
                 "nombre": "Campus A",
                 "logo_url": "no es url",
-                "estado": "activa",
+                "estado": EstadoInstancia.ACTIVE,
                 "confirmacion_contrasena": self.contrasena,
             },
         )
