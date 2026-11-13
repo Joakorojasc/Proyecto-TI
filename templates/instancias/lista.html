@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/consumo_instancia.css' %}">
+{% endblock %}
 
 {% block content %}
 <section class="instances-page">
@@ -33,6 +38,7 @@
                     <th scope="col">Estado</th>
                     <th scope="col">Versión</th>
                     <th scope="col">Plan</th>
+                    <th scope="col">Consumo de usuarios</th>
                     <th scope="col">Pago</th>
                     <th scope="col">Creada</th>
                 </tr>
@@ -70,6 +76,7 @@
                             {% endif %}
                         {% endwith %}
                     </td>
+                    <td>{% include "instancias/consumo.html" with consumo=instancia.consumo_usuarios only %}</td>
                     <td>
                         {% with suscripciones_activas=instancia.suscripciones_activas %}
                             {% if suscripciones_activas|length == 1 %}
