@@ -5,6 +5,7 @@ from django.urls import reverse
 from apps.clientes.forms import RegistroClienteForm
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.clientes.terminos import VERSION_TERMINOS
+from apps.clientes.tests.apoyo import abrir_documento_terminos
 
 
 class RegistroClienteTests(TestCase):
@@ -41,6 +42,7 @@ class RegistroClienteTests(TestCase):
             "email_contacto": "contacto@prueba.com",
         }
         form = RegistroClienteForm(data=datos)
+        form.documento_abierto = True
         self.assertTrue(form.is_valid())
 
     def test_registro_guarda_en_base_de_datos(self) -> None:
@@ -48,6 +50,8 @@ class RegistroClienteTests(TestCase):
         url = reverse("registro")
         datos = {
             "username": "admin@prueba.cl",
+            "first_name": "Ana",
+            "last_name": "Prueba",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "rut": "76.123.456-0",
@@ -58,6 +62,7 @@ class RegistroClienteTests(TestCase):
             "direccion_facturacion": "Avenida Siempre Viva 123",
             "email_contacto": "contacto@prueba.com",
         }
+        abrir_documento_terminos(self.client)
         response = self.client.post(url, data=datos)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Cliente.objects.count(), 1)
@@ -73,6 +78,8 @@ class RegistroUsuarioTests(TestCase):
         self.url = reverse("registro")
         self.datos = {
             "username": "admin@demo.cl",
+            "first_name": "Ana",
+            "last_name": "Demo",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Empresa Demo",
@@ -80,6 +87,7 @@ class RegistroUsuarioTests(TestCase):
             "acepta_terminos": "on",
             "version_terminos": VERSION_TERMINOS,
         }
+        abrir_documento_terminos(self.client)
 
     def test_pagina_registro_pide_correo(self) -> None:
         respuesta = self.client.get(self.url)
@@ -105,6 +113,9 @@ class RegistroUsuarioTests(TestCase):
         self.assertEqual(usuario_portal.usuario, auth_user)
         self.assertEqual(auth_user.usuarioportal, usuario_portal)
         self.assertEqual(usuario_portal.cliente, cliente)
+        self.assertEqual(auth_user.first_name, "Ana")
+        self.assertEqual(auth_user.last_name, "Demo")
+        self.assertEqual(usuario_portal.nombre, "Ana Demo")
 
     def test_correo_se_guarda_como_usuario_y_como_contacto(self) -> None:
         self.client.post(self.url, data=self.datos)
@@ -127,12 +138,46 @@ class RegistroUsuarioTests(TestCase):
         respuesta = self.client.get(reverse("instancias:lista"))
 
         self.assertContains(respuesta, "Aún no tienes instancias Moodle asociadas.")
-        self.assertContains(respuesta, reverse("seleccionar_plan", args=[cliente.pk]))
+        self.assertContains(respuesta, reverse("planes:seleccionar_plan", args=[cliente.pk]))
 
     def test_correo_se_normaliza_a_minusculas(self) -> None:
         self.client.post(self.url, data={**self.datos, "username": "Admin@Demo.CL"})
 
         self.assertEqual(User.objects.get().username, "admin@demo.cl")
+
+    def test_registro_guarda_nombre_y_rechaza_atributos_administrativos(self) -> None:
+        self.client.post(
+            self.url,
+            {
+                **self.datos,
+                "rol": "Superadmin",
+                "is_staff": "1",
+                "is_superuser": "1",
+            },
+        )
+        usuario = User.objects.get()
+        perfil = UsuarioPortal.objects.get()
+        self.assertEqual(usuario.first_name, "Ana")
+        self.assertEqual(usuario.last_name, "Demo")
+        self.assertEqual(perfil.nombre, "Ana Demo")
+        self.assertEqual(perfil.rol, "Admin")
+        self.assertFalse(usuario.is_staff)
+        self.assertFalse(usuario.is_superuser)
+
+    def test_registro_exige_nombre_y_apellido(self) -> None:
+        respuesta = self.client.post(
+            self.url,
+            {
+                **self.datos,
+                "first_name": "",
+                "last_name": "",
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["user_form"].errors["first_name"])
+        self.assertTrue(respuesta.context["user_form"].errors["last_name"])
+        self.assertFalse(User.objects.exists())
 
     def test_rechaza_correo_invalido(self) -> None:
         respuesta = self.client.post(self.url, data={**self.datos, "username": "no-es-un-correo"})

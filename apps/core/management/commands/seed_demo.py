@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.clientes.models import Cliente
 from apps.clientes.validators import normalizar_rut
 from apps.estadisticas.models import MedicionUsoMensual
-from apps.instancias.models import InstanciaMoodle
+from apps.instancias.models import EstadoInstancia, InstanciaMoodle
 from apps.planes.models import Plan, Suscripcion
 
 
@@ -49,36 +49,12 @@ class Command(BaseCommand):
                 "limite_usuarios": None,
             },
             {
-                "clave": "PLAN-DEMO-GRATIS",
-                "nombre": "Plan demo gratis",
-                "tipo_plan": "mensual",
-                "precio_base": Decimal("0.00"),
-                "precio_por_usuario": None,
-                "limite_usuarios": 10,
-            },
-            {
                 "clave": "PLAN-DEMO-ANUAL-1000",
                 "nombre": "Plan anual demo hasta 1000 usuarios",
                 "tipo_plan": "anual",
                 "precio_base": Decimal("1000.00"),
                 "precio_por_usuario": None,
                 "limite_usuarios": 1000,
-            },
-            {
-                "clave": "PLAN-DEMO-ANUAL-2000",
-                "nombre": "Plan anual demo hasta 2000 usuarios",
-                "tipo_plan": "anual",
-                "precio_base": Decimal("1800.00"),
-                "precio_por_usuario": None,
-                "limite_usuarios": 2000,
-            },
-            {
-                "clave": "PLAN-DEMO-ANUAL-3000",
-                "nombre": "Plan anual demo hasta 3000 usuarios",
-                "tipo_plan": "anual",
-                "precio_base": Decimal("2500.00"),
-                "precio_por_usuario": None,
-                "limite_usuarios": 3000,
             },
         ]
         planes: dict[str, Plan] = {}
@@ -157,8 +133,8 @@ class Command(BaseCommand):
         definiciones = [
             ("PEQUENA", "PLAN-DEMO-MENSUAL"),
             ("MEDIANA", "PLAN-DEMO-MENSUAL"),
-            ("ANUAL_PRINCIPAL", "PLAN-DEMO-ANUAL-2000"),
-            ("ANUAL_SECUNDARIA", "PLAN-DEMO-ANUAL-2000"),
+            ("ANUAL_PRINCIPAL", "PLAN-DEMO-ANUAL-1000"),
+            ("ANUAL_SECUNDARIA", "PLAN-DEMO-ANUAL-1000"),
         ]
         suscripciones: dict[str, Suscripcion] = {}
         for instancia_clave, plan_clave in definiciones:
@@ -202,7 +178,7 @@ class Command(BaseCommand):
                     "cliente": clientes[cliente_clave],
                     "nombre": nombre,
                     "version": "5.2-demo",
-                    "estado": "activa",
+                    "estado": EstadoInstancia.ACTIVE,
                 },
             )
             instancias[clave] = instancia
@@ -210,15 +186,26 @@ class Command(BaseCommand):
 
     @staticmethod
     def crear_mediciones(instancias: dict[str, InstanciaMoodle]) -> None:
+        # Por mes: activos, cursos, categorías, inscritos y matrículas.
         mediciones = {
-            "PEQUENA": [(6, 8, 3), (8, 9, 3), (12, 10, 4)],
-            "MEDIANA": [(42, 18, 5), (50, 20, 6), (54, 22, 6)],
-            "ANUAL_PRINCIPAL": [(1450, 75, 12), (1500, 80, 13), (1550, 86, 14)],
-            "ANUAL_SECUNDARIA": [(420, 28, 7), (450, 31, 8), (400, 34, 8)],
+            "PEQUENA": [(6, 8, 3, 9, 40), (8, 9, 3, 11, 48), (12, 10, 4, 14, 60)],
+            "MEDIANA": [(42, 18, 5, 60, 252), (50, 20, 6, 68, 300), (54, 22, 6, 72, 352)],
+            "ANUAL_PRINCIPAL": [
+                (1450, 75, 12, 1800, 5250),
+                (1500, 80, 13, 1850, 5760),
+                (1550, 86, 14, 1900, 6364),
+            ],
+            "ANUAL_SECUNDARIA": [
+                (420, 28, 7, 520, 1120),
+                (450, 31, 8, 540, 1302),
+                (400, 34, 8, 560, 1496),
+            ],
         }
         for clave, valores_mensuales in mediciones.items():
             for month, valores in enumerate(valores_mensuales, start=1):
-                usuarios_activos, cantidad_cursos, cantidad_categorias = valores
+                usuarios_activos, cantidad_cursos, cantidad_categorias, inscritos, matriculas = (
+                    valores
+                )
                 MedicionUsoMensual.objects.update_or_create(
                     instancia=instancias[clave],
                     mes=month,
@@ -227,5 +214,7 @@ class Command(BaseCommand):
                         "usuarios_activos": usuarios_activos,
                         "cantidad_cursos": cantidad_cursos,
                         "cantidad_categorias": cantidad_categorias,
+                        "usuarios_inscritos": inscritos,
+                        "total_matriculas": matriculas,
                     },
                 )

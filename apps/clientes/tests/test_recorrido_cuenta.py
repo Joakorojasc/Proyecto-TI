@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from apps.clientes.models import AceptacionTerminos, Cliente, UsuarioPortal
 from apps.clientes.terminos import VERSION_TERMINOS
+from apps.clientes.tests.apoyo import abrir_documento_terminos
 
 pytestmark = pytest.mark.django_db
 
@@ -24,6 +25,8 @@ def datos_registro(
 ) -> dict[str, str]:
     return {
         "username": correo,
+        "first_name": "Persona",
+        "last_name": "Recorrido",
         "password1": CLAVE,
         "password2": CLAVE,
         "razon_social": nombre,
@@ -34,6 +37,7 @@ def datos_registro(
 
 
 def registrar(navegador: Client, datos: dict[str, str]) -> tuple[User, Cliente]:
+    abrir_documento_terminos(navegador)
     respuesta = navegador.post(reverse("registro"), datos)
     assert respuesta.status_code == 302
     assert respuesta["Location"] == reverse("instancias:lista")
@@ -284,6 +288,7 @@ def test_cuenta_sin_institucion_no_accede_a_otra(
         },
     )
     assert respuesta.status_code == 404
+    assert "Tu cuenta no tiene una institución asociada" in respuesta.content.decode()
     assert otra.razon_social is not None
     assert otra.email_contacto is not None
     assert otra.razon_social not in respuesta.content.decode()

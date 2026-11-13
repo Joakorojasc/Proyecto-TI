@@ -120,37 +120,6 @@ body {
     outline-offset: 2px;
 }
 
-.sidebar-logout {
-    margin-top: auto;
-    padding-top: var(--espacio-md);
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.sidebar-logout button {
-    width: 100%;
-    text-align: left;
-    padding: 10px var(--espacio-sm);
-    background: transparent;
-    border: none;
-    border-radius: var(--radio-sm);
-    color: rgba(255, 255, 255, 0.72);
-    font-family: inherit;
-    font-size: 1.02rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.sidebar-logout button:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: var(--white);
-}
-
-.sidebar-logout button:focus-visible {
-    outline: 2px solid var(--edocere-blue-light);
-    outline-offset: 2px;
-}
-
 /* Base del logo. Cada lugar donde aparece le da su tamano: la barra superior
    del portal y el panel de las pantallas de entrada. */
 .brand {
@@ -451,6 +420,112 @@ body {
     font-size: 1.05rem;
 }
 
+/* Resumen arriba del formulario cuando algo quedó mal. El detalle de cada
+   error va igual bajo su campo; esto es para que se note sin tener que
+   recorrer la pantalla. */
+.form-alerta {
+    margin: 0 0 var(--espacio-lg);
+    padding: 12px 14px;
+    background: rgba(192, 57, 43, 0.08);
+    border: 1px solid var(--danger);
+    border-radius: var(--radio-sm);
+    color: var(--danger);
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* Un campo del formulario: etiqueta, campo, error y ayuda, en ese orden. El
+   error va debajo del campo, que es donde la persona está mirando. */
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 0 var(--espacio-md);
+}
+
+.errorlist {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--danger);
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+p.errorlist {
+    margin: 0 0 var(--espacio-sm);
+}
+
+.campo--con-error input,
+.campo--con-error select,
+.campo--con-error textarea {
+    border-color: var(--danger);
+}
+
+.helptext {
+    color: var(--text-soft);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.helptext ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+}
+
+/* La casilla de términos va al lado de su texto, no encima. El selector lleva
+   .auth-card form porque esa regla ya fija la columna para todos los campos. */
+.auth-card form p.campo--casilla,
+.campo--casilla {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.campo--casilla input[type="checkbox"] {
+    order: 1;
+    accent-color: var(--edocere-orange);
+}
+
+.campo--casilla label {
+    order: 2;
+    flex: 1 1 200px;
+    font-weight: 500;
+}
+
+.campo--casilla .errorlist,
+.campo--casilla .helptext {
+    order: 3;
+    flex-basis: 100%;
+}
+
+.campo--casilla input[type="checkbox"]:disabled + label,
+.campo--casilla input[type="checkbox"]:disabled ~ label {
+    color: var(--text-soft);
+}
+
+.terminos-enlace {
+    color: var(--edocere-blue);
+    font-weight: 600;
+}
+
+/* Aviso que pone el script mientras el documento no se ha abierto. */
+.terminos-aviso {
+    display: block;
+    margin-top: 4px;
+    color: var(--edocere-orange);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.terminos-evidencia {
+    color: var(--text-soft);
+    font-size: 0.9rem;
+}
+
 .registro-enlace {
     margin-top: 20px;
     text-align: center;
@@ -703,10 +778,12 @@ body {
     outline-offset: 2px;
 }
 
-.instances-page {
-}
 
 .instances-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-md);
     margin-bottom: 24px;
 }
 
@@ -762,8 +839,6 @@ body {
     border-radius: var(--radio);
 }
 
-.home-page {
-}
 
 /* Encabezado: "Bienvenido" chico arriba y el nombre del portal grande debajo,
    con el naranjo de la marca como acento. */
@@ -802,13 +877,14 @@ body {
     opacity: 0.8;
 }
 
-/* Los indicadores y el plan comparten una fila y se estiran al mismo alto, para
-   que los bordes de abajo queden parejos. */
+/* Los indicadores y el plan comparten una fila, cada uno con su alto. Antes se
+   estiraban al mismo alto y el panel azul quedaba con medio metro vacio abajo
+   cuando el cliente tenia mas de una suscripcion. */
 .home-resumen {
     display: grid;
-    grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.15fr);
     gap: var(--espacio-lg);
-    align-items: stretch;
+    align-items: start;
     margin-bottom: var(--espacio-lg);
 }
 
@@ -822,8 +898,11 @@ body {
 }
 
 .metrica {
+    position: relative;
     padding: var(--espacio-lg);
     border-left: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: default;
+    transition: background-color 0.2s ease;
 }
 
 .metrica:first-child {
@@ -878,13 +957,28 @@ body {
     border-radius: var(--radio);
 }
 
-.plan-tipo {
+.plan-alcance {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--espacio-sm);
     margin: 0 0 var(--espacio-xs);
+}
+
+.plan-alcance-nombre {
+    color: var(--edocere-blue);
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.plan-tipo {
     color: var(--edocere-orange);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .plan-nombre {
@@ -1143,8 +1237,6 @@ body {
     }
 }
 
-.subscriptions-page {
-}
 
 .subscriptions-intro {
     max-width: 850px;
@@ -1168,6 +1260,14 @@ body {
     border-radius: var(--radio);
 }
 
+.subscriptions-custom-plan {
+    display: flex;
+    flex-direction: column;
+    margin: var(--espacio-lg) 0;
+    background: var(--surface);
+    border-left: 4px solid var(--edocere-orange);
+}
+
 .subscriptions-plan-section h2,
 .subscriptions-custom-plan h2 {
     margin: 0 0 8px;
@@ -1188,19 +1288,47 @@ body {
 }
 
 .subscriptions-plan-card {
-    padding: var(--espacio-md);
+    padding: var(--espacio-md) var(--espacio-lg);
+    background: var(--white);
     border: 1px solid var(--border);
     border-radius: var(--radio);
 }
 
 .subscriptions-plan-card h3 {
-    margin: 0 0 8px;
+    margin: 0 0 var(--espacio-sm);
     color: var(--edocere-blue);
-    font-size: 1.05rem;
+    font-size: 1.02rem;
+    line-height: 1.45;
+}
+
+.subscriptions-plan-card p {
+    margin: var(--espacio-sm) 0 0;
+    color: var(--text-soft);
+    font-size: 0.92rem;
+    line-height: 1.65;
+}
+
+.subscriptions-plan-card p:first-child {
+    margin-top: 0;
+}
+
+/* El precio va bajo el nombre del plan, no pegado dentro del titulo. */
+.subscriptions-plan-card .subscriptions-plan-precio {
+    color: var(--edocere-blue);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.98rem;
+    font-weight: 600;
+}
+
+/* Primera linea de cada pago: fecha, monto y estado. Mas oscura que el detalle
+   de abajo, para que se lea antes. */
+.subscriptions-plan-card .subscriptions-pago-linea {
+    color: var(--text-dark);
+    font-weight: 600;
 }
 
 .subscriptions-plan-limit {
-    margin: 8px 0 0;
+    margin: var(--espacio-sm) 0 0;
     color: var(--text-soft);
     font-size: 0.9rem;
 }
@@ -1211,22 +1339,21 @@ body {
     font-style: italic;
 }
 
-.subscriptions-custom-plan {
-    margin-top: 20px;
-    background: var(--surface);
-    border-left: 4px solid var(--edocere-orange);
+.subscriptions-custom-plan-action .btn-primary {
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    line-height: 1.2;
 }
 
-.subscriptions-custom-plan p {
-    margin-bottom: 0;
-}
-
-.profile-page {
-}
 
 /* La tarjeta del formulario si se acota: lineas de 850px son mas comodas de
    leer que de 1100. Lo que se alinea con el resto es el encabezado. */
 .profile-card {
+    width: 100%;
     max-width: 850px;
 }
 
@@ -1245,10 +1372,6 @@ body {
     background: var(--success-soft);
     color: var(--success);
     font-weight: 600;
-}
-
-.profile-card {
-    width: 100%;
 }
 
 .profile-card h2 {
@@ -1325,20 +1448,39 @@ body {
     flex-shrink: 0;
 }
 
+.instances-status--active,
 .instances-status--activa {
     background: rgba(30, 126, 52, 0.12);
     color: var(--success);
 }
 
-.instances-status--archivada {
+/* Algo en curso: el estado va a cambiar solo. */
+.instances-status--pending,
+.instances-status--recovering,
+.instances-status--restoring,
+.instances-status--purging {
+    background: var(--edocere-orange-soft);
+    color: var(--edocere-orange);
+}
+
+/* Algo falló y necesita que alguien actúe. */
+.instances-status--failed,
+.instances-status--recovery-failed,
+.instances-status--restore-failed,
+.instances-status--purge-failed {
+    background: rgba(192, 57, 43, 0.10);
+    color: var(--danger);
+}
+
+/* Fuera de servicio: ni se cobra ni se puede entrar. */
+.instances-status--suspended,
+.instances-status--deprovisioned,
+.instances-status--purged,
+.instances-status--archivada,
+.instances-status--sin-estado {
     background: var(--bg-light);
     color: var(--text-soft);
     border: 1px solid var(--border);
-}
-
-.instances-status--sin-estado {
-    background: rgba(229, 142, 38, 0.12);
-    color: var(--edocere-orange);
 }
 
 /* Discreta y pegada al dominio: antes era una pildora con color que saltaba
@@ -1360,13 +1502,6 @@ body {
 .instance-header {
     display: flex;
     align-items: center;
-    gap: var(--espacio-md);
-}
-
-.instances-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     gap: var(--espacio-md);
 }
 
@@ -1417,10 +1552,6 @@ body {
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-}
-
-.instance-header {
-    justify-content: space-between;
 }
 
 .instance-title {
@@ -1578,12 +1709,6 @@ body {
 
 /* Detalle de cada indicador. Aparece al pasar el mouse y tambien al llegar con
    el teclado, por eso la tarjeta es enfocable. */
-.metrica {
-    position: relative;
-    cursor: default;
-    transition: background-color 0.2s ease;
-}
-
 .metrica:hover,
 .metrica:focus {
     background-color: rgba(255, 255, 255, 0.06);
@@ -1678,4 +1803,15 @@ body {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
+}
+
+/* Separa el resumen, la tabla y el historial de la pantalla de estadisticas. */
+.estadisticas-bloque {
+    margin-top: var(--espacio-lg);
+}
+
+.estadisticas-bloque h2 {
+    margin: 0 0 var(--espacio-md);
+    color: var(--edocere-blue);
+    font-size: 1.3rem;
 }

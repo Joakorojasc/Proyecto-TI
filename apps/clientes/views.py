@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods, require_safe
 
 from . import terminos
@@ -16,19 +16,20 @@ from .forms import (
     UsuarioRegistroForm,
 )
 from .models import Cliente, UsuarioPortal
+from .permisos import obtener_cliente_propio
 from .validators import RUT_DUPLICADO
 
 
+@login_required
+@require_http_methods(["GET", "POST"])
 def perfil_institucion(request: HttpRequest) -> HttpResponse:
-    usuario_portal = get_object_or_404(
-        UsuarioPortal.objects.select_related("cliente"),
-        usuario_id=request.user.pk,
-    )
-    if usuario_portal.cliente is None:
-        raise Http404("El usuario no tiene una institución asociada.")
+    cliente = obtener_cliente_propio(request)
+    if cliente is None:
+        return render(request, "clientes/sin_institucion.html", status=404)
 
-    cliente = usuario_portal.cliente
-    form = PerfilInstitucionForm(request.POST or None, instance=cliente)
+    form = PerfilInstitucionForm(
+        request.POST if request.method == "POST" else None, instance=cliente
+    )
 
     if request.method == "POST" and form.is_valid():
         if not request.user.check_password(form.cleaned_data["confirmacion_contrasena"]):
@@ -60,9 +61,13 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
     user_form: UsuarioRegistroForm
     empresa_form: EmpresaRegistroForm
 
+    terminos.asegurar_sesion(request)
+    fecha_apertura = terminos.fecha_documento_abierto(request)
+
     if request.method == "POST":
         user_form = UsuarioRegistroForm(request.POST)
         empresa_form = EmpresaRegistroForm(request.POST)
+        empresa_form.documento_abierto = fecha_apertura is not None
 
         if user_form.is_valid() and empresa_form.is_valid():
             try:
@@ -78,12 +83,15 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
                     UsuarioPortal.objects.create(
                         usuario=auth_user,
                         cliente=nuevo_cliente,
-                        nombre=auth_user.username,
+                        nombre=f"{auth_user.first_name} {auth_user.last_name}".strip(),
                         email=auth_user.email,
                         rol="Admin",
                     )
                     terminos.registrar_aceptacion(
-                        nuevo_cliente, auth_user, empresa_form.cleaned_data["version_terminos"]
+                        nuevo_cliente,
+                        auth_user,
+                        empresa_form.cleaned_data["version_terminos"],
+                        fecha_apertura,
                     )
 
             except ValidationError as error:
@@ -105,6 +113,7 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
         {
             "user_form": user_form,
             "empresa_form": empresa_form,
+            "documento_abierto": fecha_apertura is not None,
         },
     )
 
@@ -114,28 +123,32 @@ def documento_terminos(request: HttpRequest, version: str) -> FileResponse:
     documento = terminos.DOCUMENTOS_TERMINOS.get(version)
     if documento is None:
         raise Http404("El documento solicitado no está disponible.")
+    terminos.marcar_documento_abierto(request, version)
     respuesta = FileResponse(
         documento.open("rb"), content_type="application/pdf", filename="T&C Moodle.pdf"
     )
-    respuesta["Cache-Control"] = "public, max-age=31536000, immutable"
+    # Sin caché: cada apertura tiene que llegar al servidor para que quede la
+    # marca en la sesión. Si el navegador lo sirviera de su caché, la persona
+    # vería el PDF y el portal no se enteraría.
+    respuesta["Cache-Control"] = "no-store, max-age=0"
     return respuesta
 
 
 @login_required
 @require_http_methods(["GET", "POST"])
 def aceptar_terminos(request: HttpRequest) -> HttpResponse:
-    perfil = get_object_or_404(
-        UsuarioPortal.objects.select_related("cliente"), usuario=request.user
-    )
-    if perfil.cliente is None:
-        raise Http404("El usuario no tiene una institución asociada.")
-    cliente = perfil.cliente
+    cliente = obtener_cliente_propio(request)
+    if cliente is None:
+        return render(request, "clientes/sin_institucion.html", status=404)
+    terminos.asegurar_sesion(request)
+    fecha_apertura = terminos.fecha_documento_abierto(request)
     form = AceptacionTerminosForm(request.POST if request.method == "POST" else None)
+    form.documento_abierto = fecha_apertura is not None
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():
                 terminos.registrar_aceptacion(
-                    cliente, request.user, form.cleaned_data["version_terminos"]
+                    cliente, request.user, form.cleaned_data["version_terminos"], fecha_apertura
                 )
         except ValidationError as error:
             form.add_error("version_terminos", error)
@@ -148,6 +161,7 @@ def aceptar_terminos(request: HttpRequest) -> HttpResponse:
         {
             "cliente": cliente,
             "form": form,
+            "documento_abierto": fecha_apertura is not None,
             "aceptacion": cliente.aceptaciones_terminos.filter(
                 version_documento=terminos.VERSION_TERMINOS
             ).first(),

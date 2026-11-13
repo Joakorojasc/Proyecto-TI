@@ -20,11 +20,11 @@
                 <p class="metrica-etiqueta">
                     {% if total_activas == 1 %}Instancia activa{% else %}Instancias activas{% endif %}
                 </p>
-                {% if total_archivadas %}
-                    <p class="metrica-nota">{{ total_archivadas }} archivada{{ total_archivadas|pluralize }}</p>
+                {% if total_desaprovisionadas %}
+                    <p class="metrica-nota">{{ total_desaprovisionadas }} desaprovisionada{{ total_desaprovisionadas|pluralize }}</p>
                 {% endif %}
                 <p class="metrica-detalle">
-                    Plataformas Moodle en funcionamiento. Las archivadas no se cuentan
+                    Plataformas Moodle en funcionamiento. Las desaprovisionadas no se cuentan
                     aquí ni se facturan.
                 </p>
             </article>
@@ -61,14 +61,18 @@
         </section>
 
         <section class="home-bloque">
-            <h2>Tu plan</h2>
-            {% if planes %}
+            <h2>{% if suscripciones|length > 1 %}Tus planes{% else %}Tu plan{% endif %}</h2>
+            {% if suscripciones %}
                 <div class="plan-lista">
-                    {% for plan in planes %}
+                    {% for suscripcion in suscripciones %}
+                        {% with plan=suscripcion.plan %}
                         <article class="plan-tarjeta">
-                            {% if plan.tipo_plan %}
-                                <p class="plan-tipo">{{ plan.tipo_plan }}</p>
-                            {% endif %}
+                            <p class="plan-alcance">
+                                <span class="plan-alcance-nombre">
+                                    {% if suscripcion.instancia %}{{ suscripcion.instancia }}{% else %}Suscripción {{ forloop.counter }}{% endif %}
+                                </span>
+                                {% if plan.tipo_plan %}<span class="plan-tipo">{{ plan.tipo_plan }}</span>{% endif %}
+                            </p>
                             <p class="plan-nombre">{{ plan.nombre|default:"Plan sin nombre" }}</p>
                             {% if plan.precio_por_usuario is not None %}
                                 <p class="plan-precio">
@@ -85,6 +89,7 @@
                                 <p class="plan-limite">Hasta {{ plan.limite_usuarios }} usuarios activos</p>
                             {% endif %}
                         </article>
+                        {% endwith %}
                     {% endfor %}
                 </div>
             {% else %}
@@ -99,7 +104,7 @@
     <section class="home-bloque home-bloque--destacado" aria-labelledby="titulo-instancias">
         <div class="home-bloque-header">
             <h2 id="titulo-instancias">Tus instancias</h2>
-            <a class="btn-primary" href="{% url 'seleccionar_plan' cliente.pk %}">+ Crear instancia</a>
+            <a class="btn-primary" href="{% url 'planes:seleccionar_plan' cliente.pk %}">+ Crear instancia</a>
         </div>
 
         {% if instancias %}
@@ -109,7 +114,7 @@
                         <a href="{% url 'instancias:detalle' instancia.pk %}">
                             <span class="instancia-lista-titulo">
                                 <span class="instancia-lista-nombre">{{ instancia.nombre|default:"Sin nombre" }}</span>
-                                <span class="instances-status instances-status--{{ instancia.estado|default:'sin-estado' }}">
+                                <span class="instances-status instances-status--{{ instancia.clase_estado }}">
                                     {{ instancia.get_estado_display|default:"Sin estado" }}
                                 </span>
                             </span>
@@ -151,16 +156,16 @@
                 </div>
             </details>
             <details class="funcionalidad">
-                <summary>Facturación y Pagos <span class="etiqueta-pronto">Próximamente</span></summary>
+                <summary>Facturación y Pagos</summary>
                 <div class="funcionalidad-cuerpo">
-                    <p>Consulta los pagos y las facturas asociadas a los servicios de tu institución. Esta sección todavía está en desarrollo.</p>
+                    <p>Consulta los pagos y los comprobantes asociados a los servicios de tu institución.</p>
                     <a class="home-card-link" href="{% url 'seccion_facturacion' %}">Ir a Facturación y Pagos <span aria-hidden="true">&rarr;</span></a>
                 </div>
             </details>
             <details class="funcionalidad">
-                <summary>Estadísticas <span class="etiqueta-pronto">Próximamente</span></summary>
+                <summary>Estadísticas</summary>
                 <div class="funcionalidad-cuerpo">
-                    <p>Explora indicadores y estadísticas relacionados con tus instancias. Esta sección todavía está en desarrollo. Mientras tanto, el uso de cada instancia se ve en su detalle.</p>
+                    <p>Explora indicadores y estadísticas relacionados con tus instancias.</p>
                     <a class="home-card-link" href="{% url 'seccion_estadisticas' %}">Ir a Estadísticas <span aria-hidden="true">&rarr;</span></a>
                 </div>
             </details>

@@ -40,13 +40,13 @@ class PortadaConClienteTests(TestCase):
             cliente=self.cliente,
             nombre="Campus Principal",
             dominio="https://principal.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
         InstanciaMoodle.objects.create(
             cliente=self.cliente,
             nombre="Campus Viejo",
             dominio="https://viejo.demo.invalid",
-            estado=EstadoInstancia.ARCHIVADA,
+            estado=EstadoInstancia.DEPROVISIONED,
         )
         MedicionUsoMensual.objects.create(
             instancia=self.activa,
@@ -76,7 +76,7 @@ class PortadaConClienteTests(TestCase):
         respuesta = self.client.get(reverse("home"))
 
         self.assertEqual(respuesta.context["total_activas"], 1)
-        self.assertEqual(respuesta.context["total_archivadas"], 1)
+        self.assertEqual(respuesta.context["total_desaprovisionadas"], 1)
 
     def test_informa_el_uso_del_ultimo_periodo_medido(self) -> None:
         respuesta = self.client.get(reverse("home"))
@@ -116,13 +116,13 @@ class PortadaAislamientoTests(TestCase):
             cliente=self.cliente_uno,
             nombre="Campus Propio",
             dominio="https://propio.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
         self.ajena = InstanciaMoodle.objects.create(
             cliente=self.cliente_dos,
             nombre="Campus Ajeno",
             dominio="https://ajeno.demo.invalid",
-            estado=EstadoInstancia.ACTIVA,
+            estado=EstadoInstancia.ACTIVE,
         )
         MedicionUsoMensual.objects.create(
             instancia=self.ajena,
@@ -177,26 +177,3 @@ class PortadaSinInstanciasTests(TestCase):
 
         self.assertContains(respuesta, "Todavía no tienes instancias")
         self.assertEqual(respuesta.context["total_activas"], 0)
-
-
-class SeccionesPendientesTests(TestCase):
-    """La portada avisa qué secciones todavía no están implementadas."""
-
-    def setUp(self) -> None:
-        self.usuario, _ = crear_usuario_con_cliente("Pendientes", "76055555-K")
-        self.client.force_login(self.usuario)
-
-    def test_marca_las_secciones_en_desarrollo(self) -> None:
-        respuesta = self.client.get(reverse("home"))
-
-        # Dos de las cinco secciones son pantallas vacías todavía.
-        self.assertContains(respuesta, "Próximamente", count=2)
-
-    def test_no_marca_las_secciones_que_ya_funcionan(self) -> None:
-        respuesta = self.client.get(reverse("home"))
-        html = respuesta.content.decode()
-
-        for titulo in ("Perfil de Institución", "Mis Instancias", "Suscripciones y Planes"):
-            posicion = html.index(f"<summary>{titulo}")
-            fragmento = html[posicion : posicion + 120]
-            self.assertNotIn("Próximamente", fragmento)

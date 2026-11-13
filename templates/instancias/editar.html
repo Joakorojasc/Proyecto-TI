@@ -1,16 +1,5 @@
 {% extends "base.html" %}
 
-{% block migas %}
-<nav class="migas" aria-label="Ruta de navegación">
-    <ol>
-        <li><a href="{% url 'home' %}">Inicio</a></li>
-        <li><a href="{% url 'instancias:lista' %}">Mis Instancias</a></li>
-        <li><a href="{% url 'instancias:detalle' instancia.pk %}">{{ instancia.nombre|default:instancia.dominio_host|default:'Instancia' }}</a></li>
-        <li aria-current="page">Editar</li>
-    </ol>
-</nav>
-{% endblock migas %}
-
 {% block content %}
 <section class="formulario-pagina">
     <div class="auth-card auth-card-wide">
@@ -18,6 +7,13 @@
 
         <form method="post">
             {% csrf_token %}
+            {% if instancia.estado == "PENDING" %}
+            <p>
+                <label for="estado-pendiente">Estado</label>
+                <input id="estado-pendiente" type="text" value="{{ instancia.get_estado_display }}" disabled>
+                <span class="helptext">El estado no se puede modificar mientras el aprovisionamiento está pendiente.</span>
+            </p>
+            {% endif %}
             {% for field in form %}
                 {% if field.name != "confirmacion_contrasena" %}
                     {% if field.name == "plan" %}
