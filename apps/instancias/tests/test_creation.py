@@ -51,7 +51,7 @@ class CrearInstanciaViewTests(TestCase):
     def test_crea_instancia_con_direccion_de_edocere(self) -> None:
         response = self.crear_y_aprobar_instancia(
             {
-                "nombre": "Campus Duoc",
+                "nombre": "CampusDuoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "dominio_propio": "",
@@ -63,7 +63,7 @@ class CrearInstanciaViewTests(TestCase):
         self.assertEqual(response["Location"], reverse("instancias:lista"))
         instancia = InstanciaMoodle.objects.get()
         self.assertEqual(instancia.cliente, self.cliente)
-        self.assertEqual(instancia.nombre, "Campus Duoc")
+        self.assertEqual(instancia.nombre, "CampusDuoc")
         self.assertEqual(instancia.dominio, "https://duoc.edocere.com")
         self.assertEqual(instancia.logo_url, "https://empresa.cl/logo.png")
         self.assertEqual(instancia.estado, "activa")
@@ -76,7 +76,7 @@ class CrearInstanciaViewTests(TestCase):
     def test_crea_instancia_con_dominio_propio(self) -> None:
         response = self.crear_y_aprobar_instancia(
             {
-                "nombre": "Aula Duoc",
+                "nombre": "AulaDuoc",
                 "tipo_dominio": "propio",
                 "subdominio": "",
                 "dominio_propio": "aula.duoc.cl",
@@ -86,13 +86,13 @@ class CrearInstanciaViewTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         instancia = InstanciaMoodle.objects.get()
-        self.assertEqual(instancia.nombre, "Aula Duoc")
+        self.assertEqual(instancia.nombre, "AulaDuoc")
         self.assertEqual(instancia.dominio, "https://aula.duoc.cl")
 
     def test_dominio_propio_acepta_https_y_barra_final(self) -> None:
         self.crear_y_aprobar_instancia(
             {
-                "nombre": "Aula Duoc",
+                "nombre": "AulaDuoc",
                 "tipo_dominio": "propio",
                 "dominio_propio": "HTTPS://Aula.Duoc.cl/",
                 "logo_url": "",
@@ -104,7 +104,7 @@ class CrearInstanciaViewTests(TestCase):
     def test_logo_es_opcional(self) -> None:
         response = self.crear_y_aprobar_instancia(
             {
-                "nombre": "Campus Duoc",
+                "nombre": "CampusDuoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "logo_url": "",
@@ -135,7 +135,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "Campus Duoc",
+                "nombre": "CampusDuoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "Mi Empresa!",
                 "logo_url": "",
@@ -151,7 +151,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "Aula Duoc",
+                "nombre": "AulaDuoc",
                 "tipo_dominio": "propio",
                 "dominio_propio": "not a valid url",
                 "logo_url": "",
@@ -167,7 +167,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "Aula Duoc",
+                "nombre": "AulaDuoc",
                 "tipo_dominio": "propio",
                 "dominio_propio": "algo.edocere.com",
                 "logo_url": "",
@@ -187,7 +187,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "Campus Duoc",
+                "nombre": "CampusDuoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "logo_url": "",
@@ -203,7 +203,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "Campus Duoc",
+                "nombre": "CampusDuoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "logo_url": "not a valid url",

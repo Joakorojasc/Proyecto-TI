@@ -15,7 +15,7 @@ pytestmark = pytest.mark.django_db
 def solicitud(navegador: Client, operacion: str, metodo: str, cliente: Cliente, plan: Plan) -> int:
     if operacion == "crear":
         url = reverse("instancias:crear", args=[cliente.pk, plan.pk])
-        datos = {"nombre": "Campus Prueba", "tipo_dominio": "edocere", "subdominio": "campus"}
+        datos = {"nombre": "CampusPrueba", "tipo_dominio": "edocere", "subdominio": "campus"}
     else:
         url = reverse("planes:seleccionar_plan", args=[cliente.pk])
         datos = {"plan": str(plan.pk)}
