@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.estadisticas.models import MedicionUsoMensual
-from apps.instancias.models import InstanciaMoodle
+from apps.instancias.models import EstadoInstancia, InstanciaMoodle
 from apps.pagos.models import DocumentoTributario, Pago
 from apps.planes.models import Plan, Suscripcion
 
@@ -327,7 +327,7 @@ def _datos_instancia(cliente: Cliente, plan: Plan, nombre: str) -> dict[str, Any
         "dominio": f"https://{nombre}.edocere.com",
         "logo_url": "https://ejemplo.cl/logo.png",
         "version": "4.5",
-        "estado": "activa",
+        "estado": EstadoInstancia.ACTIVE,
         "plan": plan.pk,
     }
 
