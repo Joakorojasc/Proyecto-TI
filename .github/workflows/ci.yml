@@ -9,6 +9,9 @@ on:
   # poder mergear a main.
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   calidad:
     name: Linter, análisis estático y tests
