@@ -87,14 +87,13 @@ class InstanciaMoodle(models.Model):
     def es_subdominio_edocere(self) -> bool:
         return self.dominio_host.endswith(".edocere.com")
 
-<<<<<<< HEAD
     @property
     def consumo_usuarios(self) -> ConsumoUsuarios:
         """Usa los datos precargados por con_datos_consumo."""
         mediciones: list[MedicionUsoMensual] = self.__dict__["mediciones_consumo"]
         suscripciones: list[Suscripcion] = self.__dict__["suscripciones_activas"]
         return calcular_consumo(mediciones[0] if mediciones else None, suscripciones)
-=======
+
 
 class SolicitudAprovisionamiento(models.Model):
     instancia = models.ForeignKey(
@@ -122,4 +121,3 @@ class SolicitudAprovisionamiento(models.Model):
 
     def __str__(self) -> str:
         return f"Aprovisionamiento de instancia {self.instancia_id} ({self.estado})"
->>>>>>> origin/dev
