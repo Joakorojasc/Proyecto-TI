@@ -124,9 +124,9 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
         mediciones = instancia.medicionusomensual_set.order_by("-anio", "-mes")
         context["mediciones"] = mediciones
         context["ultima_medicion"] = mediciones.first()
-        context["solicitud_aprovisionamiento"] = (
-            instancia.solicitudes_aprovisionamiento.order_by("-created_at", "-pk").first()
-        )
+        context["solicitud_aprovisionamiento"] = instancia.solicitudes_aprovisionamiento.order_by(
+            "-created_at", "-pk"
+        ).first()
         return context
 
 

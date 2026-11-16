@@ -41,14 +41,16 @@ class Command(BaseCommand):
         ).select_related("instancia")
         for solicitud in solicitudes:
             suscripcion = (
-                Suscripcion.objects.filter(instancia=solicitud.instancia)
-                .order_by("-pk")
-                .first()
+                Suscripcion.objects.filter(instancia=solicitud.instancia).order_by("-pk").first()
             )
-            if suscripcion is None or estado_cliente_para_instancia(
-                solicitud.instancia.cliente_id,
-                suscripcion_id=suscripcion.pk,
-            ) != "aprobada":
+            if (
+                suscripcion is None
+                or estado_cliente_para_instancia(
+                    solicitud.instancia.cliente_id,
+                    suscripcion_id=suscripcion.pk,
+                )
+                != "aprobada"
+            ):
                 continue
             try:
                 activa = AprovisionamientoService().procesar_simulado(solicitud, fallos)
@@ -58,6 +60,5 @@ class Command(BaseCommand):
             solicitud.refresh_from_db(fields=["intentos"])
             resultado = "Funciona" if activa else "Falla"
             self.stdout.write(
-                f"Solicitud {solicitud.pk}: intento "
-                f"{solicitud.intentos}: {resultado}"
+                f"Solicitud {solicitud.pk}: intento {solicitud.intentos}: {resultado}"
             )

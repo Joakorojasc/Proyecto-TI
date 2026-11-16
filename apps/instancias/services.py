@@ -14,9 +14,11 @@ class AprovisionamientoService:
         fallos: int,
     ) -> bool:
         with transaction.atomic():
-            solicitud = SolicitudAprovisionamiento.objects.select_for_update().select_related(
-                "instancia"
-            ).get(pk=solicitud.pk)
+            solicitud = (
+                SolicitudAprovisionamiento.objects.select_for_update()
+                .select_related("instancia")
+                .get(pk=solicitud.pk)
+            )
             if solicitud.estado != EstadoAprovisionamiento.PENDIENTE:
                 return solicitud.estado == EstadoAprovisionamiento.ACTIVA
 
@@ -38,7 +40,5 @@ class AprovisionamientoService:
             solicitud.operation_id = f"SIM-{instancia.pk}-{solicitud.intentos}"
             instancia.estado = EstadoInstancia.ACTIVA
             instancia.save(update_fields=["estado"])
-            solicitud.save(
-                update_fields=["intentos", "estado", "operation_id", "updated_at"]
-            )
+            solicitud.save(update_fields=["intentos", "estado", "operation_id", "updated_at"])
             return True
