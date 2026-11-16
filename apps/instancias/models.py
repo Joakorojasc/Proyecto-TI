@@ -1,9 +1,11 @@
 from urllib.parse import urlparse
+from uuid import uuid4
 
 from django.db import models
 
 
 class EstadoInstancia(models.TextChoices):
+    PENDIENTE = "pendiente", "Pendiente de aprovisionamiento"
     ACTIVA = "activa", "Activa"
     ARCHIVADA = "archivada", "Archivada"
     FALLIDA = "fallida", "Fallida"
@@ -40,3 +42,39 @@ class InstanciaMoodle(models.Model):
     @property
     def es_subdominio_edocere(self) -> bool:
         return self.dominio_host.endswith(".edocere.com")
+
+
+class EstadoAprovisionamiento(models.TextChoices):
+    PENDIENTE = "pendiente", "Pendiente"
+    EN_PROCESO = "en_proceso", "En proceso"
+    ACTIVA = "activa", "Activa"
+    FALLIDA = "fallida", "Fallida"
+
+
+class SolicitudAprovisionamiento(models.Model):
+    instancia = models.ForeignKey(
+        InstanciaMoodle,
+        on_delete=models.PROTECT,
+        related_name="solicitudes_aprovisionamiento",
+    )
+    intentos = models.PositiveSmallIntegerField(default=0)
+    estado = models.CharField(
+        max_length=20,
+        choices=EstadoAprovisionamiento.choices,
+        default=EstadoAprovisionamiento.PENDIENTE,
+    )
+    operation_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    idempotency_key = models.CharField(
+        max_length=255,
+        unique=True,
+        default=uuid4,
+        editable=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self) -> str:
+        return f"Aprovisionamiento de instancia {self.instancia_id} ({self.estado})"
