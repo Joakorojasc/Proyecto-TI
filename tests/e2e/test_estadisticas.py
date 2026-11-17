@@ -45,13 +45,12 @@ def test_informa_el_ultimo_periodo_con_las_sumas_de_sus_instancias(
     expect(page.get_by_text("Último período medido: Febrero 2026")).to_be_visible()
     assert migas(page) == ["Inicio", "Estadísticas"]
 
-    # Febrero: 60 + 28 inscritos, 44 + 20 activos, 12 + 6 cursos, 4 + 2 categorías
+    # Febrero: 60 + 28 inscritos, 44 + 20 activos, 12 + 6 cursos
     # y 156 + 54 matrículas sobre 18 cursos.
     tarjetas = resumen(page)
     assert tarjetas["Usuarios inscritos"] == "88"
     assert tarjetas["Usuarios activos"] == "64"
     assert tarjetas["Cursos"] == "18"
-    assert tarjetas["Categorías"] == "6"
     assert tarjetas["Matriculados por curso"] == "11,7"
     assert tarjetas["Instancias con datos"] == "2 de 2"
 
@@ -86,7 +85,7 @@ def test_una_instancia_sin_medicion_en_el_ultimo_periodo_aparece_sin_datos(
     ir_por_menu(page, "Estadísticas")
 
     expect(page.get_by_text("Último período medido: Febrero 2026")).to_be_visible()
-    assert fila(page, "Campus Tres")[2:] == ["Sin datos"] * 5
+    assert fila(page, "Campus Tres")[2:] == ["Sin datos"] * 4
     tarjetas = resumen(page)
     assert tarjetas["Usuarios inscritos"] == "88"
     assert tarjetas["Instancias con datos"] == "2 de 3"
