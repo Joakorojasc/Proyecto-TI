@@ -53,7 +53,6 @@ class MedicionUsoMensualAdmin(admin.ModelAdmin):
         "periodo",
         "usuarios_activos",
         "cantidad_cursos",
-        "cantidad_categorias",
     )
     list_select_related = ("instancia", "instancia__cliente")
     list_filter = ("anio", MesFilter, "instancia__cliente")

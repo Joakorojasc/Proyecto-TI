@@ -1,3 +1,6 @@
+from typing import Any
+
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -18,6 +21,45 @@ class MedioPago(models.Model):
         return f"{self.marca_tarjeta} terminada en {self.ultimos_4_digitos}"
 
 
+class CodigoDescuento(models.Model):
+    codigo = models.CharField(
+        "código",
+        max_length=50,
+        unique=True,
+        help_text="Se guarda en mayúsculas y sin espacios al inicio ni al final.",
+    )
+    plan = models.ForeignKey(
+        "planes.Plan",
+        verbose_name="plan",
+        on_delete=models.PROTECT,
+        null=True,
+        related_name="codigos_descuento",
+        help_text="Plan al que se aplica este código.",
+    )
+    porcentaje = models.PositiveSmallIntegerField(
+        "porcentaje de descuento",
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        help_text="Porcentaje que se descuenta del precio del plan (de 1 a 100).",
+    )
+    activo = models.BooleanField("activo", default=True)
+    creado_en = models.DateTimeField("creado el", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "código de descuento"
+        verbose_name_plural = "códigos de descuento"
+
+    def __str__(self) -> str:
+        return f"{self.codigo} ({self.porcentaje}%)"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.codigo = (self.codigo or "").strip().upper()
+        super().save(*args, **kwargs)
+
+    def clean(self) -> None:
+        super().clean()
+        self.codigo = (self.codigo or "").strip().upper()
+
+
 class Pago(models.Model):
     ESTADO_PENDIENTE = "pendiente"
     ESTADO_APROBADO = "aprobado"
@@ -36,6 +78,14 @@ class Pago(models.Model):
     monto = models.DecimalField(max_digits=12, decimal_places=2, null=True)
     fecha_pago = models.DateTimeField(null=True)
     estado = models.CharField(max_length=255, choices=ESTADOS, null=True)
+    codigo_descuento = models.ForeignKey(
+        "pagos.CodigoDescuento",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pagos",
+    )
+    monto_descuento = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
 
 class DocumentoTributario(models.Model):

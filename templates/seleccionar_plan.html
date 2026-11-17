@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load descuentos %}
 
 {% block content %}
 <div class="plan-selection-page">
@@ -14,6 +15,7 @@
 
         <form method="post" class="plan-form">
             {% csrf_token %}
+            {{ form.non_field_errors }}
 
             <div class="field-group">
                 <label class="field-label">{{ form.plan.label }}</label>
@@ -42,6 +44,19 @@
                                     {% endif %}
                                 </span>
                             </label>
+                            {% if plan|tiene_codigos %}
+                            <div class="plan-codigo" style="margin: 0.25rem 0 0.75rem 1.5rem;">
+                                <label for="codigo_{{ plan.id }}"><small class="plan-option-limit">¿Tienes un código de descuento?</small></label>
+                                <input
+                                    type="text"
+                                    id="codigo_{{ plan.id }}"
+                                    name="codigo_{{ plan.id }}"
+                                    maxlength="50"
+                                    autocomplete="off"
+                                    value="{{ form.data|codigo_ingresado:plan.id }}"
+                                >
+                            </div>
+                            {% endif %}
                             {% empty %}
                             <p class="plan-empty">No hay planes disponibles para esta categoría.</p>
                             {% endfor %}

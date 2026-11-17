@@ -73,6 +73,14 @@ class Suscripcion(models.Model):
     estado = models.CharField(max_length=255, null=True)
     fecha_inicio = models.DateTimeField(null=True)
 
+    codigo_descuento = models.ForeignKey(
+        "pagos.CodigoDescuento",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="suscripciones",
+    )
+
     def __str__(self) -> str:
         return f"{self.cliente} · {self.instancia} · {self.plan}"
 

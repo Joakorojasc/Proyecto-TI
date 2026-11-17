@@ -18,7 +18,13 @@ from apps.clientes import terminos
 from apps.clientes.mixins import AislamientoClienteMixin
 from apps.clientes.models import UsuarioPortal
 from apps.clientes.permisos import es_superadministrador, obtener_cliente_autorizado
-from apps.pagos.services import estado_cliente_para_instancia
+from apps.pagos.services import (
+    aplicar_descuento,
+    codigo_recordado,
+    estado_cliente_para_instancia,
+    olvidar_codigo,
+    precio_de_referencia,
+)
 from apps.planes.models import Plan, Suscripcion
 
 from .consumo import con_datos_consumo
@@ -60,7 +66,9 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
                 plan=plan,
                 estado="pendiente",
                 fecha_inicio=timezone.now(),
+                codigo_descuento=codigo_recordado(request, plan),
             )
+        olvidar_codigo(request)
 
         estado_comercial = estado_cliente_para_instancia(
             cliente_id=cliente.pk,
@@ -258,6 +266,20 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
         context["solicitud_aprovisionamiento"] = instancia.solicitudes_aprovisionamiento.order_by(
             "-created_at", "-pk"
         ).first()
+
+        suscripcion = (
+            Suscripcion.objects.filter(instancia=instancia)
+            .select_related("plan", "codigo_descuento")
+            .order_by("-pk")
+            .first()
+        )
+        context["suscripcion"] = suscripcion
+        context["precio"] = (
+            aplicar_descuento(precio_de_referencia(suscripcion.plan), suscripcion.codigo_descuento)
+            if suscripcion is not None
+            else None
+        )
+
         return context
 
 
