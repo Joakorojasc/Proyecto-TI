@@ -66,7 +66,7 @@ class CrearInstanciaViewTests(TestCase):
         self.assertEqual(instancia.nombre, "CampusDuoc")
         self.assertEqual(instancia.dominio, "https://duoc.edocere.com")
         self.assertEqual(instancia.logo_url, "https://empresa.cl/logo.png")
-        self.assertEqual(instancia.estado, "activa")
+        self.assertEqual(instancia.estado, "pendiente")
         suscripcion = Suscripcion.objects.get(instancia=instancia)
         self.assertEqual(suscripcion.cliente, self.cliente)
         self.assertEqual(suscripcion.plan, self.plan)

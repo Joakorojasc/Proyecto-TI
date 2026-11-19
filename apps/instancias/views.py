@@ -1,14 +1,16 @@
 from typing import Any
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Prefetch, Q, QuerySet
 from django.db.models.functions import Lower
-from django.http import HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, UpdateView
 
 from apps.clientes.mixins import AislamientoClienteMixin
@@ -17,7 +19,7 @@ from apps.clientes.permisos import obtener_cliente_autorizado
 from apps.planes.models import Plan, Suscripcion
 
 from .forms import CrearInstanciaForm, EditarInstanciaForm, FiltroInstanciasForm
-from .models import InstanciaMoodle
+from .models import EstadoAprovisionamiento, InstanciaMoodle, SolicitudAprovisionamiento
 
 
 @login_required(login_url="/login/")
@@ -122,7 +124,42 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
         mediciones = instancia.medicionusomensual_set.order_by("-anio", "-mes")
         context["mediciones"] = mediciones
         context["ultima_medicion"] = mediciones.first()
+        context["solicitud_aprovisionamiento"] = instancia.solicitudes_aprovisionamiento.order_by(
+            "-created_at", "-pk"
+        ).first()
         return context
+
+
+@login_required(login_url="/login/")
+@require_POST
+def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
+    instancia = get_object_or_404(InstanciaMoodle, pk=pk)
+    cliente = obtener_cliente_autorizado(request, instancia.cliente_id)
+    with transaction.atomic():
+        instancia = get_object_or_404(
+            InstanciaMoodle.objects.select_for_update(),
+            pk=pk,
+            cliente_id=cliente.pk,
+        )
+        solicitud = (
+            SolicitudAprovisionamiento.objects.select_for_update()
+            .filter(instancia=instancia)
+            .order_by("-created_at", "-pk")
+            .first()
+        )
+        if solicitud is None:
+            raise Http404
+        if solicitud.intentos > 0:
+            messages.info(
+                request,
+                "Los reintentos son automáticos. Si fallaron, el caso queda "
+                "registrado para revisión del administrador.",
+            )
+            return redirect("instancias:detalle", pk=instancia.pk)
+        if solicitud.estado != EstadoAprovisionamiento.FALLIDA:
+            messages.error(request, "La solicitud aún no está disponible para reintento.")
+            return redirect("instancias:detalle", pk=instancia.pk)
+    return redirect("instancias:detalle", pk=instancia.pk)
 
 
 class EditarInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, UpdateView):

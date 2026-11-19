@@ -5,6 +5,7 @@ from .views import (
     EditarInstanciaView,
     ListaInstanciasView,
     crear_instancia,
+    reintentar_aprovisionamiento,
 )
 
 app_name = "instancias"
@@ -18,4 +19,5 @@ urlpatterns = [
     path("", ListaInstanciasView.as_view(), name="lista"),
     path("<int:pk>/", DetalleInstanciaView.as_view(), name="detalle"),
     path("<int:pk>/editar/", EditarInstanciaView.as_view(), name="editar"),
+    path("<int:pk>/reintentar/", reintentar_aprovisionamiento, name="reintentar"),
 ]

@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from apps.clientes.mixins import get_cliente_autorizado
 from apps.instancias.forms import CrearInstanciaForm
-from apps.instancias.models import EstadoInstancia
+from apps.instancias.models import EstadoInstancia, SolicitudAprovisionamiento
 from apps.planes.models import Suscripcion
 
 from .forms import CheckoutSimuladoForm
@@ -99,24 +99,9 @@ def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpRespo
                             )
                         instancia = instancia_form.save(commit=False)
                         instancia.cliente = cliente
-                        creada = False
-                        for _ in range(3):
-                            try:
-                                instancia.estado = EstadoInstancia.ACTIVA
-                                instancia.save()
-                                creada = True
-                                break
-                            except Exception:
-                                continue
-
-                        if not creada:
-                            instancia.estado = EstadoInstancia.FALLIDA
-                            instancia.save()
-                            return HttpResponse(
-                                "No pudimos hacerlo. Le acabamos de avisar al administrador "
-                                "para que se ponga en contacto con usted"
-                            )
-
+                        instancia.estado = EstadoInstancia.PENDIENTE
+                        instancia.save()
+                        SolicitudAprovisionamiento.objects.create(instancia=instancia)
                         suscripcion.instancia = instancia
                     DocumentoTributario.objects.create(
                         pago=pago,
