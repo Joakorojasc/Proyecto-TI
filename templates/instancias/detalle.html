@@ -15,6 +15,26 @@
     <p>Dirección web: {{ instancia.dominio_host|default:"Sin dominio" }}</p>
     <p>Versión: {{ instancia.version|default:"Sin versión" }}</p>
     <p>Creada el: {{ instancia.created_at|date:"d/m/Y" }}</p>
+    {% if suscripcion %}
+    <section>
+        <h2>Suscripción y pago</h2>
+        <p>Plan: {{ suscripcion.plan.nombre }}</p>
+        <p>Estado de la suscripción: {{ suscripcion.estado|capfirst }}</p>
+        {% if suscripcion.codigo_descuento %}
+        <p>
+            Código de descuento: {{ suscripcion.codigo_descuento.codigo }}
+            ({{ suscripcion.codigo_descuento.porcentaje }} %)
+        </p>
+        <p>Descuento: ${{ precio.descuento }}</p>
+        {% else %}
+        <p>Código de descuento: ninguno</p>
+        {% endif %}
+        <p>Precio a pagar: ${{ precio.precio_final }}</p>
+        {% if suscripcion.estado == "pendiente" %}
+        <a class="btn-crear-instancia" href="{% url 'pagos:checkout' suscripcion.pk %}">Ingresar tarjeta</a>
+        {% endif %}
+    </section>
+    {% endif %}
     {% if solicitud_aprovisionamiento %}
     <p>
         Estado de aprovisionamiento:

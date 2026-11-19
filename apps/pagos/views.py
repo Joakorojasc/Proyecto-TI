@@ -1,4 +1,3 @@
-from decimal import Decimal
 from secrets import token_urlsafe
 
 from django.contrib import messages
@@ -15,6 +14,7 @@ from apps.planes.models import Suscripcion
 
 from .forms import CheckoutSimuladoForm
 from .models import DocumentoTributario, MedioPago, Pago
+from .services import aplicar_descuento, precio_de_referencia
 
 
 def pagos_del_cliente(request: HttpRequest, cliente_id: int | None = None) -> QuerySet[Pago]:
@@ -47,10 +47,13 @@ def facturacion(request: HttpRequest) -> HttpResponse:
 @login_required(login_url="/login/")
 def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpResponse:
     suscripcion = get_object_or_404(
-        Suscripcion.objects.select_related("cliente", "plan"),
+        Suscripcion.objects.select_related("cliente", "plan", "codigo_descuento"),
         id=suscripcion_id,
     )
     cliente = get_cliente_autorizado(request, suscripcion.cliente_id)
+    detalle = aplicar_descuento(
+        precio_de_referencia(suscripcion.plan), suscripcion.codigo_descuento
+    )
     form = CheckoutSimuladoForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -71,11 +74,13 @@ def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpRespo
                 del medio_pago
                 pago = Pago.objects.create(
                     suscripcion=suscripcion,
-                    monto=Decimal("0.00"),
+                    monto=detalle.precio_final,
                     fecha_pago=timezone.now(),
                     estado=(
                         Pago.ESTADO_APROBADO if resultado == "aprobado" else Pago.ESTADO_RECHAZADO
                     ),
+                    codigo_descuento=detalle.codigo,
+                    monto_descuento=detalle.descuento if detalle.codigo else None,
                 )
                 if resultado == "aprobado":
                     DocumentoTributario.objects.create(
@@ -102,5 +107,6 @@ def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpRespo
             "cliente": cliente,
             "suscripcion": suscripcion,
             "form": form,
+            "detalle": detalle,
         },
     )

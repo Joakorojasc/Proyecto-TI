@@ -15,6 +15,14 @@
         </div>
         {% endif %}
 
+        <div class="plan-section">
+            <p>Precio base del plan: {{ detalle.precio_original|floatformat:2 }}</p>
+            {% if detalle.codigo %}
+            <p>Descuento ({{ detalle.codigo.codigo }}, {{ detalle.codigo.porcentaje }}%): -{{ detalle.descuento|floatformat:2 }}</p>
+            {% endif %}
+            <p><strong>Precio con descuento: {{ detalle.precio_final|floatformat:2 }}</strong></p>
+        </div>
+
         <form method="post">
             {% csrf_token %}
             {{ form.non_field_errors }}

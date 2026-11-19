@@ -162,8 +162,8 @@ class EstadosDeLaPantallaTests(TestCase):
 
         self.assertContains(respuesta, "Campus Uno")
         self.assertContains(respuesta, "Campus Dos")
-        # Cinco métricas por cada una de las dos instancias.
-        self.assertContains(respuesta, "Sin datos", count=10)
+        # Cuatro métricas por cada una de las dos instancias.
+        self.assertContains(respuesta, "Sin datos", count=8)
         self.assertContains(respuesta, "Todavía no hay mediciones")
         self.assertNotIn("resumen", respuesta.context)
         self.assertNotContains(respuesta, "Historial")
