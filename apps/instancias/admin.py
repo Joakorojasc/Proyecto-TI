@@ -1,8 +1,9 @@
+import re
 from typing import Any
 
 from django import forms
 from django.contrib import admin
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.http import HttpRequest
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -13,6 +14,7 @@ from django.utils.safestring import SafeString, mark_safe
 from apps.planes.models import Plan, Suscripcion
 
 from .consumo import con_datos_consumo
+from .forms import DOMINIO_BASE_EDOCERE, DOMINIO_PROPIO_RE, SUBDOMINIO_RE
 from .models import InstanciaMoodle
 
 InstanciaMoodle._meta.verbose_name = "instancia de Moodle"
@@ -52,13 +54,45 @@ class TipoDominioFilter(admin.SimpleListFilter):
 
 
 class InstanciaAltaForm(forms.ModelForm):
-    """Alta manual: pide el plan y evita planes negociados de otro cliente."""
+    """Alta manual: pide el plan, valida el dominio y evita planes de otro cliente."""
 
     plan = forms.ModelChoiceField(
         queryset=Plan.objects.all(),
         label="Plan",
         help_text="Un plan general, o el plan negociado de este mismo cliente.",
     )
+
+    def clean_nombre(self) -> str:
+        nombre = (self.cleaned_data.get("nombre") or "").strip()
+        if not nombre:
+            raise forms.ValidationError("El nombre de la plataforma no puede estar vacío.")
+        return nombre
+
+    def clean_dominio(self) -> str:
+        valor = (self.cleaned_data.get("dominio") or "").strip().lower()
+        host = re.sub(r"^https?://", "", valor).rstrip("/")
+        if not DOMINIO_PROPIO_RE.match(host):
+            raise forms.ValidationError(
+                "Ingresa un dominio válido, sin rutas, puertos ni espacios. "
+                "Por ejemplo: aula.duoc.cl."
+            )
+        if host == DOMINIO_BASE_EDOCERE:
+            raise forms.ValidationError(
+                "Ese dominio es de Edocere. Usa un subdominio, por ejemplo duoc.edocere.com."
+            )
+        if host.endswith(f".{DOMINIO_BASE_EDOCERE}"):
+            etiqueta = host[: -len(DOMINIO_BASE_EDOCERE) - 1]
+            if not SUBDOMINIO_RE.match(etiqueta) or "--" in etiqueta:
+                raise forms.ValidationError(
+                    "El nombre del subdominio debe usar minúsculas, números y guiones, "
+                    "sin empezar ni terminar con guion ni repetirlo seguido."
+                )
+        dominio = f"https://{host}"
+        if InstanciaMoodle.objects.filter(
+            Q(dominio__iexact=dominio) | Q(dominio__iexact=host)
+        ).exists():
+            raise forms.ValidationError("Ese dominio ya está en uso. Elige otro.")
+        return dominio
 
     def clean(self) -> dict[str, Any]:
         datos = super().clean() or {}

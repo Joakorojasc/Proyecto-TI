@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -8,6 +9,7 @@ from django.urls import reverse
 from apps.clientes import terminos
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.estadisticas.models import MedicionUsoMensual
+from apps.pagos.models import CodigoDescuento
 from apps.planes.models import Plan, Suscripcion
 
 from ..models import (
@@ -99,7 +101,6 @@ class ListaInstanciasViewTests(TestCase):
 
         assert self.plan_a.nombre is not None
         self.assertContains(respuesta, self.plan_a.nombre)
-        self.assertContains(respuesta, "Ingresar tarjeta")
 
     def test_suscripcion_historica_no_reemplaza_al_plan_activo(self) -> None:
         plan_historico = Plan.objects.create(nombre="Plan Histórico")
@@ -395,11 +396,65 @@ class DetalleInstanciaViewTests(TestCase):
             instancia=self.instancia_a,
             estado=EstadoAprovisionamiento.PENDIENTE,
         )
+    def crear_plan_con_suscripcion(
+        self, estado: str, codigo: CodigoDescuento | None = None
+    ) -> Suscripcion:
+        plan = (
+            codigo.plan
+            if codigo is not None and codigo.plan is not None
+            else Plan.objects.create(
+                nombre="Plan Anual A", tipo_plan="anual", precio_base=Decimal("100000")
+            )
+        )
+        return Suscripcion.objects.create(
+            cliente=self.cliente_a,
+            instancia=self.instancia_a,
+            plan=plan,
+            estado=estado,
+            codigo_descuento=codigo,
+        )
+
+    def test_detalle_muestra_plan_y_boton_de_pago_si_esta_pendiente(self) -> None:
+        suscripcion = self.crear_plan_con_suscripcion("pendiente")
         self.client.force_login(self.usuario_a)
 
         respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
 
         self.assertNotContains(respuesta, "No fue posible completar el aprovisionamiento")
+        self.assertContains(respuesta, "Suscripción y pago")
+        self.assertContains(respuesta, "Plan Anual A")
+        self.assertContains(respuesta, "Ingresar tarjeta")
+        self.assertContains(respuesta, reverse("pagos:checkout", args=[suscripcion.pk]))
+
+    def test_detalle_no_muestra_boton_de_pago_si_la_suscripcion_esta_activa(self) -> None:
+        self.crear_plan_con_suscripcion("activa")
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
+
+        self.assertContains(respuesta, "Suscripción y pago")
+        self.assertNotContains(respuesta, "Ingresar tarjeta")
+
+    def test_detalle_muestra_el_codigo_de_descuento_de_la_suscripcion(self) -> None:
+        plan = Plan.objects.create(
+            nombre="Plan Anual A", tipo_plan="anual", precio_base=Decimal("100000")
+        )
+        codigo = CodigoDescuento.objects.create(codigo="PUC20", plan=plan, porcentaje=20)
+        self.crear_plan_con_suscripcion("pendiente", codigo)
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
+
+        self.assertContains(respuesta, "PUC20")
+        self.assertContains(respuesta, "(20 %)")
+
+    def test_detalle_sin_suscripcion_no_muestra_la_seccion_de_pago(self) -> None:
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertNotContains(respuesta, "Suscripción y pago")
 
 
 class CreacionYReintentoAprovisionamientoTests(TestCase):

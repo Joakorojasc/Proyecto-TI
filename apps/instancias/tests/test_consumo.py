@@ -42,7 +42,7 @@ def test_datos_incompletos_y_tramo_gratuito() -> None:
 
 
 @pytest.mark.django_db
-def test_portal_y_admin_muestran_consumo_por_instancia(
+def test_admin_muestra_consumo_y_portal_aisla_clientes(
     client: Client, usuario_cliente: User, superadmin: User
 ) -> None:
     cliente = usuario_cliente.usuarioportal.cliente
@@ -72,14 +72,18 @@ def test_portal_y_admin_muestran_consumo_por_instancia(
     client.force_login(superadmin)
     admin = client.get(admin_url)
 
-    for respuesta in (portal, admin):
-        assert respuesta.status_code == 200
-        contenido = respuesta.content.decode()
-        assert "80 de 100 usuarios activos (80 %)" in contenido
-        assert "150 de 120 usuarios activos (125 %)" in contenido
-        assert "marzo 2026" in contenido.lower()
-        assert "consumo-instancia__barra--advertencia" in contenido
-        assert "consumo-instancia__barra--limite" in contenido
-        assert "1 de 100 usuarios activos" not in contenido
-    assert "33 de 500 usuarios activos" not in portal.content.decode()
-    assert "33 de 500 usuarios activos" in admin.content.decode()
+    contenido_portal = portal.content.decode()
+    assert portal.status_code == 200
+    assert "Campus A" in contenido_portal
+    assert "Campus B" in contenido_portal
+    assert "Campus ajeno" not in contenido_portal
+
+    contenido_admin = admin.content.decode()
+    assert admin.status_code == 200
+    assert "80 de 100 usuarios activos (80 %)" in contenido_admin
+    assert "150 de 120 usuarios activos (125 %)" in contenido_admin
+    assert "marzo 2026" in contenido_admin.lower()
+    assert "consumo-instancia__barra--advertencia" in contenido_admin
+    assert "consumo-instancia__barra--limite" in contenido_admin
+    assert "1 de 100 usuarios activos" not in contenido_admin
+    assert "33 de 500 usuarios activos" in contenido_admin
