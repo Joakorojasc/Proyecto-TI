@@ -358,7 +358,7 @@ class DetalleInstanciaViewTests(TestCase):
 
         self.assertContains(respuesta, "Creada el: 05/03/2026")
 
-    def test_detalle_muestra_reintento_solo_para_solicitud_fallida(self) -> None:
+    def test_detalle_muestra_aviso_si_solicitud_fallida_y_no_ofrece_reintento(self) -> None:
         solicitud = SolicitudAprovisionamiento.objects.create(
             instancia=self.instancia_a,
             estado=EstadoAprovisionamiento.FALLIDA,
@@ -367,12 +367,39 @@ class DetalleInstanciaViewTests(TestCase):
 
         respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
 
-        self.assertContains(respuesta, "Reintentar aprovisionamiento")
         self.assertContains(
             respuesta,
-            reverse("instancias:reintentar", args=[self.instancia_a.pk]),
+            "No fue posible completar el aprovisionamiento tras los reintentos automáticos.",
         )
+        self.assertContains(
+            respuesta,
+            "Se ha notificado al administrador de Edocere para que se ponga en contacto contigo.",
+        )
+        self.assertNotContains(respuesta, "Reintentar aprovisionamiento")
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.FALLIDA)
+
+    def test_detalle_muestra_aviso_si_instancia_fallida_sin_solicitud(self) -> None:
+        self.instancia_a.estado = EstadoInstancia.FAILED
+        self.instancia_a.save(update_fields=["estado"])
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
+
+        self.assertContains(
+            respuesta,
+            "No fue posible completar el aprovisionamiento tras los reintentos automáticos.",
+        )
+
+    def test_detalle_no_muestra_aviso_si_aprovisionamiento_no_fallo(self) -> None:
+        SolicitudAprovisionamiento.objects.create(
+            instancia=self.instancia_a,
+            estado=EstadoAprovisionamiento.PENDIENTE,
+        )
+        self.client.force_login(self.usuario_a)
+
+        respuesta = self.client.get(reverse("instancias:detalle", args=[self.instancia_a.pk]))
+
+        self.assertNotContains(respuesta, "No fue posible completar el aprovisionamiento")
 
 
 class CreacionYReintentoAprovisionamientoTests(TestCase):
@@ -380,6 +407,11 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         self.cliente_a = Cliente.objects.create(rut="77121212-3", razon_social="Cliente A")
         self.cliente_b = Cliente.objects.create(rut="77131313-2", razon_social="Cliente B")
         self.usuario_a = User.objects.create_user(username="usuario-a", password="Password123!")
+        self.usuario_staff = User.objects.create_user(
+            username="usuario-staff",
+            password="Password123!",
+            is_staff=True,
+        )
         UsuarioPortal.objects.create(usuario=self.usuario_a, cliente=self.cliente_a)
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="mensual")
         self.usuario_a.email = "usuario-a@cliente-a.test"
@@ -478,6 +510,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         self.assertFalse(SolicitudAprovisionamiento.objects.exists())
 
     def test_reintenta_solicitud_fallida_con_nueva_clave(self) -> None:
+        self.client.force_login(self.usuario_staff)
         instancia = InstanciaMoodle.objects.create(
             cliente=self.cliente_a,
             dominio="https://cliente-a.edocere.com",
@@ -512,6 +545,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         )
 
     def test_reintento_que_vuelve_a_fallar_mantiene_estado_fallido(self) -> None:
+        self.client.force_login(self.usuario_staff)
         instancia = InstanciaMoodle.objects.create(
             cliente=self.cliente_a,
             dominio="https://cliente-a.edocere.com",
@@ -548,6 +582,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         self.assertEqual(instancia.estado, EstadoInstancia.FAILED)
 
     def test_no_reintenta_si_ya_no_esta_fallida(self) -> None:
+        self.client.force_login(self.usuario_staff)
         instancia = InstanciaMoodle.objects.create(
             cliente=self.cliente_a,
             dominio="https://cliente-a.edocere.com",
@@ -567,6 +602,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
 
     def test_reintento_fallido_no_se_envia_si_pago_no_aprobado(self) -> None:
+        self.client.force_login(self.usuario_staff)
         instancia = InstanciaMoodle.objects.create(
             cliente=self.cliente_a,
             dominio="https://cliente-a.edocere.com",
@@ -598,10 +634,10 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.FALLIDA)
         self.assertIsNone(solicitud.operation_id)
 
-    def test_cliente_no_puede_reintentar_instancia_de_otro_cliente(self) -> None:
+    def test_cliente_no_puede_reintentar_ninguna_instancia(self) -> None:
         instancia = InstanciaMoodle.objects.create(
-            cliente=self.cliente_b,
-            dominio="https://cliente-b.edocere.com",
+            cliente=self.cliente_a,
+            dominio="https://cliente-a.edocere.com",
         )
         SolicitudAprovisionamiento.objects.create(
             instancia=instancia,
@@ -611,7 +647,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
 
         respuesta = self.client.post(url)
 
-        self.assertEqual(respuesta.status_code, 404)
+        self.assertEqual(respuesta.status_code, 403)
 
     def test_reintento_solo_acepta_post(self) -> None:
         instancia = InstanciaMoodle.objects.create(
@@ -629,6 +665,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         self.assertEqual(respuesta.status_code, 405)
 
     def test_reintento_no_crea_operacion_concurrente(self) -> None:
+        self.client.force_login(self.usuario_staff)
         instancia = InstanciaMoodle.objects.create(
             cliente=self.cliente_a,
             dominio="https://cliente-a.edocere.com",
