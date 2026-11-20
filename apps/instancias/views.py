@@ -249,6 +249,11 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
     context_object_name = "instancia"
     login_url = "/login/"
 
+    def get_queryset(self) -> QuerySet[InstanciaMoodle]:
+        if self.request.user.is_staff:
+            return InstanciaMoodle.objects.all()
+        return super().get_queryset()
+
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
         context = super().get_context_data(**kwargs)
         instancia = self.object
