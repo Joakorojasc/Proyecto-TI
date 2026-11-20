@@ -396,6 +396,7 @@ class DetalleInstanciaViewTests(TestCase):
             instancia=self.instancia_a,
             estado=EstadoAprovisionamiento.PENDIENTE,
         )
+
     def crear_plan_con_suscripcion(
         self, estado: str, codigo: CodigoDescuento | None = None
     ) -> Suscripcion:
