@@ -193,7 +193,7 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
                 request,
                 "Solo se pueden reintentar solicitudes de aprovisionamiento fallidas.",
             )
-            return redirect("instancias:detalle", pk=instancia.pk)
+            return redirect("admin:index")
         if (
             SolicitudAprovisionamiento.objects.filter(
                 instancia=instancia,
@@ -209,7 +209,7 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
                 request,
                 "Ya existe otra operación de aprovisionamiento en curso para esta instancia.",
             )
-            return redirect("instancias:detalle", pk=instancia.pk)
+            return redirect("admin:index")
 
         suscripcion = (
             Suscripcion.objects.filter(instancia=instancia, cliente_id=instancia.cliente_id)
@@ -226,7 +226,7 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
                 request,
                 "No se puede reintentar hasta que el pago esté aprobado.",
             )
-            return redirect("instancias:detalle", pk=instancia.pk)
+            return redirect("admin:index")
 
         solicitud.estado = EstadoAprovisionamiento.PENDIENTE
         solicitud.operation_id = None
@@ -250,7 +250,7 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
             "El reintento fue aceptado y está pendiente de aprovisionamiento.",
         )
 
-    return redirect("instancias:detalle", pk=instancia.pk)
+    return redirect("admin:index")
 
 
 class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailView):
@@ -258,11 +258,6 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
     template_name = "instancias/detalle.html"
     context_object_name = "instancia"
     login_url = "/login/"
-
-    def get_queryset(self) -> QuerySet[InstanciaMoodle]:
-        if self.request.user.is_staff:
-            return InstanciaMoodle.objects.all()
-        return super().get_queryset()
 
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
         context = super().get_context_data(**kwargs)

@@ -590,7 +590,7 @@ class CreacionYReintentoAprovisionamientoTests(TestCase):
         ):
             respuesta = self.client.post(url)
 
-        self.assertRedirects(respuesta, reverse("instancias:detalle", args=[instancia.pk]))
+        self.assertRedirects(respuesta, reverse("admin:index"))
         solicitud.refresh_from_db()
         self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
         self.assertEqual(solicitud.operation_id, f"SIM-{instancia.pk}")
