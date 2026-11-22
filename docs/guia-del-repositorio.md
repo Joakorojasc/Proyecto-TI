@@ -58,6 +58,10 @@ cliente de Edocere.
 
 El resto de esta guía sigue ese orden.
 
+Para la propuesta de conexión de la pasarela y la emisión de DTE, y sus
+requisitos antes de producción, consulta
+[Integración de pagos y DTE](integracion-pasarela-y-dte.md).
+
 ---
 
 ## Levantarlo en tu computador
