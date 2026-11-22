@@ -1,29 +1,171 @@
+import re
 from typing import Any
 
+from django import forms
 from django.contrib import admin
+from django.db.models import Q, QuerySet
 from django.http import HttpRequest
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.html import format_html
+from django.utils.safestring import SafeString, mark_safe
 
-from .models import InstanciaMoodle, SolicitudAprovisionamiento
+from apps.planes.models import Plan, Suscripcion
 
-admin.site.register(InstanciaMoodle)
+from .consumo import con_datos_consumo
+from .forms import DOMINIO_BASE_EDOCERE, DOMINIO_PROPIO_RE, SUBDOMINIO_RE
+from .models import InstanciaMoodle
+
+InstanciaMoodle._meta.verbose_name = "instancia de Moodle"
+InstanciaMoodle._meta.verbose_name_plural = "instancias de Moodle"
 
 
-@admin.register(SolicitudAprovisionamiento)
-class SolicitudAprovisionamientoAdmin(admin.ModelAdmin):
-    list_display = ("instancia", "estado", "intentos", "updated_at")
-    list_filter = ("estado",)
-    readonly_fields = (
-        "instancia",
-        "estado",
-        "intentos",
-        "operation_id",
-        "idempotency_key",
-        "created_at",
-        "updated_at",
+class SuscripcionInline(admin.TabularInline):
+    model = Suscripcion
+    extra = 0
+    can_delete = False
+    show_change_link = True
+    fields = ("plan", "estado", "fecha_inicio")
+    readonly_fields = fields
+    verbose_name_plural = "Suscripciones"
+
+    def has_add_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return False
+
+
+class TipoDominioFilter(admin.SimpleListFilter):
+    title = "tipo de dominio"
+    parameter_name = "tipo_dominio"
+
+    def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
+        return [("edocere", "Dominio de Edocere"), ("propio", "Dominio propio")]
+
+    def queryset(
+        self, request: HttpRequest, queryset: QuerySet[InstanciaMoodle]
+    ) -> QuerySet[InstanciaMoodle]:
+        valor = self.value()
+        if valor not in ("edocere", "propio"):
+            return queryset
+        ids_edocere = [i.pk for i in queryset if i.es_subdominio_edocere]
+        if valor == "edocere":
+            return queryset.filter(pk__in=ids_edocere)
+        return queryset.exclude(pk__in=ids_edocere)
+
+
+class InstanciaAltaForm(forms.ModelForm):
+    """Alta manual: pide el plan, valida el dominio y evita planes de otro cliente."""
+
+    plan = forms.ModelChoiceField(
+        queryset=Plan.objects.all(),
+        label="Plan",
+        help_text="Un plan general, o el plan negociado de este mismo cliente.",
     )
 
-    def has_add_permission(self, request: HttpRequest) -> bool:
-        return False
+    def clean_nombre(self) -> str:
+        nombre = (self.cleaned_data.get("nombre") or "").strip()
+        if not nombre:
+            raise forms.ValidationError("El nombre de la plataforma no puede estar vacío.")
+        return nombre
 
-    def has_delete_permission(self, request: HttpRequest, obj: Any = None) -> bool:
-        return False
+    def clean_dominio(self) -> str:
+        valor = (self.cleaned_data.get("dominio") or "").strip().lower()
+        host = re.sub(r"^https?://", "", valor).rstrip("/")
+        if not DOMINIO_PROPIO_RE.match(host):
+            raise forms.ValidationError(
+                "Ingresa un dominio válido, sin rutas, puertos ni espacios. "
+                "Por ejemplo: aula.duoc.cl."
+            )
+        if host == DOMINIO_BASE_EDOCERE:
+            raise forms.ValidationError(
+                "Ese dominio es de Edocere. Usa un subdominio, por ejemplo duoc.edocere.com."
+            )
+        if host.endswith(f".{DOMINIO_BASE_EDOCERE}"):
+            etiqueta = host[: -len(DOMINIO_BASE_EDOCERE) - 1]
+            if not SUBDOMINIO_RE.match(etiqueta) or "--" in etiqueta:
+                raise forms.ValidationError(
+                    "El nombre del subdominio debe usar minúsculas, números y guiones, "
+                    "sin empezar ni terminar con guion ni repetirlo seguido."
+                )
+        dominio = f"https://{host}"
+        if InstanciaMoodle.objects.filter(
+            Q(dominio__iexact=dominio) | Q(dominio__iexact=host)
+        ).exists():
+            raise forms.ValidationError("Ese dominio ya está en uso. Elige otro.")
+        return dominio
+
+    def clean(self) -> dict[str, Any]:
+        datos = super().clean() or {}
+        cliente = datos.get("cliente")
+        plan = datos.get("plan")
+        if cliente is None or plan is None:
+            return datos
+        if plan.cliente_id not in (None, cliente.pk):
+            self.add_error(
+                "plan",
+                "Este plan negociado pertenece a otro cliente. "
+                "Elige un plan general o uno de este cliente.",
+            )
+        return datos
+
+
+@admin.register(InstanciaMoodle)
+class InstanciaMoodleAdmin(admin.ModelAdmin):
+    list_display = (
+        "nombre_instancia",
+        "enlace_cliente",
+        "dominio",
+        "version",
+        "estado",
+        "created_at",
+        "consumo",
+    )
+    list_select_related = ("cliente",)
+    search_fields = ("nombre",)
+    list_filter = ("estado", TipoDominioFilter)
+    inlines = [SuscripcionInline]
+
+    class Media:
+        css = {"all": ("css/consumo_instancia.css",)}
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet[InstanciaMoodle]:
+        return con_datos_consumo(super().get_queryset(request))
+
+    @admin.display(description="Consumo de usuarios")
+    def consumo(self, instancia: InstanciaMoodle) -> str:
+        contenido = render_to_string(
+            "instancias/consumo.html", {"consumo": instancia.consumo_usuarios}
+        )
+        return mark_safe(contenido)
+
+    @admin.display(description="Instancia", ordering="nombre")
+    def nombre_instancia(self, obj: InstanciaMoodle) -> str:
+        return str(obj)
+
+    @admin.display(description="Cliente", ordering="cliente__razon_social")
+    def enlace_cliente(self, obj: InstanciaMoodle) -> str | SafeString:
+        cliente = obj.cliente
+        etiqueta = cliente.razon_social or cliente.rut_formateado or f"Cliente {cliente.pk}"
+        url = reverse("admin:clientes_cliente_change", args=[cliente.pk])
+        return format_html('<a href="{}">{}</a>', url, etiqueta)
+
+    def get_form(
+        self, request: HttpRequest, obj: Any | None = None, change: bool = False, **kwargs: Any
+    ) -> Any:
+        if obj is None:
+            kwargs["form"] = InstanciaAltaForm
+        return super().get_form(request, obj, change=change, **kwargs)
+
+    def save_model(
+        self, request: HttpRequest, obj: InstanciaMoodle, form: Any, change: bool
+    ) -> None:
+        super().save_model(request, obj, form, change)
+        if change:
+            return
+        Suscripcion.objects.create(
+            instancia=obj,
+            cliente=obj.cliente,
+            plan=form.cleaned_data["plan"],
+            estado="activa",
+            fecha_inicio=timezone.now(),
+        )

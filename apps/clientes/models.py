@@ -30,6 +30,9 @@ class Cliente(models.Model):
 
     objects = ClienteManager()
 
+    def __str__(self) -> str:
+        return self.razon_social or self.rut or f"Cliente {self.pk}"
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.clean()
         super().save(*args, **kwargs)
@@ -64,6 +67,9 @@ class UsuarioPortal(models.Model):
     email = models.CharField(max_length=255, null=True)
     rol = models.CharField(max_length=255, null=True)
 
+    def __str__(self) -> str:
+        return self.nombre or self.email or f"Usuario del portal {self.pk}"
+
 
 class AceptacionTerminos(models.Model):
     cliente = models.ForeignKey(
@@ -72,6 +78,9 @@ class AceptacionTerminos(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     version_documento = models.CharField(max_length=80)
     fecha_aceptacion = models.DateTimeField(auto_now_add=True)
+    # Cuándo se abrió el PDF en la sesión que aceptó. Queda nulo en las
+    # aceptaciones anteriores a este control.
+    fecha_documento_abierto = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [

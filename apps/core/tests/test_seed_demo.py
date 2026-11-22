@@ -7,7 +7,7 @@ from apps.clientes.models import Cliente, UsuarioPortal
 from apps.clientes.validators import normalizar_rut
 from apps.estadisticas.models import MedicionUsoMensual
 from apps.instancias.models import InstanciaMoodle
-from apps.planes.models import Suscripcion
+from apps.planes.models import Plan, Suscripcion
 
 
 class SeedDemoTests(TestCase):
@@ -18,6 +18,14 @@ class SeedDemoTests(TestCase):
         self.assertEqual(Cliente.objects.count(), 3)
         self.assertEqual(InstanciaMoodle.objects.count(), 4)
         self.assertEqual(Suscripcion.objects.count(), 4)
+        self.assertEqual(
+            list(
+                Plan.objects.filter(tipo_plan__iexact="anual").values_list(
+                    "limite_usuarios", flat=True
+                )
+            ),
+            [1000],
+        )
 
         dominios = {
             "pequena.demo.invalid",
@@ -38,6 +46,20 @@ class SeedDemoTests(TestCase):
         for cliente in Cliente.objects.all():
             assert cliente.rut is not None
             self.assertEqual(cliente.rut, normalizar_rut(cliente.rut))
+
+    def test_seed_llena_las_metricas_con_numeros_coherentes(self) -> None:
+        call_command("seed_demo", verbosity=0)
+
+        mediciones = MedicionUsoMensual.objects.all()
+        self.assertTrue(mediciones.exists())
+        for medicion in mediciones:
+            with self.subTest(medicion=medicion.pk):
+                assert medicion.usuarios_inscritos is not None
+                assert medicion.usuarios_activos is not None
+                assert medicion.total_matriculas is not None
+                # Nadie puede estar activo sin estar inscrito.
+                self.assertGreaterEqual(medicion.usuarios_inscritos, medicion.usuarios_activos)
+                self.assertGreater(medicion.total_matriculas, 0)
 
     def test_seed_actualiza_rut_historico_sin_recrear_clientes_o_relaciones(self) -> None:
         call_command("seed_demo", verbosity=0)

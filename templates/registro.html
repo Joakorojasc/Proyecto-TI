@@ -26,17 +26,24 @@
     <div class="auth-formulario">
     <div class="auth-card auth-card-wide">
         <h2>Registrar Nueva Institución</h2>
-        <form method="post" novalidate>
+
+        {% if user_form.errors or empresa_form.errors %}
+        <p class="form-alerta" role="alert">
+            Hay uno o más errores en el registro. Revisa los campos marcados en rojo.
+        </p>
+        {% endif %}
+
+        <form method="post" novalidate data-exige-terminos{% if documento_abierto %} data-terminos-abiertos{% endif %}>
             {% csrf_token %}
 
             <div class="form-section">
                 <h3>Datos de Acceso</h3>
-                {{ user_form.as_p }}
+                {% include "clientes/campos_formulario.html" with form=user_form only %}
             </div>
 
             <div class="form-section">
                 <h3>Datos de la Institución</h3>
-                {% include "clientes/formulario_con_terminos.html" with form=empresa_form only %}
+                {% include "clientes/campos_formulario.html" with form=empresa_form only %}
             </div>
 
             <button type="submit">Crear Cuenta</button>
@@ -49,4 +56,8 @@
     </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/terminos.js' %}?v=2" defer></script>
 {% endblock %}

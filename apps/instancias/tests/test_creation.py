@@ -1,20 +1,47 @@
+from unittest.mock import Mock
+
 from django.contrib.auth.models import User
-from django.http import HttpResponseBase
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.clientes import terminos
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.planes.models import Plan, Suscripcion
 
-from ..models import InstanciaMoodle
+from ..models import (
+    EstadoAprovisionamiento,
+    EstadoInstancia,
+    InstanciaMoodle,
+    SolicitudAprovisionamiento,
+    TipoOperacion,
+)
+from ..services import (
+    ACTOR_ASSERTION_HEADER,
+    OPERATIONS_URL,
+    SIMULATED_ACTOR_ASSERTION,
+    AprovisionamientoError,
+    AprovisionamientoService,
+    RespuestaAprovisionamiento,
+    SimuladorAprovisionamientoAPI,
+)
 
 
 class CrearInstanciaViewTests(TestCase):
     def setUp(self) -> None:
         self.cliente = Cliente.objects.create(rut="77020202-7", razon_social="Empresa Demo")
         self.otro_cliente = Cliente.objects.create(rut="77030303-6", razon_social="Otra Empresa")
-        usuario = User.objects.create_user(username="propietario")
-        UsuarioPortal.objects.create(usuario=usuario, cliente=self.cliente)
+        usuario = User.objects.create_user(
+            username="propietario",
+            email="propietario@demo.cl",
+            first_name="Persona",
+            last_name="Propietaria",
+        )
+        UsuarioPortal.objects.create(
+            usuario=usuario,
+            cliente=self.cliente,
+            email="propietario@demo.cl",
+        )
+        terminos.registrar_aceptacion(self.cliente, usuario, terminos.VERSION_TERMINOS)
         self.client.force_login(usuario)
         self.plan = Plan.objects.create(nombre="Plan Mensual", tipo_plan="Mensual")
         self.url = reverse(
@@ -22,18 +49,39 @@ class CrearInstanciaViewTests(TestCase):
             kwargs={"cliente_id": self.cliente.id, "plan_id": self.plan.id},
         )
 
-    def crear_y_aprobar_instancia(self, datos: dict[str, str]) -> HttpResponseBase:
-        respuesta = self.client.post(self.url, datos)
-        self.assertEqual(respuesta.status_code, 302)
-        suscripcion = Suscripcion.objects.get()
-        return self.client.post(
-            reverse("pagos:checkout", kwargs={"suscripcion_id": suscripcion.id}),
-            {
-                "ultimos_4_digitos": "4242",
-                "marca_tarjeta": "Visa",
-                "resultado": "aprobado",
-            },
+    def test_choices_incluyen_el_vocabulario_de_estado_y_operacion_rc3(self) -> None:
+        estados_rc3 = {
+            "PENDING",
+            "ACTIVE",
+            "FAILED",
+            "DEPROVISIONED",
+            "SUSPENDED",
+            "RECOVERING",
+            "RECOVERY_FAILED",
+            "RESTORING",
+            "RESTORE_FAILED",
+            "PURGING",
+            "PURGE_FAILED",
+            "PURGED",
+        }
+        operaciones_rc3 = {
+            "PROVISION",
+            "DEPROVISION",
+            "BACKUP",
+            "RESTORE",
+            "CLONE",
+            "SUSPEND",
+            "REACTIVATE",
+            "RECOVER",
+            "UPDATE_BRANDING",
+        }
+
+        self.assertTrue(estados_rc3.issubset({value for value, _ in EstadoInstancia.choices}))
+        self.assertEqual(
+            {value for value, _ in EstadoInstancia.choices},
+            estados_rc3,
         )
+        self.assertTrue(operaciones_rc3.issubset({value for value, _ in TipoOperacion.choices}))
 
     def test_muestra_formulario_con_datos_del_cliente_y_plan(self) -> None:
         response = self.client.get(self.url)
@@ -49,66 +97,212 @@ class CrearInstanciaViewTests(TestCase):
         self.assertContains(response, self.plan.nombre)
 
     def test_crea_instancia_con_direccion_de_edocere(self) -> None:
-        response = self.crear_y_aprobar_instancia(
+        response = self.client.post(
+            self.url,
             {
-                "nombre": "CampusDuoc",
+                "nombre": "Campus Duoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "dominio_propio": "",
                 "logo_url": "https://empresa.cl/logo.png",
-            }
+            },
         )
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], reverse("instancias:lista"))
         instancia = InstanciaMoodle.objects.get()
         self.assertEqual(instancia.cliente, self.cliente)
-        self.assertEqual(instancia.nombre, "CampusDuoc")
+        self.assertEqual(instancia.nombre, "Campus Duoc")
         self.assertEqual(instancia.dominio, "https://duoc.edocere.com")
         self.assertEqual(instancia.logo_url, "https://empresa.cl/logo.png")
-        self.assertEqual(instancia.estado, "pendiente")
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDING)
+        solicitud = SolicitudAprovisionamiento.objects.get(instancia=instancia)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+        self.assertIsNone(solicitud.operation_id)
+        self.assertTrue(solicitud.idempotency_key)
         suscripcion = Suscripcion.objects.get(instancia=instancia)
         self.assertEqual(suscripcion.cliente, self.cliente)
         self.assertEqual(suscripcion.plan, self.plan)
-        self.assertEqual(suscripcion.estado, "activa")
+        self.assertEqual(suscripcion.estado, "pendiente")
         self.assertIsNotNone(suscripcion.fecha_inicio)
 
-    def test_crea_instancia_con_dominio_propio(self) -> None:
-        response = self.crear_y_aprobar_instancia(
+    def test_servicio_envia_contrato_y_persiste_aceptacion(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente,
+            dominio="https://campus.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
+        proveedor = Mock()
+        proveedor.enviar_solicitud.return_value = RespuestaAprovisionamiento(
+            status_code=202,
+            body={"operation_id": "SIM-42", "status": "PENDING"},
+        )
+        servicio = AprovisionamientoService(proveedor)
+        password_hash = User.objects.get(username="propietario").password
+
+        respuesta = servicio.enviar_solicitud(solicitud)
+        llamada = proveedor.enviar_solicitud.call_args
+        assert llamada is not None
+        payload = llamada.args[0]
+
+        self.assertEqual(
+            {key: value for key, value in payload.items() if key != "manager"},
             {
-                "nombre": "AulaDuoc",
+                "operation_type": "PROVISION",
+                "tenant_slug": f"tenant-{instancia.pk}",
+                "hostname": "campus.edocere.com",
+                "owner_ref": str(self.cliente.pk),
+                "language": "es",
+            },
+        )
+        manager = payload["manager"]
+        self.assertIsInstance(manager, dict)
+        assert isinstance(manager, dict)
+        password = manager["password"]
+        self.assertEqual(
+            {key: value for key, value in manager.items() if key != "password"},
+            {
+                "username": "propietario",
+                "firstname": "Persona",
+                "lastname": "Propietaria",
+                "email": "propietario@demo.cl",
+            },
+        )
+        self.assertIsInstance(password, str)
+        self.assertTrue(password)
+        self.assertEqual(User.objects.get(username="propietario").password, password_hash)
+        tenant_slug = payload["tenant_slug"]
+        self.assertIsInstance(tenant_slug, str)
+        assert isinstance(tenant_slug, str)
+        self.assertLessEqual(len(tenant_slug), 63)
+        self.assertRegex(tenant_slug, r"^[a-z0-9]+(-[a-z0-9]+)*$")
+        proveedor.enviar_solicitud.assert_called_once_with(
+            payload,
+            idempotency_key=str(solicitud.idempotency_key),
+            url=OPERATIONS_URL,
+            headers={ACTOR_ASSERTION_HEADER: SIMULATED_ACTOR_ASSERTION},
+        )
+        self.assertEqual(respuesta.status_code, 202)
+        self.assertEqual(respuesta.body["status"], "PENDING")
+        solicitud.refresh_from_db()
+        instancia.refresh_from_db()
+        self.assertEqual(solicitud.operation_id, "SIM-42")
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+        self.assertEqual(instancia.estado, EstadoInstancia.PENDING)
+
+    def test_rechaza_tenant_slug_mayor_a_63_caracteres(self) -> None:
+        with self.assertRaises(AprovisionamientoError):
+            AprovisionamientoService.construir_tenant_slug(10**63)
+
+    def test_respuesta_no_202_no_persiste_una_operacion(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente,
+            dominio="https://campus.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
+        proveedor = Mock()
+        proveedor.enviar_solicitud.return_value = RespuestaAprovisionamiento(
+            status_code=503,
+            body={"operation_id": "SIM-42", "status": "PENDING"},
+        )
+
+        with self.assertRaises(AprovisionamientoError):
+            AprovisionamientoService(proveedor).enviar_solicitud(solicitud)
+
+        solicitud.refresh_from_db()
+        self.assertIsNone(solicitud.operation_id)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+
+    def test_respuesta_202_mal_formada_no_persiste_una_operacion(self) -> None:
+        instancia = InstanciaMoodle.objects.create(
+            cliente=self.cliente,
+            dominio="https://campus.edocere.com",
+        )
+        solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
+        proveedor = Mock()
+        proveedor.enviar_solicitud.return_value = RespuestaAprovisionamiento(
+            status_code=202,
+            body={"operation_id": "SIM-42", "status": "RUNNING"},
+        )
+
+        with self.assertRaises(AprovisionamientoError):
+            AprovisionamientoService(proveedor).enviar_solicitud(solicitud)
+
+        solicitud.refresh_from_db()
+        self.assertIsNone(solicitud.operation_id)
+        self.assertEqual(solicitud.estado, EstadoAprovisionamiento.PENDIENTE)
+
+    def test_simulador_responde_con_aceptacion_asincrona(self) -> None:
+        simulador = SimuladorAprovisionamientoAPI()
+        respuesta = simulador.enviar_solicitud(
+            {
+                "operation_type": "PROVISION",
+                "tenant_slug": "tenant-42",
+                "hostname": "campus.edocere.com",
+                "owner_ref": str(self.cliente.pk),
+            },
+            idempotency_key="test-key",
+            url=OPERATIONS_URL,
+            headers={ACTOR_ASSERTION_HEADER: SIMULATED_ACTOR_ASSERTION},
+        )
+        repeticion = simulador.enviar_solicitud(
+            {
+                "operation_type": "PROVISION",
+                "tenant_slug": "tenant-99",
+                "hostname": "otro.edocere.com",
+                "owner_ref": str(self.cliente.pk),
+            },
+            idempotency_key="test-key",
+            url=OPERATIONS_URL,
+            headers={ACTOR_ASSERTION_HEADER: SIMULATED_ACTOR_ASSERTION},
+        )
+
+        self.assertEqual(respuesta.status_code, 202)
+        self.assertEqual(
+            respuesta.body,
+            {"operation_id": "SIM-42", "status": "PENDING"},
+        )
+        self.assertIs(repeticion, respuesta)
+
+    def test_crea_instancia_con_dominio_propio(self) -> None:
+        response = self.client.post(
+            self.url,
+            {
+                "nombre": "Aula Duoc",
                 "tipo_dominio": "propio",
                 "subdominio": "",
                 "dominio_propio": "aula.duoc.cl",
                 "logo_url": "",
-            }
+            },
         )
 
         self.assertEqual(response.status_code, 302)
         instancia = InstanciaMoodle.objects.get()
-        self.assertEqual(instancia.nombre, "AulaDuoc")
+        self.assertEqual(instancia.nombre, "Aula Duoc")
         self.assertEqual(instancia.dominio, "https://aula.duoc.cl")
 
     def test_dominio_propio_acepta_https_y_barra_final(self) -> None:
-        self.crear_y_aprobar_instancia(
+        self.client.post(
+            self.url,
             {
-                "nombre": "AulaDuoc",
+                "nombre": "Aula Duoc",
                 "tipo_dominio": "propio",
                 "dominio_propio": "HTTPS://Aula.Duoc.cl/",
                 "logo_url": "",
-            }
+            },
         )
 
         self.assertEqual(InstanciaMoodle.objects.get().dominio, "https://aula.duoc.cl")
 
     def test_logo_es_opcional(self) -> None:
-        response = self.crear_y_aprobar_instancia(
+        response = self.client.post(
+            self.url,
             {
-                "nombre": "CampusDuoc",
+                "nombre": "Campus Duoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "logo_url": "",
-            }
+            },
         )
 
         self.assertEqual(response.status_code, 302)
@@ -135,7 +329,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "CampusDuoc",
+                "nombre": "Campus Duoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "Mi Empresa!",
                 "logo_url": "",
@@ -151,7 +345,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "AulaDuoc",
+                "nombre": "Aula Duoc",
                 "tipo_dominio": "propio",
                 "dominio_propio": "not a valid url",
                 "logo_url": "",
@@ -167,7 +361,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "AulaDuoc",
+                "nombre": "Aula Duoc",
                 "tipo_dominio": "propio",
                 "dominio_propio": "algo.edocere.com",
                 "logo_url": "",
@@ -187,7 +381,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "CampusDuoc",
+                "nombre": "Campus Duoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "logo_url": "",
@@ -203,7 +397,7 @@ class CrearInstanciaViewTests(TestCase):
         response = self.client.post(
             self.url,
             {
-                "nombre": "CampusDuoc",
+                "nombre": "Campus Duoc",
                 "tipo_dominio": "edocere",
                 "subdominio": "duoc",
                 "logo_url": "not a valid url",

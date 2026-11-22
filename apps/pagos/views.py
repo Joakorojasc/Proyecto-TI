@@ -1,4 +1,3 @@
-from decimal import Decimal
 from secrets import token_urlsafe
 
 from django.contrib import messages
@@ -7,15 +6,15 @@ from django.db import transaction
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.clientes.mixins import get_cliente_autorizado
-from apps.instancias.forms import CrearInstanciaForm
-from apps.instancias.models import EstadoInstancia, SolicitudAprovisionamiento
 from apps.planes.models import Suscripcion
 
 from .forms import CheckoutSimuladoForm
 from .models import DocumentoTributario, MedioPago, Pago
+from .services import aplicar_descuento, precio_de_referencia
 
 
 def pagos_del_cliente(request: HttpRequest, cliente_id: int | None = None) -> QuerySet[Pago]:
@@ -48,10 +47,13 @@ def facturacion(request: HttpRequest) -> HttpResponse:
 @login_required(login_url="/login/")
 def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpResponse:
     suscripcion = get_object_or_404(
-        Suscripcion.objects.select_related("cliente", "plan"),
+        Suscripcion.objects.select_related("cliente", "plan", "codigo_descuento"),
         id=suscripcion_id,
     )
     cliente = get_cliente_autorizado(request, suscripcion.cliente_id)
+    detalle = aplicar_descuento(
+        precio_de_referencia(suscripcion.plan), suscripcion.codigo_descuento
+    )
     form = CheckoutSimuladoForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -72,49 +74,22 @@ def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpRespo
                 del medio_pago
                 pago = Pago.objects.create(
                     suscripcion=suscripcion,
-                    monto=Decimal("0.00"),
+                    monto=detalle.precio_final,
                     fecha_pago=timezone.now(),
                     estado=(
                         Pago.ESTADO_APROBADO if resultado == "aprobado" else Pago.ESTADO_RECHAZADO
                     ),
+                    codigo_descuento=detalle.codigo,
+                    monto_descuento=detalle.descuento if detalle.codigo else None,
                 )
                 if resultado == "aprobado":
-                    datos_instancia = request.session.get(f"checkout_instancia_{suscripcion.pk}")
-                    if datos_instancia is not None:
-                        instancia_form = CrearInstanciaForm(data=datos_instancia)
-                        if not instancia_form.is_valid():
-                            form.add_error(
-                                None,
-                                "Los datos de la instancia ya no son válidos. "
-                                "Vuelve a iniciar la contratación.",
-                            )
-                            return render(
-                                request,
-                                "pagos/checkout.html",
-                                {
-                                    "cliente": cliente,
-                                    "suscripcion": suscripcion,
-                                    "form": form,
-                                },
-                            )
-                        instancia = instancia_form.save(commit=False)
-                        instancia.cliente = cliente
-                        instancia.estado = EstadoInstancia.PENDIENTE
-                        instancia.save()
-                        SolicitudAprovisionamiento.objects.create(instancia=instancia)
-                        suscripcion.instancia = instancia
                     DocumentoTributario.objects.create(
                         pago=pago,
                         tipo_documento="comprobante simulado",
                         folio=pago.id,
                     )
                     suscripcion.estado = "activa"
-                    suscripcion.fecha_inicio = timezone.now()
-                    update_fields = ["estado", "fecha_inicio"]
-                    if datos_instancia is not None:
-                        update_fields.append("instancia")
-                        del request.session[f"checkout_instancia_{suscripcion.pk}"]
-                    suscripcion.save(update_fields=update_fields)
+                    suscripcion.save(update_fields=["estado"])
                     messages.success(request, "Pago aprobado y comprobante generado.")
                 else:
                     suscripcion.estado = "pendiente"
@@ -123,9 +98,7 @@ def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpRespo
                         request,
                         "Pago rechazado: el medio de pago no fue aprobado. Puedes reintentar.",
                     )
-            if resultado == "aprobado":
-                return redirect("instancias:lista")
-            return redirect("pagos:checkout", suscripcion_id=suscripcion.pk)
+            return redirect(f"{reverse('seccion_facturacion')}?cliente_id={cliente.id}")
 
     return render(
         request,
@@ -134,5 +107,6 @@ def checkout_suscripcion(request: HttpRequest, suscripcion_id: int) -> HttpRespo
             "cliente": cliente,
             "suscripcion": suscripcion,
             "form": form,
+            "detalle": detalle,
         },
     )

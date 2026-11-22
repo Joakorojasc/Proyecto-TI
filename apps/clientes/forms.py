@@ -12,6 +12,10 @@ from .validators import normalizar_rut
 
 
 class AceptacionTerminosForm(forms.Form):
+    # La vista lo cambia a True cuando la sesión registra que se abrió el PDF.
+    # Por defecto en False, así un formulario armado a mano tampoco se salta el paso.
+    documento_abierto = False
+
     acepta_terminos = forms.BooleanField(
         label="He leído y acepto los términos y condiciones de Edocere.",
         required=True,
@@ -28,8 +32,9 @@ class AceptacionTerminosForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["version_terminos"].initial = terminos.VERSION_TERMINOS
         self.fields["acepta_terminos"].help_text = format_html(
-            '<a href="{}" target="_blank" rel="noopener">Leer el documento completo '
-            "de términos y condiciones (PDF, se abre en otra pestaña)</a>.",
+            '<a class="terminos-enlace" data-abre-terminos href="{}" target="_blank" '
+            'rel="noopener">Leer el documento completo de términos y condiciones '
+            "(PDF, se abre en otra pestaña)</a>.",
             reverse("documento_terminos", kwargs={"version": terminos.VERSION_TERMINOS}),
         )
 
@@ -41,6 +46,10 @@ class AceptacionTerminosForm(forms.Form):
             raise forms.ValidationError(
                 self.fields["acepta_terminos"].error_messages["required"], code="required"
             )
+        # La casilla sola no sirve de prueba: el documento tiene que haberse
+        # pedido al servidor en esta sesión.
+        if not self.documento_abierto:
+            raise forms.ValidationError(terminos.ERROR_SIN_ABRIR, code="documento_sin_abrir")
         return True
 
 
@@ -105,6 +114,12 @@ class UsuarioRegistroForm(UserCreationForm):
         max_length=150,
         widget=forms.EmailInput(attrs={"placeholder": "nombre@empresa.cl"}),
     )
+    first_name = forms.CharField(label="Nombre", max_length=150)
+    last_name = forms.CharField(label="Apellido", max_length=150)
+
+    class Meta:
+        model = User
+        fields = ("username", "first_name", "last_name")
 
     def clean_username(self) -> str:
         correo: str = self.cleaned_data["username"].strip().lower()

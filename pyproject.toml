@@ -29,10 +29,20 @@ django_settings_module = "config.settings.test"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["test_*.py"]
-addopts = "-q"
+addopts = "-q -m 'not e2e'"
+markers = [
+    "e2e: recorrido en navegador. Fuera de la corrida normal porque levanta servidor y Chromium.",
+]
 
 [tool.coverage.run]
-omit = ["*/migrations/*", "*/tests/*", "config/wsgi.py", "config/asgi.py", "manage.py"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "tests/*",
+    "config/wsgi.py",
+    "config/asgi.py",
+    "manage.py",
+]
 
 # Para que falle bajo 90% de coverage y se mantenga  siempre. 
 [tool.coverage.report]

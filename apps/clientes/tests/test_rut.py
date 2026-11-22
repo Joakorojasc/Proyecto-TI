@@ -11,6 +11,7 @@ from django.urls import reverse
 from apps.clientes.forms import EmpresaRegistroForm, RegistroClienteForm
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.clientes.terminos import VERSION_TERMINOS
+from apps.clientes.tests.apoyo import abrir_documento_terminos
 from apps.clientes.validators import RUT_DUPLICADO, normalizar_rut, validar_rut
 
 
@@ -87,6 +88,7 @@ def test_formularios_guardan_rut_normalizado(
             "email_contacto": "contacto@demo.cl",
         }
     )
+    form.documento_abierto = True
 
     assert form.fields["rut"].label == "RUT de la institución"
     assert form.is_valid(), form.errors
@@ -107,10 +109,13 @@ def test_formularios_guardan_rut_normalizado(
 def test_registro_invalido_muestra_error_y_no_crea_cuentas(
     client: Client, rut: str, mensaje: str
 ) -> None:
+    abrir_documento_terminos(client)
     respuesta = client.post(
         reverse("registro"),
         data={
             "username": "admin@demo.cl",
+            "first_name": "Ana",
+            "last_name": "Prueba",
             "password1": "ClaveSegura123!",
             "password2": "ClaveSegura123!",
             "razon_social": "Institución de prueba",
@@ -211,11 +216,14 @@ def test_registro_duplicado_muestra_error_sin_crear_usuario(
     # Al omitir solo la comprobación previa se reproduce el conflicto que
     # ocurriría si otra petición guardara el RUT después de is_valid().
     context = patch.object(form_class, "validate_unique") if concurrencia else nullcontext()
+    abrir_documento_terminos(client)
     with context:
         respuesta = client.post(
             reverse("registro"),
             data={
                 "username": "admin@otra.cl",
+                "first_name": "Otra",
+                "last_name": "Institución",
                 "password1": "ClaveSegura123!",
                 "password2": "ClaveSegura123!",
                 "rut": "76.123.456-0",

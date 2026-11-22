@@ -1,14 +1,5 @@
 {% extends "base.html" %}
 
-{% block migas %}
-<nav class="migas" aria-label="Ruta de navegación">
-    <ol>
-        <li><a href="{% url 'home' %}">Inicio</a></li>
-        <li aria-current="page">Perfil de Institución</li>
-    </ol>
-</nav>
-{% endblock migas %}
-
 {% block content %}
 <section class="profile-page">
     <header class="instances-header">
@@ -24,7 +15,7 @@
         Para proteger tu cuenta, te pediremos tu contraseña antes de guardar los cambios.
     </p>
 
-    <p><a href="{% url 'aceptar_terminos' %}">Consultar y aceptar términos y condiciones</a></p>
+    <p><a class="btn-primary" href="{% url 'aceptar_terminos' %}">Consultar y aceptar términos y condiciones</a></p>
 
     <div class="auth-card profile-card">
         <h2>Información de la institución</h2>

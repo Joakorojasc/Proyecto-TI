@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.clientes.terminos import VERSION_TERMINOS
+from apps.clientes.tests.apoyo import abrir_documento_terminos
 from apps.planes.models import Plan, Suscripcion
 
 
@@ -13,6 +14,8 @@ from apps.planes.models import Plan, Suscripcion
 def test_registro_redirige_a_mis_instancias(client: Client) -> None:
     data = {
         "username": "admin@demo.cl",
+        "first_name": "Ana",
+        "last_name": "Demo",
         "password1": "Password123!",
         "password2": "Password123!",
         "razon_social": "Empresa Demo",
@@ -21,6 +24,7 @@ def test_registro_redirige_a_mis_instancias(client: Client) -> None:
         "version_terminos": VERSION_TERMINOS,
     }
 
+    abrir_documento_terminos(client)
     response = client.post(reverse("registro"), data=data)
 
     assert response.status_code == 302
