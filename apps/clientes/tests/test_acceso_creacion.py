@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group, Permission, User
 from django.test import Client
 from django.urls import reverse
 
+from apps.clientes import terminos
 from apps.clientes.models import Cliente, UsuarioPortal
 from apps.instancias.models import InstanciaMoodle
 from apps.planes.models import Plan, Suscripcion
@@ -15,7 +16,7 @@ pytestmark = pytest.mark.django_db
 def solicitud(navegador: Client, operacion: str, metodo: str, cliente: Cliente, plan: Plan) -> int:
     if operacion == "crear":
         url = reverse("instancias:crear", args=[cliente.pk, plan.pk])
-        datos = {"nombre": "CampusPrueba", "tipo_dominio": "edocere", "subdominio": "campus"}
+        datos = {"nombre": "Campus Prueba", "tipo_dominio": "edocere", "subdominio": "campus"}
     else:
         url = reverse("planes:seleccionar_plan", args=[cliente.pk])
         datos = {"plan": str(plan.pk)}
@@ -84,6 +85,7 @@ def test_acceso_permitido_respeta_los_permisos_existentes(
 ) -> None:
     cliente = usuario_cliente.usuarioportal.cliente
     assert cliente is not None
+    terminos.registrar_aceptacion(cliente, usuario_cliente, terminos.VERSION_TERMINOS)
     if actor.startswith("superusuario"):
         usuario = User.objects.create_user(
             username="administrador",
@@ -103,18 +105,6 @@ def test_acceso_permitido_respeta_los_permisos_existentes(
 
     assert solicitud(client, operacion, metodo, cliente, plan) == (200 if metodo == "get" else 302)
     if operacion == "crear" and metodo == "post":
-        suscripcion_pendiente = Suscripcion.objects.get()
-        client.post(
-            reverse(
-                "pagos:checkout",
-                kwargs={"suscripcion_id": suscripcion_pendiente.pk},
-            ),
-            {
-                "ultimos_4_digitos": "4242",
-                "marca_tarjeta": "Visa",
-                "resultado": "aprobado",
-            },
-        )
         instancia = InstanciaMoodle.objects.get()
         suscripcion = Suscripcion.objects.get()
         assert instancia.cliente_id == cliente.pk

@@ -7,7 +7,7 @@ from django.db.models import Q
 from apps.planes.forms import PlanChoiceField
 from apps.planes.models import Plan, Suscripcion
 
-from .models import EstadoInstancia, InstanciaMoodle
+from .models import EstadoAprovisionamiento, EstadoInstancia, InstanciaMoodle
 
 DOMINIO_BASE_EDOCERE = "edocere.com"
 SUBDOMINIO_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
@@ -20,9 +20,9 @@ class CrearInstanciaForm(forms.ModelForm):
 
     nombre = forms.CharField(
         label="Nombre de la instancia",
-        help_text="Cómo quieres identificar esta instancia, por ejemplo: CampusCorporativo.",
+        help_text="Cómo quieres identificar esta instancia, por ejemplo: Campus Corporativo.",
         max_length=255,
-        widget=forms.TextInput(attrs={"placeholder": "CampusCorporativo"}),
+        widget=forms.TextInput(attrs={"placeholder": "Campus Corporativo"}),
     )
     tipo_dominio = forms.ChoiceField(
         label="Dirección web de la instancia",
@@ -67,14 +67,6 @@ class CrearInstanciaForm(forms.ModelForm):
 
     def clean(self) -> dict[str, Any]:
         cleaned = super().clean() or {}
-        nombre = cleaned.get("nombre") or ""
-        if not nombre.isalnum():
-            self.add_error(
-                "nombre",
-                "El nombre solo puede contener letras y números, sin espacios.",
-            )
-            return cleaned
-
         tipo = cleaned.get("tipo_dominio")
 
         if tipo == self.TIPO_EDOCERE:
@@ -123,6 +115,12 @@ class CrearInstanciaForm(forms.ModelForm):
 
 
 class EditarInstanciaForm(forms.ModelForm):
+    ESTADOS_EDITABLES = (
+        (EstadoInstancia.ACTIVE, EstadoInstancia.ACTIVE.label),
+        (EstadoInstancia.SUSPENDED, EstadoInstancia.SUSPENDED.label),
+        (EstadoInstancia.DEPROVISIONED, EstadoInstancia.DEPROVISIONED.label),
+    )
+
     PLAN_BLOCKS = {
         "mensual": {
             "key": "Mensual",
@@ -170,6 +168,12 @@ class EditarInstanciaForm(forms.ModelForm):
         assume_scheme="https",
         widget=forms.URLInput(attrs={"placeholder": "https://empresa.cl/logo.png"}),
     )
+    estado = forms.ChoiceField(
+        label="Estado",
+        choices=(("", "Mantener estado actual"), *ESTADOS_EDITABLES),
+        required=False,
+        help_text=("El aprovisionamiento determina cuándo una instancia pendiente pasa a activa."),
+    )
 
     class Meta:
         model = InstanciaMoodle
@@ -180,6 +184,8 @@ class EditarInstanciaForm(forms.ModelForm):
         instancia = self.instance
         planes = Plan.objects.none()
         if instancia.pk:
+            if instancia.estado == EstadoInstancia.PENDING:
+                self.fields.pop("estado")
             planes = Plan.objects.filter(
                 Q(tipo_plan__iexact="mensual")
                 | Q(tipo_plan__iexact="anual")
@@ -224,6 +230,21 @@ class EditarInstanciaForm(forms.ModelForm):
         if not contrasena:
             raise forms.ValidationError("Ingresa tu contraseña para confirmar los cambios.")
         return contrasena
+
+    def clean_estado(self) -> str:
+        estado = self.cleaned_data["estado"]
+        if not estado:
+            return self.instance.estado
+        if estado == EstadoInstancia.ACTIVE and self.instance.estado != EstadoInstancia.ACTIVE:
+            solicitud = self.instance.solicitudes_aprovisionamiento.order_by(
+                "-created_at",
+                "-pk",
+            ).first()
+            if solicitud is None or solicitud.estado != EstadoAprovisionamiento.ACTIVA:
+                raise forms.ValidationError(
+                    "La instancia solo puede activarse después de confirmar su aprovisionamiento."
+                )
+        return estado
 
 
 class FiltroInstanciasForm(forms.Form):

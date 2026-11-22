@@ -41,7 +41,7 @@ class CheckoutViewTests(TestCase):
 
         self.assertRedirects(
             response,
-            reverse("instancias:lista"),
+            f"{reverse('seccion_facturacion')}?cliente_id={self.cliente.id}",
         )
         self.assertEqual(MedioPago.objects.count(), 1)
         pago = Pago.objects.get()
@@ -59,7 +59,7 @@ class CheckoutViewTests(TestCase):
 
         self.assertRedirects(
             response,
-            self.url,
+            f"{reverse('seccion_facturacion')}?cliente_id={self.cliente.id}",
         )
         self.assertEqual(Pago.objects.get().estado, Pago.ESTADO_RECHAZADO)
         self.assertFalse(DocumentoTributario.objects.exists())

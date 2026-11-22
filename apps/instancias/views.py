@@ -1,10 +1,12 @@
 from typing import Any
+from uuid import uuid4
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Prefetch, Q, QuerySet
+from django.db.models import Q, QuerySet
 from django.db.models.functions import Lower
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,18 +15,39 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, UpdateView
 
+from apps.clientes import terminos
 from apps.clientes.mixins import AislamientoClienteMixin
 from apps.clientes.models import UsuarioPortal
-from apps.clientes.permisos import obtener_cliente_autorizado
+from apps.clientes.permisos import es_superadministrador, obtener_cliente_autorizado
+from apps.pagos.services import (
+    aplicar_descuento,
+    codigo_recordado,
+    estado_cliente_para_instancia,
+    olvidar_codigo,
+    precio_de_referencia,
+)
 from apps.planes.models import Plan, Suscripcion
 
+from .consumo import con_datos_consumo
 from .forms import CrearInstanciaForm, EditarInstanciaForm, FiltroInstanciasForm
-from .models import EstadoAprovisionamiento, InstanciaMoodle, SolicitudAprovisionamiento
+from .models import (
+    EstadoAprovisionamiento,
+    EstadoInstancia,
+    InstanciaMoodle,
+    SolicitudAprovisionamiento,
+)
+from .services import AprovisionamientoError, AprovisionamientoService
 
 
 @login_required(login_url="/login/")
 def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> HttpResponse:
     cliente = obtener_cliente_autorizado(request, cliente_id)
+    if not es_superadministrador(request.user) and not terminos.tiene_aceptacion_vigente(cliente):
+        messages.info(
+            request,
+            "Antes de crear una instancia debes aceptar los términos y condiciones.",
+        )
+        return redirect("aceptar_terminos")
     plan = get_object_or_404(
         Plan.objects.filter(Q(cliente__isnull=True) | Q(cliente=cliente)),
         id=plan_id,
@@ -32,19 +55,58 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
     form = CrearInstanciaForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
-        suscripcion = Suscripcion.objects.create(
-            cliente=cliente,
-            plan=plan,
-            estado="pendiente",
+        with transaction.atomic():
+            instancia = form.save(commit=False)
+            instancia.cliente = cliente
+            instancia.estado = EstadoInstancia.PENDING
+            instancia.save()
+            solicitud = SolicitudAprovisionamiento.objects.create(instancia=instancia)
+            suscripcion = Suscripcion.objects.create(
+                cliente=cliente,
+                instancia=instancia,
+                plan=plan,
+                estado="pendiente",
+                fecha_inicio=timezone.now(),
+                codigo_descuento=codigo_recordado(request, plan),
+            )
+        olvidar_codigo(request)
+
+        estado_comercial = estado_cliente_para_instancia(
+            cliente_id=cliente.pk,
+            suscripcion_id=suscripcion.pk,
+            plan_id=plan.pk,
         )
-        request.session[f"checkout_instancia_{suscripcion.pk}"] = {
-            "nombre": form.cleaned_data["nombre"],
-            "tipo_dominio": form.cleaned_data["tipo_dominio"],
-            "subdominio": form.cleaned_data.get("subdominio", ""),
-            "dominio_propio": form.cleaned_data.get("dominio_propio", ""),
-            "logo_url": form.cleaned_data.get("logo_url", ""),
-        }
-        return redirect("pagos:checkout", suscripcion_id=suscripcion.pk)
+        if estado_comercial == "aprobada":
+            suscripcion.estado = "activa"
+            suscripcion.save(update_fields=["estado"])
+            try:
+                AprovisionamientoService().enviar_solicitud(solicitud)
+            except AprovisionamientoError:
+                solicitud.estado = EstadoAprovisionamiento.FALLIDA
+                solicitud.save(update_fields=["estado", "updated_at"])
+                instancia.estado = EstadoInstancia.FAILED
+                instancia.save(update_fields=["estado"])
+                messages.error(
+                    request,
+                    "No se pudo enviar la solicitud de aprovisionamiento. "
+                    "El administrador de Edocere fue notificado para ponerse en contacto contigo.",
+                )
+            else:
+                messages.success(
+                    request,
+                    "La solicitud fue aceptada y está pendiente de aprovisionamiento.",
+                )
+        elif estado_comercial == "pendiente":
+            messages.info(
+                request,
+                "Tu solicitud quedó pendiente. Se procesará cuando se confirme el pago.",
+            )
+        else:
+            messages.error(
+                request,
+                "No se pudo autorizar la solicitud. Revisa el estado de tu pago.",
+            )
+        return redirect("instancias:lista")
 
     return render(
         request,
@@ -94,14 +156,7 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
             queryset = queryset.filter(estado=filtros["estado"])
         queryset = queryset.order_by(*ORDENES[filtros.get("orden") or ""])
 
-        suscripciones_activas = Suscripcion.objects.filter(estado="activa").select_related("plan")
-        return queryset.prefetch_related(
-            Prefetch(
-                "suscripciones",
-                queryset=suscripciones_activas,
-                to_attr="suscripciones_activas",
-            )
-        )
+        return con_datos_consumo(queryset)
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
@@ -110,6 +165,92 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
         context["filtro_form"] = self.filtro_form
         context["hay_filtros"] = bool(filtros.get("q") or filtros.get("estado"))
         return context
+
+
+@login_required(login_url="/login/")
+@require_POST
+def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
+    if not (request.user.is_staff or request.user.is_superuser):
+        raise PermissionDenied
+
+    instancia = get_object_or_404(InstanciaMoodle, pk=pk)
+
+    with transaction.atomic():
+        instancia = get_object_or_404(
+            InstanciaMoodle.objects.select_for_update(),
+            pk=pk,
+        )
+        solicitud = (
+            SolicitudAprovisionamiento.objects.select_for_update()
+            .filter(instancia=instancia)
+            .order_by("-created_at", "-pk")
+            .first()
+        )
+        if solicitud is None:
+            raise Http404
+        if solicitud.estado != EstadoAprovisionamiento.FALLIDA:
+            messages.error(
+                request,
+                "Solo se pueden reintentar solicitudes de aprovisionamiento fallidas.",
+            )
+            return redirect("admin:index")
+        if (
+            SolicitudAprovisionamiento.objects.filter(
+                instancia=instancia,
+                estado__in=[
+                    EstadoAprovisionamiento.PENDIENTE,
+                    EstadoAprovisionamiento.EN_PROCESO,
+                ],
+            )
+            .exclude(pk=solicitud.pk)
+            .exists()
+        ):
+            messages.error(
+                request,
+                "Ya existe otra operación de aprovisionamiento en curso para esta instancia.",
+            )
+            return redirect("admin:index")
+
+        suscripcion = (
+            Suscripcion.objects.filter(instancia=instancia, cliente_id=instancia.cliente_id)
+            .order_by("-pk")
+            .first()
+        )
+        estado_comercial = estado_cliente_para_instancia(
+            cliente_id=instancia.cliente_id,
+            suscripcion_id=suscripcion.pk if suscripcion is not None else None,
+            plan_id=suscripcion.plan_id if suscripcion is not None else None,
+        )
+        if estado_comercial != "aprobada":
+            messages.error(
+                request,
+                "No se puede reintentar hasta que el pago esté aprobado.",
+            )
+            return redirect("admin:index")
+
+        solicitud.estado = EstadoAprovisionamiento.PENDIENTE
+        solicitud.operation_id = None
+        solicitud.idempotency_key = str(uuid4())
+        solicitud.save(update_fields=["estado", "operation_id", "idempotency_key", "updated_at"])
+
+    try:
+        AprovisionamientoService().enviar_solicitud(solicitud)
+    except AprovisionamientoError:
+        solicitud.estado = EstadoAprovisionamiento.FALLIDA
+        solicitud.save(update_fields=["estado", "updated_at"])
+        instancia.estado = EstadoInstancia.FAILED
+        instancia.save(update_fields=["estado"])
+        messages.error(
+            request,
+            "El reintento falló. Puedes volver a intentarlo más tarde.",
+        )
+    else:
+        messages.success(
+            request,
+            "El reintento fue aceptado y está pendiente de aprovisionamiento.",
+        )
+
+    return redirect("admin:index")
 
 
 class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailView):
@@ -127,39 +268,21 @@ class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailVi
         context["solicitud_aprovisionamiento"] = instancia.solicitudes_aprovisionamiento.order_by(
             "-created_at", "-pk"
         ).first()
-        return context
 
-
-@login_required(login_url="/login/")
-@require_POST
-def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
-    instancia = get_object_or_404(InstanciaMoodle, pk=pk)
-    cliente = obtener_cliente_autorizado(request, instancia.cliente_id)
-    with transaction.atomic():
-        instancia = get_object_or_404(
-            InstanciaMoodle.objects.select_for_update(),
-            pk=pk,
-            cliente_id=cliente.pk,
-        )
-        solicitud = (
-            SolicitudAprovisionamiento.objects.select_for_update()
-            .filter(instancia=instancia)
-            .order_by("-created_at", "-pk")
+        suscripcion = (
+            Suscripcion.objects.filter(instancia=instancia)
+            .select_related("plan", "codigo_descuento")
+            .order_by("-pk")
             .first()
         )
-        if solicitud is None:
-            raise Http404
-        if solicitud.intentos > 0:
-            messages.info(
-                request,
-                "Los reintentos son automáticos. Si fallaron, el caso queda "
-                "registrado para revisión del administrador.",
-            )
-            return redirect("instancias:detalle", pk=instancia.pk)
-        if solicitud.estado != EstadoAprovisionamiento.FALLIDA:
-            messages.error(request, "La solicitud aún no está disponible para reintento.")
-            return redirect("instancias:detalle", pk=instancia.pk)
-    return redirect("instancias:detalle", pk=instancia.pk)
+        context["suscripcion"] = suscripcion
+        context["precio"] = (
+            aplicar_descuento(precio_de_referencia(suscripcion.plan), suscripcion.codigo_descuento)
+            if suscripcion is not None
+            else None
+        )
+
+        return context
 
 
 class EditarInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, UpdateView):

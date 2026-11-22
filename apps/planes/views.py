@@ -3,6 +3,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from apps.clientes.permisos import obtener_cliente_autorizado
+from apps.pagos.services import buscar_codigo, olvidar_codigo, recordar_codigo
 from apps.pagos.views import pagos_del_cliente
 
 from .forms import ContactoPlanPersonalizadoForm, SeleccionarPlanForm
@@ -48,11 +49,25 @@ def seleccionar_plan(request: HttpRequest, cliente_id: int) -> HttpResponse:
 
     if request.method == "POST" and form.is_valid():
         plan_seleccionado = form.cleaned_data["plan"]
-        return redirect(
-            "instancias:crear",
-            cliente_id=cliente.id,
-            plan_id=plan_seleccionado.id,
-        )
+        texto = request.POST.get(f"codigo_{plan_seleccionado.id}", "")
+        if not texto.strip():
+            olvidar_codigo(request)
+        else:
+            codigo = buscar_codigo(texto, plan_seleccionado)
+            if codigo is None:
+                form.add_error(
+                    None,
+                    "El código de descuento no existe, no está activo "
+                    "o no corresponde al plan elegido.",
+                )
+            else:
+                recordar_codigo(request, plan_seleccionado, codigo)
+        if not form.errors:
+            return redirect(
+                "instancias:crear",
+                cliente_id=cliente.id,
+                plan_id=plan_seleccionado.id,
+            )
 
     return render(
         request,
