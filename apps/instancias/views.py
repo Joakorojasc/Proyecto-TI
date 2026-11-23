@@ -4,6 +4,7 @@ from uuid import uuid4
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q, QuerySet
 from django.db.models.functions import Lower
@@ -88,7 +89,7 @@ def crear_instancia(request: HttpRequest, cliente_id: int, plan_id: int) -> Http
                 messages.error(
                     request,
                     "No se pudo enviar la solicitud de aprovisionamiento. "
-                    "Puedes reintentarlo desde el detalle de la instancia.",
+                    "El administrador de Edocere fue notificado para ponerse en contacto contigo.",
                 )
             else:
                 messages.success(
@@ -169,14 +170,15 @@ class ListaInstanciasView(LoginRequiredMixin, AislamientoClienteMixin, ListView)
 @login_required(login_url="/login/")
 @require_POST
 def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
+    if not (request.user.is_staff or request.user.is_superuser):
+        raise PermissionDenied
+
     instancia = get_object_or_404(InstanciaMoodle, pk=pk)
-    cliente = obtener_cliente_autorizado(request, instancia.cliente_id)
 
     with transaction.atomic():
         instancia = get_object_or_404(
             InstanciaMoodle.objects.select_for_update(),
             pk=pk,
-            cliente_id=cliente.pk,
         )
         solicitud = (
             SolicitudAprovisionamiento.objects.select_for_update()
@@ -191,7 +193,7 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
                 request,
                 "Solo se pueden reintentar solicitudes de aprovisionamiento fallidas.",
             )
-            return redirect("instancias:detalle", pk=instancia.pk)
+            return redirect("admin:index")
         if (
             SolicitudAprovisionamiento.objects.filter(
                 instancia=instancia,
@@ -207,15 +209,15 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
                 request,
                 "Ya existe otra operación de aprovisionamiento en curso para esta instancia.",
             )
-            return redirect("instancias:detalle", pk=instancia.pk)
+            return redirect("admin:index")
 
         suscripcion = (
-            Suscripcion.objects.filter(instancia=instancia, cliente_id=cliente.pk)
+            Suscripcion.objects.filter(instancia=instancia, cliente_id=instancia.cliente_id)
             .order_by("-pk")
             .first()
         )
         estado_comercial = estado_cliente_para_instancia(
-            cliente_id=cliente.pk,
+            cliente_id=instancia.cliente_id,
             suscripcion_id=suscripcion.pk if suscripcion is not None else None,
             plan_id=suscripcion.plan_id if suscripcion is not None else None,
         )
@@ -224,7 +226,7 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
                 request,
                 "No se puede reintentar hasta que el pago esté aprobado.",
             )
-            return redirect("instancias:detalle", pk=instancia.pk)
+            return redirect("admin:index")
 
         solicitud.estado = EstadoAprovisionamiento.PENDIENTE
         solicitud.operation_id = None
@@ -248,7 +250,7 @@ def reintentar_aprovisionamiento(request: HttpRequest, pk: int) -> HttpResponse:
             "El reintento fue aceptado y está pendiente de aprovisionamiento.",
         )
 
-    return redirect("instancias:detalle", pk=instancia.pk)
+    return redirect("admin:index")
 
 
 class DetalleInstanciaView(LoginRequiredMixin, AislamientoClienteMixin, DetailView):
