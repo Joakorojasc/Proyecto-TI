@@ -1,0 +1,145 @@
+/* Estilo del admin con la paleta de Edocere. Sobrescribe las variables del
+   admin de Django; no cambia la estructura de las pantallas. */
+
+/* :root:root:root sube la especificidad para ganarle al modo oscuro del admin,
+   así el admin siempre se ve con la marca clara de Edocere. */
+:root:root:root {
+    color-scheme: light;
+
+    --edocere-blue: #143454;
+    --edocere-blue-soft: #1E4D7D;
+    --edocere-blue-light: #ADCCEB;
+    --edocere-orange: #EC740C;
+    --edocere-orange-soft: #FDF1E5;
+
+    --font-family-primary: "Raleway", system-ui, -apple-system, sans-serif;
+
+    --primary: #143454;
+    --secondary: #1E4D7D;
+    --accent: #FDF1E5;
+    --primary-fg: #ffffff;
+
+    --body-fg: #143454;
+    --body-bg: #ffffff;
+    --body-quiet-color: #5d6d7e;
+    --body-loud-color: #143454;
+
+    --header-color: #ADCCEB;
+    --header-branding-color: #ffffff;
+    --header-bg: #143454;
+    --header-link-color: #ffffff;
+
+    --breadcrumbs-fg: #ADCCEB;
+    --breadcrumbs-link-fg: #ffffff;
+    --breadcrumbs-bg: #1E4D7D;
+
+    --link-fg: #1E4D7D;
+    --link-hover-color: #EC740C;
+    --link-selected-fg: #1E4D7D;
+
+    --hairline-color: #dfe6ee;
+    --border-color: #dfe6ee;
+
+    --error-fg: #C0392B;
+    --message-success-bg: #EDF8F0;
+    --message-warning-bg: #FDF1E5;
+    --message-error-bg: #fbeae8;
+
+    --selected-bg: #FDF1E5;
+    --selected-row: #FDF1E5;
+
+    --button-fg: #ffffff;
+    --button-bg: #1E4D7D;
+    --button-hover-bg: #143454;
+    --default-button-bg: #EC740C;
+    --default-button-hover-bg: #c85f06;
+    --close-button-bg: #5d6d7e;
+    --close-button-hover-bg: #143454;
+    --delete-button-bg: #C0392B;
+    --delete-button-hover-bg: #962d22;
+
+    --object-tools-fg: #ffffff;
+    --object-tools-bg: #1E4D7D;
+    --object-tools-hover-bg: #143454;
+}
+
+body {
+    background-color: #EDF0F2;
+    font-variant-numeric: lining-nums;
+}
+
+/* Franja naranja arriba, como en el portal. */
+#header {
+    border-top: 5px solid var(--edocere-orange);
+}
+
+/* El modo claro/oscuro no aplica: el admin siempre usa la marca. */
+.theme-toggle {
+    display: none;
+}
+
+/* Bloques como tarjetas, igual que el portal. */
+.module {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.module caption,
+.module h2,
+.inline-group h2 {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+#changelist .paginator,
+#changelist-filter {
+    border-radius: 10px;
+}
+
+#changelist-filter h2 {
+    background: var(--edocere-blue-soft);
+    color: #ffffff;
+}
+
+thead th,
+.module thead th {
+    background: #EDF0F2;
+    color: var(--edocere-blue);
+    font-weight: 600;
+}
+
+/* Botones con las esquinas del portal. */
+.button,
+input[type="submit"],
+input[type="button"],
+.submit-row input,
+a.button,
+.object-tools a {
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="url"],
+input[type="number"],
+select,
+textarea {
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--edocere-orange);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(236, 116, 12, 0.25);
+}
+
+.messagelist li {
+    border-radius: 6px;
+}
