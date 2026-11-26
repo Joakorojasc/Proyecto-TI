@@ -62,6 +62,11 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
     empresa_form: EmpresaRegistroForm
 
     terminos.asegurar_sesion(request)
+    if request.method == "GET":
+        # Cada carga del formulario empieza sin autorización de lectura.
+        # Si el usuario abrió el PDF antes y volvió a entrar, no puede heredar
+        # esa marca en una página distinta ni después de recargar.
+        request.session.pop(terminos.CLAVE_SESION_DOCUMENTO, None)
     fecha_apertura = terminos.fecha_documento_abierto(request)
 
     if request.method == "POST":
@@ -141,6 +146,8 @@ def aceptar_terminos(request: HttpRequest) -> HttpResponse:
     if cliente is None:
         return render(request, "clientes/sin_institucion.html", status=404)
     terminos.asegurar_sesion(request)
+    if request.method == "GET":
+        request.session.pop(terminos.CLAVE_SESION_DOCUMENTO, None)
     fecha_apertura = terminos.fecha_documento_abierto(request)
     form = AceptacionTerminosForm(request.POST if request.method == "POST" else None)
     form.documento_abierto = fecha_apertura is not None

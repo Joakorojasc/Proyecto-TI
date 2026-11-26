@@ -343,6 +343,19 @@ class LecturaDocumentoTests(TestCase):
         self.assertIn("no-store", respuesta["Cache-Control"])
         self.assertIsNotNone(self.client.session.get(terminos.CLAVE_SESION_DOCUMENTO))
 
+    def test_cargar_el_registro_reinicia_marca_heredada(self) -> None:
+        sesion = self.client.session
+        sesion[terminos.CLAVE_SESION_DOCUMENTO] = {
+            "version": terminos.VERSION_TERMINOS,
+            "fecha": timezone.now().isoformat(),
+        }
+        sesion.save()
+
+        respuesta = self.client.get(reverse("registro"))
+
+        self.assertNotContains(respuesta, "data-terminos-abiertos")
+        self.assertIsNone(self.client.session.get(terminos.CLAVE_SESION_DOCUMENTO))
+
     def test_documento_desconocido_no_deja_marca(self) -> None:
         self.client.get(reverse("documento_terminos", kwargs={"version": "inexistente"}))
 
