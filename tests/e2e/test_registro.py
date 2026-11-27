@@ -98,3 +98,20 @@ def test_sin_abrir_el_documento_la_casilla_queda_bloqueada(
 
     expect(casilla).to_be_enabled()
     expect(page.get_by_text("Abre el documento para poder aceptarlo.")).to_have_count(0)
+
+
+def test_respuesta_fallida_no_habilita_la_casilla(
+    orm_con_playwright: None, transactional_db: None, page: Page, live_server: LiveServer
+) -> None:
+    base = live_server.url
+    llenar_registro(page, base)
+
+    casilla = page.locator("input[name='acepta_terminos']")
+    expect(casilla).to_be_disabled()
+
+    page.route("**/terminos/documento/**", lambda ruta: ruta.abort())
+    with page.expect_popup():
+        page.get_by_role("link", name="Leer el documento completo").click()
+
+    expect(casilla).to_be_disabled()
+    expect(page.get_by_text("Abre el documento para poder aceptarlo.")).to_be_visible()

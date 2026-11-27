@@ -34,12 +34,28 @@
     casilla.checked = false;
     casilla.disabled = true;
 
+    window.addEventListener("pageshow", function () {
+        if (!formulario.hasAttribute("data-terminos-abiertos")) {
+            casilla.checked = false;
+            casilla.disabled = true;
+        }
+    });
+
     enlace.addEventListener("click", function () {
         // La pestaña nueva ya pide el documento. Lo pedimos también desde acá
         // porque hay navegadores que abren el PDF en un visor aparte y la
         // sesión de esa petición no vuelve al portal.
         fetch(enlace.href, { credentials: "same-origin", cache: "no-store" })
-            .then(habilitar)
-            .catch(habilitar);
+            .then(function (respuesta) {
+                if (respuesta.ok) {
+                    habilitar();
+                }
+            })
+            .catch(function () {
+                // Una red caída o una respuesta fallida no demuestra que el
+                // documento se abrió. La casilla permanece bloqueada.
+                casilla.checked = false;
+                casilla.disabled = true;
+            });
     });
 })();

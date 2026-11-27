@@ -62,6 +62,14 @@ def registro_usuario(request: HttpRequest) -> HttpResponse:
     empresa_form: EmpresaRegistroForm
 
     terminos.asegurar_sesion(request)
+    documento_pendiente = request.session.pop(
+        terminos.CLAVE_SESION_DOCUMENTO_PENDIENTE,
+        False,
+    )
+    if not documento_pendiente:
+        # Una marca sin la entrega inmediata del PDF no autoriza la lectura.
+        # También se descarta en recargas posteriores del propio formulario.
+        request.session.pop(terminos.CLAVE_SESION_DOCUMENTO, None)
     fecha_apertura = terminos.fecha_documento_abierto(request)
 
     if request.method == "POST":
@@ -141,6 +149,8 @@ def aceptar_terminos(request: HttpRequest) -> HttpResponse:
     if cliente is None:
         return render(request, "clientes/sin_institucion.html", status=404)
     terminos.asegurar_sesion(request)
+    if request.method == "GET":
+        request.session.pop(terminos.CLAVE_SESION_DOCUMENTO, None)
     fecha_apertura = terminos.fecha_documento_abierto(request)
     form = AceptacionTerminosForm(request.POST if request.method == "POST" else None)
     form.documento_abierto = fecha_apertura is not None

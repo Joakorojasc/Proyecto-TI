@@ -24,6 +24,7 @@ DOCUMENTOS_TERMINOS = {
 # Marca de sesión que deja la descarga del PDF. Es la prueba de que la persona
 # abrió el documento antes de marcar la casilla.
 CLAVE_SESION_DOCUMENTO = "terminos_documento_abierto"
+CLAVE_SESION_DOCUMENTO_PENDIENTE = "terminos_documento_abierto_pendiente"
 
 ERROR_SIN_ABRIR = (
     "Abre primero el documento de términos y condiciones. El enlace lo muestra en otra pestaña."
@@ -48,6 +49,7 @@ def marcar_documento_abierto(request: HttpRequest, version: str) -> None:
         "version": version,
         "fecha": timezone.now().isoformat(),
     }
+    request.session[CLAVE_SESION_DOCUMENTO_PENDIENTE] = True
 
 
 def fecha_documento_abierto(request: HttpRequest) -> datetime | None:
